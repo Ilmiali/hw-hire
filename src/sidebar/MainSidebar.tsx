@@ -1,7 +1,6 @@
 import { Sidebar, SidebarHeader, SidebarSection, SidebarSpacer, SidebarFooter, SidebarBody, SidebarItem, SidebarLabel, SidebarHeading } from '../components/sidebar';
 import { getSidebarRoutes } from '../config/routes';
 import { useLocation } from 'react-router-dom';
-import { clsx } from 'clsx';
 import { Dropdown, DropdownDivider, DropdownItem, DropdownLabel, DropdownMenu, DropdownButton  } from '../components/dropdown';
 import { Avatar } from '../components/avatar';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
