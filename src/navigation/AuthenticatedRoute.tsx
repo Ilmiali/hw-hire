@@ -7,8 +7,8 @@ const AuthenticatedRoute = ({ children }: { children: React.ReactNode }) => {
   const [user, loading] = useAuthState(auth);
 
   if (loading) {
-    // You can return a loading spinner here.
-    return <div>Loading...</div>;
+    // DO NOTHING
+    return
   }
 
   if (!user) {

@@ -53,13 +53,11 @@ export function MainSidebar() {
       {group.routes.map((route) => {
         const isActive = location.pathname === route.path;
         return (
-          <SidebarItem href={route.path}>
-            <route.icon className={clsx(
-              'mr-3 h-5 w-5 flex-shrink-0',
-              isActive
-                ? 'text-primary-600 dark:text-primary-400'
-                : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400'
-            )} />
+          <SidebarItem 
+            href={route.path}
+            current={isActive}
+          >
+            <route.icon />
             <SidebarLabel>{route.name}</SidebarLabel>
           </SidebarItem>
         );
