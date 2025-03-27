@@ -1,28 +1,45 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'; 
-import Login from '../screens/Login'; 
-import Dashboard from '../screens/Dashboard'; 
-import Profile from '../screens/Profile';
-import AuthenticatedRoute from './AuthenticatedRoute';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/config';
+import { getAllRoutes } from '../config/routes';
 import { AuthenticatedLayout } from '../layouts/AuthenticatedLayout';
 
-const AppRouter = () => { 
+const AppRouter = () => {
   const [user] = useAuthState(auth);
+  const routes = getAllRoutes();
 
-  return ( 
-    <BrowserRouter> 
-      <Routes> 
+  return (
+    <BrowserRouter>
+      <Routes>
         <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
         
-        {/* Authenticated routes with layout */}
-        <Route element={<AuthenticatedRoute><AuthenticatedLayout /></AuthenticatedRoute>}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-        </Route>
-      </Routes> 
-    </BrowserRouter> 
+        {routes.map((route) => {
+          const RouteComponent = route.component;
+          
+          if (route.layout === 'authenticated') {
+            return (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={
+                  <AuthenticatedLayout>
+                    <RouteComponent />
+                  </AuthenticatedLayout>
+                }
+              />
+            );
+          }
+          
+          return (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={<RouteComponent />}
+            />
+          );
+        })}
+      </Routes>
+    </BrowserRouter>
   );
 };
 
