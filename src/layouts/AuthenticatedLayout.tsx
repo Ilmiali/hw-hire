@@ -1,9 +1,13 @@
 import { SidebarLayout } from '../components/sidebar-layout'
 import { MainSidebar } from '../sidebar/MainSidebar'
 import { MainNavbar } from '../navbar/MainNavbar'
-import { Outlet } from 'react-router-dom'
+import { ReactNode } from 'react'
 
-export function AuthenticatedLayout() {
+interface AuthenticatedLayoutProps {
+  children: ReactNode;
+}
+
+export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   return (
     <SidebarLayout
       navbar={
@@ -13,7 +17,7 @@ export function AuthenticatedLayout() {
         <MainSidebar />
       }
     >
-        <Outlet />
+      {children}
     </SidebarLayout>
   );
 }

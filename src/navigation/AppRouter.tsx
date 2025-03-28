@@ -9,7 +9,7 @@ const AppRouter = () => {
   const routes = getAllRoutes();
 
   if (loading) {
-    return
+    return null;
   }
 
   return (
@@ -41,10 +41,12 @@ const AppRouter = () => {
         {/* Protected routes wrapper */}
         <Route
           element={
-            (user) ? (
-              <AuthenticatedLayout>
-                <Outlet />
-              </AuthenticatedLayout>
+            user ? (
+              <>
+                <AuthenticatedLayout>
+                  <Outlet />
+                </AuthenticatedLayout>
+              </>
             ) : (
               <Navigate to="/login" replace state={{ from: window.location.pathname }} />
             )
