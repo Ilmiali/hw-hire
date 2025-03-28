@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { Input } from '../components/input';
+import { Button } from '../components/button';
+import { Link } from '../components/link';
+import { Field, Label } from '../components/fieldset';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from '../store/slices/authSlice';
@@ -7,7 +11,7 @@ import type { RootState, AppDispatch } from '../store';
 export default function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { user, loading, error: authError } = useSelector((state: RootState) => state.auth);
+  const { loading, error: authError } = useSelector((state: RootState) => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,7 +31,7 @@ export default function Login() {
 
   return (
     <>
-      <div className="flex min-h-full min-w-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
+      <div className="flex min-h-screen min-w-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8 bg-white lg:bg-zinc-100 dark:bg-zinc-900 dark:lg:bg-zinc-950">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <img
             alt="Your Company"
@@ -40,7 +44,7 @@ export default function Login() {
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
-          <div className="bg-white dark:bg-gray-800 px-6 py-12 shadow-sm sm:rounded-lg sm:px-12 border border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-12 shadow-sm sm:rounded-lg sm:px-12 border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800">
             <form onSubmit={handleSubmit} className="space-y-6">
               {(error || authError) && (
                 <div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
@@ -49,11 +53,11 @@ export default function Login() {
               )}
               
               <div>
-                <label htmlFor="email" className="block text-sm/6 font-medium text-gray-900 dark:text-gray-100">
+                <Field>
+                <Label htmlFor="email" className="block text-sm/6 font-medium text-gray-900 dark:text-gray-100">
                   Email address
-                </label>
-                <div className="mt-2">
-                  <input
+                </Label>
+                  <Input
                     id="email"
                     name="email"
                     type="email"
@@ -61,17 +65,16 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"
-                    className="block w-full rounded-md bg-white dark:bg-gray-700 px-3 py-1.5 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-primary-600 dark:focus:outline-primary-500 sm:text-sm/6"
                   />
-                </div>
+                </Field>
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm/6 font-medium text-gray-900 dark:text-gray-100">
+                <Field>
+                <Label htmlFor="password" className="block text-sm/6 font-medium text-gray-900 dark:text-gray-100">
                   Password
-                </label>
-                <div className="mt-2">
-                  <input
+                </Label>
+                  <Input
                     id="password"
                     name="password"
                     type="password"
@@ -79,43 +82,26 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
-                    className="block w-full rounded-md bg-white dark:bg-gray-700 px-3 py-1.5 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-primary-600 dark:focus:outline-primary-500 sm:text-sm/6"
                   />
-                </div>
+                </Field>
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex gap-3">
-                  <div className="flex h-6 shrink-0 items-center">
-                    <div className="group grid size-4 grid-cols-1">
-                      <input
-                        id="remember-me"
-                        name="remember-me"
-                        type="checkbox"
-                        className="peer size-4 cursor-pointer appearance-none rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 checked:border-primary-600 dark:checked:border-primary-500 checked:bg-primary-600 dark:checked:bg-primary-500"
-                      />
-                    </div>
-                  </div>
-                  <label htmlFor="remember-me" className="text-sm/6 text-gray-900 dark:text-gray-100">
-                    Remember me
-                  </label>
-                </div>
-
                 <div className="text-sm/6">
-                  <a href="#" className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300">
+                  <a href="#" className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">
                     Forgot your password?
                   </a>
                 </div>
               </div>
 
               <div>
-                <button
+                <Button
                   type="submit"
                   disabled={loading}
                   className="flex w-full justify-center rounded-md bg-primary-600 dark:bg-primary-500 px-3 py-1.5 text-sm/6 font-semibold leading-6 text-white shadow-sm hover:bg-primary-500 dark:hover:bg-primary-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:focus-visible:outline-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Signing in...' : 'Sign in'}
-                </button>
+                </Button>
               </div>
             </form>
 
