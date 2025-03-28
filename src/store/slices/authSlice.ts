@@ -7,7 +7,7 @@ import {
   User,
   AuthError
 } from 'firebase/auth';
-import { auth } from '../../config/firebase';
+import { auth } from '../../firebase/config';
 
 interface AuthState {
   user: User | null;
@@ -17,7 +17,7 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  loading: true,
+  loading: false,
   error: null
 };
 

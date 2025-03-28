@@ -1,38 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signIn } from '../services/auth';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase/config';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser } from '../store/slices/authSlice';
+import type { RootState, AppDispatch } from '../store';
 
 export default function Login() {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, loading, error: authError } = useSelector((state: RootState) => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
-
-    const { error } = await signIn(email, password);
     
-    if (error) {
-      setError(error);
+    const result = await dispatch(loginUser({ email, password }));
+    
+    if (loginUser.rejected.match(result)) {
+      setError(result.payload as string);
     } else {
       navigate('/dashboard');
     }
-    
-    setIsLoading(false);
   };
-  // Check if user is already logged in
-  const [user, ] = useAuthState(auth);
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
 
   return (
     <>
@@ -51,9 +42,9 @@ export default function Login() {
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
           <div className="bg-white dark:bg-gray-800 px-6 py-12 shadow-sm sm:rounded-lg sm:px-12 border border-gray-200 dark:border-gray-700">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
+              {(error || authError) && (
                 <div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
-                  <div className="text-sm text-red-700 dark:text-red-200">{error}</div>
+                  <div className="text-sm text-red-700 dark:text-red-200">{error || authError}</div>
                 </div>
               )}
               
@@ -120,10 +111,10 @@ export default function Login() {
               <div>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={loading}
                   className="flex w-full justify-center rounded-md bg-primary-600 dark:bg-primary-500 px-3 py-1.5 text-sm/6 font-semibold leading-6 text-white shadow-sm hover:bg-primary-500 dark:hover:bg-primary-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:focus-visible:outline-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
+                  {loading ? 'Signing in...' : 'Sign in'}
                 </button>
               </div>
             </form>

@@ -1,43 +1,65 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase/config';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 import { getAllRoutes } from '../config/routes';
 import { AuthenticatedLayout } from '../layouts/AuthenticatedLayout';
 
 const AppRouter = () => {
-  const [user] = useAuthState(auth);
+  const { user, loading } = useSelector((state: RootState) => state.auth);
   const routes = getAllRoutes();
+
+  if (loading) {
+    return <div>Loading...</div>; // You might want to replace this with a proper loading component
+  }
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
-        
-        {routes.map((route) => {
-          const RouteComponent = route.component;
-          
-          if (route.layout === 'authenticated') {
-            return (
-              <Route
-                key={route.path}
-                path={route.path}
-                element={
-                  <AuthenticatedLayout>
-                    <RouteComponent />
-                  </AuthenticatedLayout>
-                }
-              />
-            );
-          }
-          
-          return (
+        {/* Root path redirect */}
+        <Route 
+          path="/" 
+          element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
+        />
+
+        {/* Public routes */}
+        {routes
+          .filter(route => route.layout !== 'authenticated')
+          .map((route) => (
             <Route
               key={route.path}
               path={route.path}
-              element={<RouteComponent />}
+              element={
+                user && route.path === '/login' ? (
+                  <Navigate to="/dashboard" replace />
+                ) : (
+                  <route.component />
+                )
+              }
             />
-          );
-        })}
+          ))}
+
+        {/* Protected routes wrapper */}
+        <Route
+          element={
+            user ? (
+              <AuthenticatedLayout>
+                <Outlet />
+              </AuthenticatedLayout>
+            ) : (
+              <Navigate to="/login" replace state={{ from: window.location.pathname }} />
+            )
+          }
+        >
+          {routes
+            .filter(route => route.layout === 'authenticated')
+            .map((route) => (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={<route.component />}
+              />
+            ))}
+        </Route>
       </Routes>
     </BrowserRouter>
   );

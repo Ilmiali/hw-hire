@@ -4,7 +4,12 @@ import {
   ArrowRightStartOnRectangleIcon,
 } from '@heroicons/react/16/solid';
 import { DropdownConfig } from '../types/dropdown';
-import { logOut } from '../services/auth';
+import { logoutUser } from '../store/slices/authSlice';
+import { store } from '../store';
+
+const handleLogout = () => {
+  store.dispatch(logoutUser());
+};
 
 export const teamDropdownConfig: DropdownConfig = {
   trigger: {
@@ -45,7 +50,7 @@ export const teamDropdownConfig: DropdownConfig = {
     {
       label: "Sign out",
       icon: ArrowRightStartOnRectangleIcon,
-      onClick: () => logOut(),
+      onClick: handleLogout,
     },
   ],
 }; 
