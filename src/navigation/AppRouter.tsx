@@ -9,7 +9,7 @@ const AppRouter = () => {
   const routes = getAllRoutes();
 
   if (loading) {
-    return <div>Loading...</div>; // You might want to replace this with a proper loading component
+    return
   }
 
   return (
@@ -41,7 +41,7 @@ const AppRouter = () => {
         {/* Protected routes wrapper */}
         <Route
           element={
-            user ? (
+            (user) ? (
               <AuthenticatedLayout>
                 <Outlet />
               </AuthenticatedLayout>
