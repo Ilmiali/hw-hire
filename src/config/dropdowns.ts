@@ -14,7 +14,8 @@ const handleLogout = () => {
 export const teamDropdownConfig: DropdownConfig = {
   trigger: {
     avatar: {
-      src: "https://catalyst-demo.tailwindui.com/teams/catalyst.svg",
+      initials: "HR",
+      className: "bg-blue-500 text-white",
     },
     label: "Hoiwa HR",
   },
@@ -23,7 +24,8 @@ export const teamDropdownConfig: DropdownConfig = {
       label: "Hoiwa HR",
       href: "/teams/1",
       avatar: {
-        src: "/tailwind-logo.svg",
+        initials: "HR",
+        className: "bg-blue-500 text-white",
       },
     },
     {

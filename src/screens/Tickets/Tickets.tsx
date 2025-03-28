@@ -1,6 +1,7 @@
 import { SplitTwoLayout } from '../../components/split-two-layout';
 import { TicketsList } from './TicketsList';
-
+import { TicketChat } from './TicketChat';
+import { useState } from 'react';
 export default function Tickets() {
   const users = [
     {
@@ -27,7 +28,27 @@ export default function Tickets() {
       online: true,
       url: '/tickets/3',
     },
-  ];  
+  ];
+  const mockMessages = [
+    {
+      id: 1,
+      content: 'Hello, how are you?',
+      sender: { name: 'John Doe', isCurrentUser: true },
+      timestamp: '2021-01-01 12:00:00',
+    },
+    {
+      id: 2,
+      content: 'I am fine, thank you!',
+      sender: { name: 'Jane Doe', isCurrentUser: false },
+      timestamp: '2021-01-01 12:01:00',
+    },
+
+  ]
+  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const handleSendMessage = (content: string) => {
+    setMessages([...messages, { id: Date.now(), content, sender: { name: 'John Doe', isCurrentUser: true }, timestamp: new Date().toISOString() }]);
+  }
+
   return (
     <SplitTwoLayout
       leftColumn={
@@ -35,7 +56,11 @@ export default function Tickets() {
           <TicketsList users={users} />
         </div>
       }
-      rightColumn={<div>Right Column</div>}
+      rightColumn={
+        <div className="relative h-full">
+          <TicketChat messages={messages} onSendMessage={handleSendMessage} />
+        </div>
+      }
     />
   )
 }
