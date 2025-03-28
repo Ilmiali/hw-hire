@@ -22,9 +22,7 @@ export function SplitTwoLayout({
         {leftColumn}
       </aside>
       <main className={clsx('flex-1 min-w-0', rightColumnClassName)}>
-        <div className="px-4 py-10 sm:px-6 lg:px-8 lg:py-6">
-          {rightColumn}
-        </div>
+        {rightColumn}
       </main>
     </div>
   )

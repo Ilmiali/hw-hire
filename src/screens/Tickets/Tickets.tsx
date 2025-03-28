@@ -57,7 +57,7 @@ export default function Tickets() {
         </div>
       }
       rightColumn={
-        <div className="relative h-full">
+        <div className="h-full">
           <TicketChat messages={messages} onSendMessage={handleSendMessage} />
         </div>
       }
