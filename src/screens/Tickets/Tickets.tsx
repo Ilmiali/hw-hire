@@ -52,7 +52,7 @@ export default function Tickets() {
   return (
     <SplitTwoLayout
       leftColumn={
-        <div className="h-screen dark:bg-zinc-800 p-4">
+        <div className="h-screen dark:bg-zinc-800 p-4 border-r border-zinc-200 dark:border-zinc-700">
           <TicketsList users={users} />
         </div>
       }

@@ -1,6 +1,5 @@
 import { Menu, MenuItem, MenuItems, MenuButton } from '@headlessui/react'
 import { Avatar } from '../../components/avatar'
-import { Textarea } from '../../components/textarea'
 import { ChevronDownIcon } from '@heroicons/react/16/solid'
 import { useState } from 'react'
 
@@ -77,17 +76,17 @@ export function TicketChat({ messages, onSendMessage }: TicketChatProps) {
 
       {/* Message Input */}
       <form onSubmit={handleSubmit} className="border-t border-zinc-200 p-4 dark:border-zinc-800">
-        <div className="flex gap-2">
-          <Textarea
+        <div className="relative">
+          <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type your message..."
-            className="min-h-[60px]"
-            resizable={false}
+            className="w-full min-h-[60px] pr-32 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none"
+            rows={8}
           />
-          <div className="inline-flex rounded-md shadow-xs h-full">
+          <div className="absolute right-4 bottom-4 inline-flex rounded-md shadow-xs">
             <button
-              type="button"
+              type="submit"
               className="relative inline-flex items-center rounded-l-md bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-semibold text-zinc-900 dark:text-white ring-1 ring-zinc-300 dark:ring-zinc-700 ring-inset hover:bg-zinc-50 dark:hover:bg-zinc-800 focus:z-10"
             >
               Submit
