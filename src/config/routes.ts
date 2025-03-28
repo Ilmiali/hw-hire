@@ -6,10 +6,12 @@ import {
   LightBulbIcon,
   ArrowRightStartOnRectangleIcon,
   SparklesIcon,
+  TicketIcon,
 } from '@heroicons/react/16/solid';
 import Dashboard from '../screens/Dashboard';
 import Profile from '../screens/Profile';
 import Login from '../screens/Login';
+import Tickets from '../screens/Tickets/Tickets';
 import { RouteConfig, RouteGroup } from '../types/routes';
 
 // Public routes (no authentication required)
@@ -21,6 +23,18 @@ export const publicRoutes: RouteConfig[] = [
     component: Login,
     layout: 'public',
     isAuthProtected: false,
+  },
+];
+
+// Additional routes that shouldn't appear in the sidebar
+export const additionalRoutes: RouteConfig[] = [
+  {
+    path: '/tickets/:id',
+    name: 'Ticket Details',
+    icon: TicketIcon,
+    component: Tickets,
+    layout: 'authenticated',
+    isAuthProtected: true,
   },
 ];
 
@@ -37,6 +51,14 @@ export const mainRoutes: RouteGroup[] = [
         name: 'Dashboard',
         icon: HomeIcon,
         component: Dashboard,
+        layout: 'authenticated',
+        isAuthProtected: true,
+      },
+      {
+        path: '/tickets',
+        name: 'Tickets',
+        icon: TicketIcon,
+        component: Tickets,
         layout: 'authenticated',
         isAuthProtected: true,
       },
@@ -103,7 +125,7 @@ export const mainRoutes: RouteGroup[] = [
 
 // Helper function to get all routes (including nested ones)
 export function getAllRoutes(): RouteConfig[] {
-  const routes: RouteConfig[] = [...publicRoutes];
+  const routes: RouteConfig[] = [...publicRoutes, ...additionalRoutes];
   
   mainRoutes.forEach(group => {
     routes.push(...group.routes);
