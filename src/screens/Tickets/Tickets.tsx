@@ -1,92 +1,45 @@
 import { SplitTwoLayout } from '../../components/split-two-layout';
 import { TicketsList } from './TicketsList';
 import { TicketChat } from './TicketChat';
-import { useEffect, useState } from 'react';
-import { auth } from '../../firebase/config'
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { fetchTickets } from '../../store/slices/ticketsSlice';
+import { Message } from '../../types/message';
 
 export default function Tickets() {
-  const users = [
-    {
-      id: 1,
-      name: 'New message from John Doe',
-      email: 'john.doe@example.com',
-      access: 'Admin',
-      online: true,
-      url: '/tickets/1',
-    },
-    {
-      id: 2,
-      name: 'New message from Jane Doe',
-      email: 'jane.doe@example.com',
-      access: 'User',
-      online: false,
-      url: '/tickets/2',
-    },
-    {
-      id: 3,
-      name: 'New message from Jim Doe',
-      email: 'jim.doe@example.com',
-      access: 'User',
-      online: true,
-      url: '/tickets/3',
-    },
-  ];
-  const mockMessages = [
-    {
-      id: 1,
-      content: 'Hello, how are you?',
-      sender: { name: 'John Doe', isCurrentUser: true },
-      timestamp: '2021-01-01 12:00:00',
-    },
-    {
-      id: 2,
-      content: 'I am fine, thank you!',
-      sender: { name: 'Jane Doe', isCurrentUser: false },
-      timestamp: '2021-01-01 12:01:00',
-    },
-
-  ]
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
-  const handleSendMessage = (content: string) => {
-    setMessages([...messages, { id: Date.now(), content, sender: { name: 'John Doe', isCurrentUser: true }, timestamp: new Date().toISOString() }]);
-  }
+  const dispatch = useDispatch<AppDispatch>();
+  const { tickets, loading, error } = useSelector((state: RootState) => state.tickets);
 
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const currentUser = auth.currentUser
-        if (!currentUser) {
-          console.log('User not authenticated')
-          return
-        }
-        const token = await currentUser.getIdToken()
-        const grantId = import.meta.env.VITE_NYLAS_GRANT_ID
-        console.log(token)
-        const response = await fetch(`https://us-central1-zanaa-desk.cloudfunctions.net/getMessages?grantId=${grantId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          method: 'POST',
-          body: JSON.stringify({
-            grantId: grantId
-          })
-        })
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Unauthorized - Please log in again')
-          }
-          throw new Error('Failed to fetch messages')
-        }
-        const data = await response.json()
-        console.log(data)
-      } catch (err) {
-        console.log(err)
-      }
-    }
+    dispatch(fetchTickets());
+  }, [dispatch]);
 
-    fetchMessages()
-  }, [])
+  const handleSendMessage = (content: string) => {
+    // TODO: Implement send message functionality with Redux
+    console.log('Sending message:', content);
+  };
+
+  // Transform tickets into the format expected by TicketsList
+  const users = tickets.map(ticket => ({
+    id: ticket.id,
+    name: ticket.title,
+    email: ticket.createdBy,
+    access: ticket.status,
+    online: true, // TODO: Implement online status
+    url: `/tickets/${ticket.id}`,
+  }));
+
+  if (loading) {
+    return <div>Loading tickets...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
+  // TODO: Implement messages state management with Redux
+  const messages: Message[] = [];
 
   return (
     <SplitTwoLayout
@@ -101,5 +54,5 @@ export default function Tickets() {
         </div>
       }
     />
-  )
+  );
 }
