@@ -12,7 +12,6 @@ export type QueryConstraint = {
 // Document interface
 export interface Document {
   id: string;
-  data: unknown;
   createdAt?: Date;
   updatedAt?: Date;
 }

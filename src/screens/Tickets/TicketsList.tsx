@@ -4,7 +4,7 @@ import { Checkbox } from '../../components/checkbox'
 import { EllipsisHorizontalIcon } from '@heroicons/react/16/solid'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/table'
 
-export function TicketsList({ users }: { users: any[] }) {
+export function TicketsList({ tickets }: { tickets: any[] }) {
   return (
     <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)]">
       <TableHead>
@@ -21,22 +21,22 @@ export function TicketsList({ users }: { users: any[] }) {
         </TableRow>
       </TableHead>
       <TableBody>
-        {users.map((user) => (
-          <TableRow key={user.handle} href={user.url}>
+        {tickets.map((ticket) => (
+          <TableRow key={ticket.id} href={ticket.url}>
             <TableCell>
               <Checkbox />
             </TableCell>
             <TableCell>
-              {user.online ? <Badge color="lime">Online</Badge> : <Badge color="zinc">Offline</Badge>}
+              {ticket.status === 'open' ? <Badge color="lime">Open</Badge> : <Badge color="zinc">{ticket.status}</Badge>}
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-4">
                 <div>
-                  <div className="font-medium">{user.name}</div>
+                  <div className="font-medium">{ticket.subject}</div>
                 </div>
               </div>
             </TableCell>
-            <TableCell className="text-zinc-500">{user.access}</TableCell>
+            <TableCell className="text-zinc-500">{ticket.access}</TableCell>
             <TableCell>
               <div className="-mx-3 -my-1.5 sm:-mx-2.5">
                 <Dropdown>

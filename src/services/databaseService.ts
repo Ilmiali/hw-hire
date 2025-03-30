@@ -30,12 +30,12 @@ export class DatabaseService {
 
   public async getDocument<T>(collection: string, id: string): Promise<T | null> {
     const doc = await this.database.getDocument(collection, id);
-    return doc ? doc.data as T : null;
+    return doc ? doc as T : null;
   }
 
   public async getDocuments<T>(collection: string, constraints?: QueryConstraint[]): Promise<T[]> {
     const docs = await this.database.getDocuments(collection, constraints);
-    return docs.map(doc => doc.data as T);
+    return docs.map(doc => doc as T);
   }
 
   public async buildQuery(collection: string, constraints?: QueryConstraint[]): Promise<unknown> {

@@ -21,12 +21,12 @@ export default function Tickets() {
   };
 
   // Transform tickets into the format expected by TicketsList
-  const users = tickets.map(ticket => ({
+  const ticketsList = tickets.map(ticket => ({
     id: ticket.id,
-    name: ticket.title,
+    subject: ticket.subject,
     email: ticket.createdBy,
     access: ticket.status,
-    online: true, // TODO: Implement online status
+    status: ticket.status,
     url: `/tickets/${ticket.id}`,
   }));
 
@@ -44,8 +44,8 @@ export default function Tickets() {
   return (
     <SplitTwoLayout
       leftColumn={
-        <div className="h-screen dark:bg-zinc-800 p-4 border-r border-zinc-200 dark:border-zinc-700">
-          <TicketsList users={users} />
+        <div className="h-screen p-4 border-r border-zinc-200 dark:border-zinc-700">
+          <TicketsList tickets={ticketsList} />
         </div>
       }
       rightColumn={

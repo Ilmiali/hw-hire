@@ -34,7 +34,7 @@ export class FirestoreDatabase implements Database {
     const data = docSnap.data() as FirestoreDocumentData;
     return {
       id: docSnap.id,
-      data,
+      ...data,
       createdAt: data.createdAt?.toDate(),
       updatedAt: data.updatedAt?.toDate()
     };
@@ -48,7 +48,7 @@ export class FirestoreDatabase implements Database {
       const data = doc.data() as FirestoreDocumentData;
       return {
         id: doc.id,
-        data,
+        ...data,
         createdAt: data.createdAt?.toDate(),
         updatedAt: data.updatedAt?.toDate()
       };
