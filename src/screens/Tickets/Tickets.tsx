@@ -1,7 +1,9 @@
 import { SplitTwoLayout } from '../../components/split-two-layout';
 import { TicketsList } from './TicketsList';
 import { TicketChat } from './TicketChat';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { auth } from '../../firebase/config'
+
 export default function Tickets() {
   const users = [
     {
@@ -48,6 +50,43 @@ export default function Tickets() {
   const handleSendMessage = (content: string) => {
     setMessages([...messages, { id: Date.now(), content, sender: { name: 'John Doe', isCurrentUser: true }, timestamp: new Date().toISOString() }]);
   }
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const currentUser = auth.currentUser
+        if (!currentUser) {
+          console.log('User not authenticated')
+          return
+        }
+        const token = await currentUser.getIdToken()
+        const grantId = import.meta.env.VITE_NYLAS_GRANT_ID
+        console.log(token)
+        const response = await fetch(`https://us-central1-zanaa-desk.cloudfunctions.net/getMessages?grantId=${grantId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          method: 'POST',
+          body: JSON.stringify({
+            grantId: grantId
+          })
+        })
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Unauthorized - Please log in again')
+          }
+          throw new Error('Failed to fetch messages')
+        }
+        const data = await response.json()
+        console.log(data)
+      } catch (err) {
+        console.log(err)
+      }
+    }
+
+    fetchMessages()
+  }, [])
 
   return (
     <SplitTwoLayout
