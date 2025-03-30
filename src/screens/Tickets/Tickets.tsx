@@ -28,6 +28,7 @@ export default function Tickets() {
     access: ticket.status,
     status: ticket.status,
     url: `/tickets/${ticket.id}`,
+    requestedAt: ticket.createdAt // Using createdAt as requestedAt since it's the same in this case
   }));
 
   if (loading) {

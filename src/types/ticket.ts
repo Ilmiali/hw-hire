@@ -2,10 +2,11 @@ export interface Ticket {
   id: string;
   subject: string;
   snippet: string;
-  status: string;
+  status: 'open' | 'closed';
   priority: string;
   createdAt: Date;
   updatedAt: Date;
+  requestedAt: Date;
   assignedTo?: string;
   createdBy: string;
 } 

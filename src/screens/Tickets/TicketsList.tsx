@@ -7,22 +7,13 @@ type Ticket = {
   status: 'open' | 'closed'
   access: string
   url: string
+  requestedAt: Date
 }
 
 const fields: Field<Ticket>[] = [
   { key: 'status', label: 'Status', type: 'badge' },
-  { 
-    key: 'subject', 
-    label: 'Name',
-    render: (item: Ticket) => (
-      <div className="flex items-center gap-4">
-        <div>
-          <div className="font-medium">{item.subject}</div>
-        </div>
-      </div>
-    )
-  },
-  { key: 'access', label: 'Role' },
+  { key: 'subject', label: 'Name' },
+  { key: 'requestedAt', label: 'Requested', type: 'date' },
   { key: 'actions', label: '', type: 'actions' }
 ]
 

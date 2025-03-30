@@ -4,11 +4,12 @@ import { Checkbox } from '../components/checkbox'
 import { EllipsisHorizontalIcon } from '@heroicons/react/16/solid'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/table'
 import React from 'react'
+import { formatTimeAgo } from '../utils/time'
 
 export type Field<T = Record<string, unknown>> = {
   key: string
   label: string
-  type?: 'text' | 'badge' | 'checkbox' | 'actions'
+  type?: 'text' | 'badge' | 'checkbox' | 'actions' | 'date'
   render?: (item: T) => React.ReactNode
 }
 
@@ -56,11 +57,13 @@ export function DataTable<T extends { id: string; url?: string }>({
       return field.render(item)
     }
 
+    const value = item[field.key as keyof T]
+
     switch (field.type) {
       case 'badge':
         return (
-          <Badge color={item[field.key as keyof T] === 'open' ? 'lime' : 'zinc'}>
-            {String(item[field.key as keyof T])}
+          <Badge color={value === 'open' ? 'lime' : 'zinc'}>
+            {String(value)}
           </Badge>
         )
       case 'checkbox':
@@ -70,6 +73,8 @@ export function DataTable<T extends { id: string; url?: string }>({
             onChange={() => handleSelect(item.id)}
           />
         )
+      case 'date':
+        return <span className="text-sm text-zinc-500 dark:text-zinc-400">{formatTimeAgo(value as Date)}</span>
       case 'actions':
         return (
           <div className="-mx-3 -my-1.5 sm:-mx-2.5">
@@ -92,7 +97,7 @@ export function DataTable<T extends { id: string; url?: string }>({
           </div>
         )
       default:
-        return String(item[field.key as keyof T])
+        return String(value)
     }
   }
 
