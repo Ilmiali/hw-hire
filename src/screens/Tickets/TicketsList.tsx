@@ -1,59 +1,49 @@
-import { Dropdown, DropdownButton, DropdownItem, DropdownMenu } from '../../components/dropdown'
-import { Badge } from '../../components/badge'
-import { Checkbox } from '../../components/checkbox'
-import { EllipsisHorizontalIcon } from '@heroicons/react/16/solid'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/table'
+import { DataTable } from '../../data-components/dataTable'
+import type { Field } from '../../data-components/dataTable'
 
-export function TicketsList({ tickets }: { tickets: any[] }) {
+type Ticket = {
+  id: string
+  subject: string
+  status: 'open' | 'closed'
+  access: string
+  url: string
+}
+
+const fields: Field<Ticket>[] = [
+  { key: 'status', label: 'Status', type: 'badge' },
+  { 
+    key: 'subject', 
+    label: 'Name',
+    render: (item: Ticket) => (
+      <div className="flex items-center gap-4">
+        <div>
+          <div className="font-medium">{item.subject}</div>
+        </div>
+      </div>
+    )
+  },
+  { key: 'access', label: 'Role' },
+  { key: 'actions', label: '', type: 'actions' }
+]
+
+export function TicketsList({ list }: { list: Ticket[] }) {
   return (
-    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)]">
-      <TableHead>
-        <TableRow>
-          <TableHeader>
-            <span className="sr-only">Select</span>
-          </TableHeader>
-          <TableHeader>Status</TableHeader>
-          <TableHeader>Name</TableHeader>
-          <TableHeader>Role</TableHeader>
-          <TableHeader className="relative w-0">
-            <span className="sr-only">Actions</span>
-          </TableHeader>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {tickets.map((ticket) => (
-          <TableRow key={ticket.id} href={ticket.url}>
-            <TableCell>
-              <Checkbox />
-            </TableCell>
-            <TableCell>
-              {ticket.status === 'open' ? <Badge color="lime">Open</Badge> : <Badge color="zinc">{ticket.status}</Badge>}
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-4">
-                <div>
-                  <div className="font-medium">{ticket.subject}</div>
-                </div>
-              </div>
-            </TableCell>
-            <TableCell className="text-zinc-500">{ticket.access}</TableCell>
-            <TableCell>
-              <div className="-mx-3 -my-1.5 sm:-mx-2.5">
-                <Dropdown>
-                  <DropdownButton plain aria-label="More options">
-                    <EllipsisHorizontalIcon />
-                  </DropdownButton>
-                  <DropdownMenu anchor="bottom end">
-                    <DropdownItem>View</DropdownItem>
-                    <DropdownItem>Edit</DropdownItem>
-                    <DropdownItem>Delete</DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <DataTable<Ticket>
+      data={list}
+      fields={fields}
+      selectable
+      isLink
+      actions={['view', 'delete']}
+      onAction={(action, item) => {
+        switch (action) {
+          case 'view':
+            window.location.href = item.url
+            break
+          case 'delete':
+            // Handle delete
+            break
+        }
+      }}
+    />
   )
 }
