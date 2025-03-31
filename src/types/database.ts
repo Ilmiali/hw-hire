@@ -3,6 +3,22 @@ export type DatabaseEngine = 'firestore' | 'mongodb';
 
 // Query operators
 export type QueryOperator = '==' | '!=' | '>' | '<' | '>=' | '<=';
+export type SortOrder = 'asc' | 'desc';
+
+// Query options
+export interface QueryOptions {
+  constraints?: QueryConstraint[];
+  sortBy?: {
+    field: string;
+    order: SortOrder;
+  };
+  limit?: number;
+  startAfter?: {
+    field: string;
+    value: unknown;
+  };
+}
+
 export type QueryConstraint = {
   field: string;
   operator: QueryOperator;
@@ -19,6 +35,6 @@ export interface Document {
 // Database interface
 export interface Database {
   getDocument(collection: string, id: string): Promise<Document | null>;
-  getDocuments(collection: string, constraints?: QueryConstraint[]): Promise<Document[]>;
-  buildQuery(collection: string, constraints?: QueryConstraint[]): Promise<unknown>;
+  getDocuments(collection: string, options?: QueryOptions): Promise<Document[]>;
+  buildQuery(collection: string, options?: QueryOptions): Promise<unknown>;
 } 

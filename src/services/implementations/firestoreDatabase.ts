@@ -7,9 +7,12 @@ import {
   where, 
   Query as FirestoreQuery,
   DocumentData,
-  Firestore
+  Firestore,
+  orderBy,
+  limit as firestoreLimit,
+  startAfter
 } from 'firebase/firestore';
-import { Database, Document, QueryConstraint } from '../types/database';
+import { Database, Document, QueryOptions } from '../../types/database';
 
 interface FirestoreDocumentData extends DocumentData {
   createdAt?: { toDate: () => Date };
@@ -32,39 +35,66 @@ export class FirestoreDatabase implements Database {
     }
 
     const data = docSnap.data() as FirestoreDocumentData;
+    const { createdAt, updatedAt, ...rest } = data;
+    
     return {
       id: docSnap.id,
-      ...data,
-      createdAt: data.createdAt?.toDate(),
-      updatedAt: data.updatedAt?.toDate()
+      ...rest,
+      createdAt: createdAt?.toDate(),
+      updatedAt: updatedAt?.toDate()
     };
   }
 
-  async getDocuments(collectionName: string, constraints?: QueryConstraint[]): Promise<Document[]> {
-    const q = await this.buildQuery(collectionName, constraints);
+  async getDocuments(collectionName: string, options?: QueryOptions): Promise<Document[]> {
+    const q = await this.buildQuery(collectionName, options);
     const querySnapshot = await getDocs(q);
     
     return querySnapshot.docs.map(doc => {
       const data = doc.data() as FirestoreDocumentData;
+      const { createdAt, updatedAt, ...rest } = data;
+      
       return {
         id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate()
+        ...rest,
+        createdAt: createdAt?.toDate(),
+        updatedAt: updatedAt?.toDate()
       };
     });
   }
 
-  async buildQuery(collectionName: string, constraints?: QueryConstraint[]): Promise<FirestoreQuery<DocumentData>> {
+  async buildQuery(collectionName: string, options?: QueryOptions): Promise<FirestoreQuery<DocumentData>> {
     const collectionRef = collection(this.db, collectionName);
-    
-    if (!constraints || constraints.length === 0) {
-      return collectionRef;
+    const queryConstraints = [];
+
+    // Add where constraints if they exist
+    if (options?.constraints) {
+      queryConstraints.push(
+        ...options.constraints.map(constraint => 
+          where(constraint.field, constraint.operator, constraint.value)
+        )
+      );
     }
 
-    const queryConstraints = constraints.map(constraint => 
-      where(constraint.field, constraint.operator, constraint.value)
-    );
+    // Add sorting if specified
+    if (options?.sortBy) {
+      queryConstraints.push(
+        orderBy(options.sortBy.field, options.sortBy.order)
+      );
+    }
+
+    // Add limit if specified
+    if (options?.limit !== undefined) {
+      queryConstraints.push(
+        firestoreLimit(options.limit)
+      );
+    }
+
+    // Add startAfter for pagination if specified
+    if (options?.startAfter) {
+      queryConstraints.push(
+        startAfter(options.startAfter.value)
+      );
+    }
 
     return query(collectionRef, ...queryConstraints);
   }

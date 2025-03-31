@@ -1,4 +1,4 @@
-import { DatabaseEngine, Database } from '../types/database';
+import { DatabaseEngine, Database } from '../../types/database';
 
 export class DatabaseFactory {
   private static instance: DatabaseFactory;

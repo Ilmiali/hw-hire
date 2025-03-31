@@ -20,8 +20,9 @@ export const fetchTickets = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const tickets = await db.getDocuments<Ticket>('tickets');
-      console.log('Tickets', tickets);
+      const tickets = await db.getDocuments<Ticket>('tickets', {
+        sortBy: { field: 'createdAt', order: 'desc' }
+      });
       return tickets;
     } catch (error) {
       if (error instanceof Error) {

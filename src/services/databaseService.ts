@@ -1,8 +1,19 @@
-import { DatabaseEngine, Database, QueryConstraint } from './types/database';
+import { DatabaseEngine, Database, QueryConstraint } from '../types/database';
 import { DatabaseFactory } from './factories/databaseFactory';
 
 // Database types
 export type QueryOperator = '==' | '!=' | '>' | '<' | '>=' | '<=';
+export type SortOrder = 'asc' | 'desc';
+
+// Query options interface
+export interface QueryOptions {
+  constraints?: QueryConstraint[];
+  sortBy?: {
+    field: string;
+    order: SortOrder;
+  };
+  limit?: number;
+}
 
 // Document interface
 export interface Document {
@@ -33,9 +44,35 @@ export class DatabaseService {
     return doc ? doc as T : null;
   }
 
-  public async getDocuments<T>(collection: string, constraints?: QueryConstraint[]): Promise<T[]> {
-    const docs = await this.database.getDocuments(collection, constraints);
+  public async getDocuments<T>(collection: string, options: QueryOptions = {}): Promise<T[]> {
+    const { constraints, sortBy, limit } = options;
+    let docs = await this.database.getDocuments(collection, constraints);
+    
+    // Apply sorting if specified
+    if (sortBy) {
+      docs = this.sortDocuments(docs, sortBy.field, sortBy.order);
+    }
+    
+    // Apply limit if specified
+    if (limit !== undefined) {
+      docs = docs.slice(0, limit);
+    }
+    
     return docs.map(doc => doc as T);
+  }
+
+  private sortDocuments(docs: Document[], field: string, order: SortOrder): Document[] {
+    return [...docs].sort((a, b) => {
+      const aValue = a[field];
+      const bValue = b[field];
+      
+      if (aValue === bValue) return 0;
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+      
+      const comparison = aValue < bValue ? -1 : 1;
+      return order === 'asc' ? comparison : -comparison;
+    });
   }
 
   public async buildQuery(collection: string, constraints?: QueryConstraint[]): Promise<unknown> {
