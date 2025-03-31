@@ -24,7 +24,7 @@ export default function Tickets() {
   const ticketsList = tickets.map(ticket => ({
     id: ticket.id,
     subject: ticket.subject,
-    email: ticket.createdBy,
+    requestedBy: ticket.from[0].name || ticket.from[0].email,
     access: ticket.status,
     status: ticket.status,
     url: `/tickets/${ticket.id}`,
@@ -45,7 +45,7 @@ export default function Tickets() {
   return (
     <SplitTwoLayout
       leftColumn={
-        <div className="h-screen p-4 border-r border-zinc-200 dark:border-zinc-700">
+        <div className="h-screen p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">
           <TicketsList list={ticketsList} />
         </div>
       }

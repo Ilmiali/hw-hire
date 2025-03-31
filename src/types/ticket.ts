@@ -8,5 +8,12 @@ export interface Ticket {
   updatedAt: Date;
   requestedAt: Date;
   assignedTo?: string;
-  createdBy: string;
+  from: Array<{
+    email: string;
+    name: string;
+  }>;
+  to: Array<{
+    email: string;
+    name: string;
+  }>;
 } 

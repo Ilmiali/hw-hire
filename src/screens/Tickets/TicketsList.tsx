@@ -1,5 +1,6 @@
 import { DataTable } from '../../data-components/dataTable'
 import type { Field } from '../../data-components/dataTable'
+import { Badge } from '../../components/badge'
 
 type Ticket = {
   id: string
@@ -8,11 +9,25 @@ type Ticket = {
   access: string
   url: string
   requestedAt: Date
+  requestedBy: string
 }
 
 const fields: Field<Ticket>[] = [
-  { key: 'status', label: 'Status', type: 'badge' },
-  { key: 'subject', label: 'Name' },
+  { 
+    key: 'subject', 
+    label: 'Subject',
+    render: (item: Ticket) => (
+      <div className="flex items-start gap-3">
+        <Badge color={item.status === 'open' ? 'lime' : 'zinc'}>
+          {item.status}
+        </Badge>
+        <div className="flex flex-col">
+          <span className="font-medium text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px]">{item.subject}</span>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400 text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px] capitalize">{item.requestedBy}</span>
+        </div>
+      </div>
+    )
+  },
   { key: 'requestedAt', label: 'Requested', type: 'date' },
   { key: 'actions', label: '', type: 'actions' }
 ]
