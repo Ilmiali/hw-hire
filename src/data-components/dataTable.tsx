@@ -5,7 +5,7 @@ import { EllipsisHorizontalIcon } from '@heroicons/react/16/solid'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/table'
 import React from 'react'
 import { formatTimeAgo } from '../utils/time'
-
+import { useLocation } from 'react-router-dom'
 export type Field<T = Record<string, unknown>> = {
   key: string
   label: string
@@ -19,6 +19,7 @@ type DataTableProps<T extends { id: string }> = {
   data: T[]
   fields: Field<T>[]
   selectable?: boolean
+  rootPath?: string
   isLink?: boolean
   actions?: Action[]
   onSelect?: (selectedIds: string[]) => void
@@ -27,7 +28,8 @@ type DataTableProps<T extends { id: string }> = {
 
 export function DataTable<T extends { id: string; url?: string }>({ 
   data, 
-  fields, 
+  fields,
+  rootPath,
   selectable = false, 
   isLink = false,
   actions = ['view', 'edit', 'delete'],
@@ -120,7 +122,7 @@ export function DataTable<T extends { id: string; url?: string }>({
       </TableHead>
       <TableBody>
         {data.map((item) => (
-          <TableRow key={item.id} href={isLink ? item.url : undefined}>
+          <TableRow key={item.id} href={isLink ? `/${rootPath}/${item.id}` : undefined}>
             {selectable && (
               <TableCell>
                 <Checkbox

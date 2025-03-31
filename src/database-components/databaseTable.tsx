@@ -9,10 +9,13 @@ interface DatabaseTableProps<T extends Document> {
   pageSize?: number;
   selectable?: boolean;
   isLink?: boolean;
+  rootPath?: string;
   actions?: ('view' | 'edit' | 'delete')[];
   onSelect?: (selectedIds: string[]) => void;
   onAction?: (action: 'view' | 'edit' | 'delete', item: T) => void;
   queryOptions?: Omit<QueryOptions, 'limit'>;
+  defaultSortField?: string;
+  defaultSortOrder?: 'asc' | 'desc';
 }
 
 export function DatabaseTable<T extends Document>({
@@ -21,18 +24,21 @@ export function DatabaseTable<T extends Document>({
   pageSize = 10,
   selectable = false,
   isLink = false,
+  rootPath,
   actions = ['view', 'edit', 'delete'],
   onSelect,
   onAction,
   queryOptions = {},
+  defaultSortField,
+  defaultSortOrder = 'asc',
 }: DatabaseTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [sortField, setSortField] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState<string | null>(defaultSortField || null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(defaultSortOrder);
 
   const databaseService = DatabaseService.getInstance();
 
@@ -90,6 +96,7 @@ export function DatabaseTable<T extends Document>({
           onClick: () => handleSort(field.key)
         }))}
         selectable={selectable}
+        rootPath={rootPath}
         isLink={isLink}
         actions={actions}
         onSelect={onSelect}
