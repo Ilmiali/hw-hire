@@ -9,7 +9,10 @@ import { useLocation } from 'react-router-dom'
 export type Field<T = Record<string, unknown>> = {
   key: string
   label: string
-  type?: 'text' | 'badge' | 'checkbox' | 'actions' | 'date'
+  type?: 'text' | 'badge' | 'checkbox' | 'actions' | 'date',
+  sortable?: boolean,
+  sortDirection?: 'asc' | 'desc',
+  onSort?: () => void,
   render?: (item: T) => React.ReactNode
 }
 
@@ -118,7 +121,7 @@ export function DataTable<T extends { id: string; url?: string }>({
             </TableHeader>
           )}
           {fields.map((field) => (
-            <TableHeader key={field.key}>{field.label}</TableHeader>
+            <TableHeader key={field.key} sortable={field.sortable} sortDirection={field.sortDirection} onSort={field.onSort}>{field.label}</TableHeader>
           ))}
         </TableRow>
       </TableHead>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { DataTable, Field } from '../data-components/dataTable';
 import { DatabaseService, QueryOptions, Document } from '../services/databaseService';
 import { Button } from '../components/button';
@@ -35,7 +34,6 @@ export function DatabaseTable<T extends Document>({
   defaultSortField,
   defaultSortOrder = 'asc',
 }: DatabaseTableProps<T>) {
-  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +41,7 @@ export function DatabaseTable<T extends Document>({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(defaultSortOrder);
   const [pageCursors, setPageCursors] = useState<Record<number, T>>({});
   const [hasMore, setHasMore] = useState(true);
-  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const databaseService = DatabaseService.getInstance();
 
@@ -80,12 +78,16 @@ export function DatabaseTable<T extends Document>({
     fetchData(currentPage);
   }, [collection, currentPage, sortField, sortOrder, pageSize]);
 
-  const handleSort = (field: string) => {
+  const handleSort = (field: string, sortDirection: 'asc' | 'desc') => {
+    console.log('handleSort', field, sortDirection);
+    // If the field is already sorted, toggle the direction
     if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      console.log('toggle direction');
+      setSortOrder(sortDirection === 'asc' ? 'desc' : 'asc');
+      console.log('sortOrder', sortOrder);
     } else {
       setSortField(field);
-      setSortOrder('asc');
+      setSortOrder(sortDirection);
     }
     setCurrentPage(1); // Reset to first page when sorting changes
     setPageCursors({}); // Reset cursors when sorting changes
@@ -110,7 +112,7 @@ export function DatabaseTable<T extends Document>({
           data={data}
           fields={fields.map(field => ({
             ...field,
-            onClick: () => handleSort(field.key)
+            onSort: () => handleSort(field.key, field.sortDirection)
           }))}
           selectable={selectable}
           rootPath={rootPath}

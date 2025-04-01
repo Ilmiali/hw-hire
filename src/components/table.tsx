@@ -76,8 +76,18 @@ export function TableRow({
   )
 }
 
-export function TableHeader({ className, ...props }: React.ComponentPropsWithoutRef<'th'>) {
-  let { bleed, grid, sticky } = useContext(TableContext)
+export function TableHeader({ 
+  className, 
+  sortable = false,
+  sortDirection,
+  onSort,
+  ...props 
+}: { 
+  sortable?: boolean;
+  sortDirection?: 'asc' | 'desc' | null;
+  onSort?: () => void;
+} & React.ComponentPropsWithoutRef<'th'>) {
+  const { bleed, grid, sticky } = useContext(TableContext)
 
   return (
     <th
@@ -87,9 +97,36 @@ export function TableHeader({ className, ...props }: React.ComponentPropsWithout
         'border-b border-b-zinc-950/10 px-4 py-2 font-medium first:pl-(--gutter,--spacing(2)) last:pr-(--gutter,--spacing(2)) dark:border-b-white/10',
         grid && 'border-l border-l-zinc-950/5 first:border-l-0 dark:border-l-white/5',
         !bleed && 'sm:first:pl-1 sm:last:pr-1',
-        sticky && 'sticky top-0 z-10 bg-white/75 dark:bg-zinc-800/75 backdrop-blur-sm backdrop-filter'
+        sticky && 'sticky top-0 z-10 bg-white/75 dark:bg-zinc-800/75 backdrop-blur-sm backdrop-filter',
+        sortable && 'cursor-pointer select-none'
       )}
-    />
+    >
+      <div className="flex items-center gap-1">
+        {props.children}
+        {sortable && (
+          <button
+            onClick={onSort}
+            className="ml-1 inline-flex items-center justify-center rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            aria-label={`Sort ${sortDirection === 'asc' ? 'descending' : 'ascending'}`}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={sortDirection === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+    </th>
   )
 }
 

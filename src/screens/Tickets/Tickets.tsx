@@ -33,7 +33,9 @@ const fields: Field<Ticket>[] = [
       </div>
     )
   },
-  { key: 'createdAt', label: 'Requested', type: 'date' },
+  { key: 'createdAt', label: 'Requested', type: 'date', sortable: true, sortDirection: 'desc', onSort: () => {
+    console.log('onSort');
+  } },
   { key: 'actions', label: '', type: 'actions' },
 ];
 
