@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DataTable, Field } from '../data-components/dataTable';
 import { DatabaseService, QueryOptions, Document } from '../services/databaseService';
 import { Button } from '../components/button';
+import CheckboxList from '../loaders/CheckboxList';
 
 interface DatabaseTableProps<T extends Document> {
   collection: string;
@@ -94,7 +95,9 @@ export function DatabaseTable<T extends Document>({
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+        <CheckboxList />
+    );
   }
 
   if (error) {
