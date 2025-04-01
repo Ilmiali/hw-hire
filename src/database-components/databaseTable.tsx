@@ -103,7 +103,7 @@ export function DatabaseTable<T extends Document>({
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="flex-grow">
+      <div className="flex-grow" style={{ height: 'calc(100vh - 100px)' }}>
         <DataTable
           data={data}
           fields={fields.map(field => ({

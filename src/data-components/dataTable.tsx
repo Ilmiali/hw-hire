@@ -104,7 +104,7 @@ export function DataTable<T extends { id: string; url?: string }>({
   }
 
   return (
-    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)]" bleed>
+    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)] h-full" bleed>
       <TableHead>
         <TableRow>
           {selectable && (
