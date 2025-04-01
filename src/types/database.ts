@@ -13,10 +13,7 @@ export interface QueryOptions {
     order: SortOrder;
   };
   limit?: number;
-  startAfter?: {
-    field: string;
-    value: unknown;
-  };
+  startAfter?: unknown;
 }
 
 export type QueryConstraint = {

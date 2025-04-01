@@ -13,6 +13,7 @@ export interface QueryOptions {
     order: SortOrder;
   };
   limit?: number;
+  startAfter?: unknown;
 }
 
 // Document interface
@@ -45,8 +46,8 @@ export class DatabaseService {
   }
 
   public async getDocuments<T>(collection: string, options: QueryOptions = {}): Promise<T[]> {
-    const { constraints, sortBy, limit } = options;
-    let docs = await this.database.getDocuments(collection, constraints);
+    const { constraints, sortBy, limit, startAfter } = options;
+    let docs = await this.database.getDocuments(collection, { constraints, sortBy, limit, startAfter });
     
     // Apply sorting if specified
     if (sortBy) {

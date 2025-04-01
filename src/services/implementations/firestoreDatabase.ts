@@ -92,7 +92,7 @@ export class FirestoreDatabase implements Database {
     // Add startAfter for pagination if specified
     if (options?.startAfter) {
       queryConstraints.push(
-        startAfter(options.startAfter.value)
+        startAfter(options.startAfter)
       );
     }
 

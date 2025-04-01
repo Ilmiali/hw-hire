@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DataTable, Field } from '../data-components/dataTable';
 import { DatabaseService, QueryOptions, Document } from '../services/databaseService';
-import { Pagination, PaginationList, PaginationPage, PaginationPrevious, PaginationNext } from '../components/pagination';
+import { Button } from '../components/button';
 
 interface DatabaseTableProps<T extends Document> {
   collection: string;
@@ -13,7 +14,7 @@ interface DatabaseTableProps<T extends Document> {
   actions?: ('view' | 'edit' | 'delete')[];
   onSelect?: (selectedIds: string[]) => void;
   onAction?: (action: 'view' | 'edit' | 'delete', item: T) => void;
-  queryOptions?: Omit<QueryOptions, 'limit'>;
+  queryOptions?: Omit<QueryOptions, 'limit' | 'startAfter'>;
   defaultSortField?: string;
   defaultSortOrder?: 'asc' | 'desc';
 }
@@ -32,17 +33,19 @@ export function DatabaseTable<T extends Document>({
   defaultSortField,
   defaultSortOrder = 'asc',
 }: DatabaseTableProps<T>) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
   const [sortField, setSortField] = useState<string | null>(defaultSortField || null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(defaultSortOrder);
+  const [lastDocument, setLastDocument] = useState<T | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
 
   const databaseService = DatabaseService.getInstance();
 
-  const fetchData = async () => {
+  const fetchData = async (page: number) => {
     try {
       setLoading(true);
       setError(null);
@@ -51,12 +54,16 @@ export function DatabaseTable<T extends Document>({
         ...queryOptions,
         sortBy: sortField ? { field: sortField, order: sortOrder } : undefined,
         limit: pageSize,
+        startAfter: page > 1 ? lastDocument?.[sortField] : undefined,
       };
 
       const items = await databaseService.getDocuments<T>(collection, options);
       setData(items);
-      // Note: In a real implementation, you might want to get the total count from the database
-      setTotalItems(items.length);
+      setHasMore(items.length === pageSize);
+      
+      if (items.length > 0) {
+        setLastDocument(items[items.length - 1]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
     } finally {
@@ -65,7 +72,7 @@ export function DatabaseTable<T extends Document>({
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(currentPage);
   }, [collection, currentPage, sortField, sortOrder, pageSize]);
 
   const handleSort = (field: string) => {
@@ -75,9 +82,13 @@ export function DatabaseTable<T extends Document>({
       setSortField(field);
       setSortOrder('asc');
     }
+    setCurrentPage(1); // Reset to first page when sorting changes
+    setLastDocument(null); // Reset last document when sorting changes
   };
 
-  const totalPages = Math.ceil(totalItems / pageSize);
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
   if (loading) {
     return <div>Loading...</div>;
@@ -102,25 +113,40 @@ export function DatabaseTable<T extends Document>({
         onSelect={onSelect}
         onAction={onAction}
       />
-      <Pagination>
-        <PaginationPrevious
-          href={currentPage > 1 ? `?page=${currentPage - 1}` : null}
-        />
-        <PaginationList>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <PaginationPage
-              key={page}
-              href={`?page=${page}`}
-              current={page === currentPage}
-            >
-              {page}
-            </PaginationPage>
-          ))}
-        </PaginationList>
-        <PaginationNext
-          href={currentPage < totalPages ? `?page=${currentPage + 1}` : null}
-        />
-      </Pagination>
+      <div className="flex gap-x-2">
+        <Button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage <= 1}
+          plain
+          aria-label="Previous page"
+        >
+          <svg className="stroke-current" data-slot="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M2.75 8H13.25M2.75 8L5.25 5.5M2.75 8L5.25 10.5"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Previous
+        </Button>
+        <Button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={!hasMore}
+          plain
+          aria-label="Next page"
+        >
+          Next
+          <svg className="stroke-current" data-slot="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M13.25 8L2.75 8M13.25 8L10.75 10.5M13.25 8L10.75 5.5"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </Button>
+      </div>
     </div>
   );
 }
