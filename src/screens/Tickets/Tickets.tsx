@@ -52,6 +52,7 @@ export default function Tickets() {
 
   return (
     <SplitTwoLayout
+      leftColumnWidth="550px"
       leftColumn={
         <div className="h-screen p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">
           <DatabaseTable<Ticket>

@@ -97,7 +97,7 @@ export function DatabaseTable<T extends Document>({
 
   if (loading) {
     return (
-      <div className="h-full">
+      <div className="flex flex-col" style={{ height: 'calc(80vh)', marginTop: '30px'}}>
         <CheckboxList />
       </div>
     );
@@ -108,7 +108,7 @@ export function DatabaseTable<T extends Document>({
   }
 
   return (
-    <FadeIn>
+    <FadeIn delay={100} transitionDuration={500}>
       <div className="flex flex-col min-h-full">
         <div className="flex-grow" style={{ height: 'calc(100vh - 100px)' }}>
           <DataTable

@@ -17,6 +17,7 @@ const CheckboxList: React.FC<CheckboxListProps> = props => {
   const [containerHeight, setContainerHeight] = useState(150);
   const [containerWidth, setContainerWidth] = useState(400);
   const [lines, setLines] = useState<number[]>([]);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     const calculateDimensions = () => {
@@ -31,21 +32,30 @@ const CheckboxList: React.FC<CheckboxListProps> = props => {
       }
     };
 
+    // Check if dark mode is enabled
+    const checkDarkMode = () => {
+      setIsDarkMode(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    };
+
     calculateDimensions();
+    checkDarkMode();
     window.addEventListener('resize', calculateDimensions);
-    return () => window.removeEventListener('resize', calculateDimensions);
+
+    return () => {
+      window.removeEventListener('resize', calculateDimensions);
+    };
   }, []);
 
   return (
     <div id="checkbox-list-container" className="w-full h-full">
       <ContentLoader
-        speed={2}
+        speed={1.2}
         width="100%"
         height={containerHeight}
         viewBox={`0 0 ${containerWidth} ${containerHeight}`}
         className="animate-pulse"
-        backgroundColor="#e5e7eb"
-        foregroundColor="#d1d5db"
+        backgroundColor={isDarkMode ? "#535353" : "#e5e7eb"}
+        foregroundColor={isDarkMode ? "#626262" : "#d1d5db"}
         {...props}
       >
         {lines.map((index) => (
@@ -73,13 +83,6 @@ const CheckboxList: React.FC<CheckboxListProps> = props => {
       </ContentLoader>
     </div>
   );
-}
-
-export const CheckboxListMetadata = {
-  name: 'Manuela Garcia',
-  github: 'ManuelaGar',
-  description: 'This is a checkbox list loader.',
-  filename: 'CheckboxList',
 }
 
 export default CheckboxList
