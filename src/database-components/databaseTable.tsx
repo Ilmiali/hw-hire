@@ -39,7 +39,7 @@ export function DatabaseTable<T extends Document>({
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<string | null>(defaultSortField || null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(defaultSortOrder);
-  const [lastDocument, setLastDocument] = useState<T | null>(null);
+  const [pageCursors, setPageCursors] = useState<Record<number, T>>({});
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
 
@@ -54,7 +54,7 @@ export function DatabaseTable<T extends Document>({
         ...queryOptions,
         sortBy: sortField ? { field: sortField, order: sortOrder } : undefined,
         limit: pageSize,
-        startAfter: page > 1 ? lastDocument?.[sortField] : undefined,
+        startAfter: page > 1 ? pageCursors[page - 1] : undefined,
       };
 
       const items = await databaseService.getDocuments<T>(collection, options);
@@ -62,7 +62,10 @@ export function DatabaseTable<T extends Document>({
       setHasMore(items.length === pageSize);
       
       if (items.length > 0) {
-        setLastDocument(items[items.length - 1]);
+        setPageCursors(prev => ({
+          ...prev,
+          [page]: items[items.length - 1]?.[sortField]
+        }));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
@@ -83,7 +86,7 @@ export function DatabaseTable<T extends Document>({
       setSortOrder('asc');
     }
     setCurrentPage(1); // Reset to first page when sorting changes
-    setLastDocument(null); // Reset last document when sorting changes
+    setPageCursors({}); // Reset cursors when sorting changes
   };
 
   const handlePageChange = (newPage: number) => {
