@@ -3,6 +3,7 @@ import { DataTable, Field } from '../data-components/dataTable';
 import { DatabaseService, QueryOptions, Document } from '../services/databaseService';
 import { Button } from '../components/button';
 import CheckboxList from '../loaders/CheckboxList';
+import FadeIn from 'react-fade-in';
 
 interface DatabaseTableProps<T extends Document> {
   collection: string;
@@ -96,7 +97,9 @@ export function DatabaseTable<T extends Document>({
 
   if (loading) {
     return (
+      <div className="h-full">
         <CheckboxList />
+      </div>
     );
   }
 
@@ -105,58 +108,60 @@ export function DatabaseTable<T extends Document>({
   }
 
   return (
-    <div className="flex flex-col min-h-full">
-      <div className="flex-grow" style={{ height: 'calc(100vh - 100px)' }}>
-        <DataTable
-          data={data}
-          sortField={sortField}
-          sortOrder={sortOrder}
-          onSort={handleSort}
-          fields={fields}
-          selectable={selectable}
-          rootPath={rootPath}
-          isLink={isLink}
-          actions={actions}
-          onSelect={onSelect}
-          onAction={onAction}
-          sticky={sticky}
-        />
+    <FadeIn>
+      <div className="flex flex-col min-h-full">
+        <div className="flex-grow" style={{ height: 'calc(100vh - 100px)' }}>
+          <DataTable
+            data={data}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+            fields={fields}
+            selectable={selectable}
+            rootPath={rootPath}
+            isLink={isLink}
+            actions={actions}
+            onSelect={onSelect}
+            onAction={onAction}
+            sticky={sticky}
+          />
+        </div>
+        <div className="flex justify-center gap-x-2 mt-4">
+          <Button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+            plain
+            aria-label="Previous page"
+          >
+            <svg className="stroke-current" data-slot="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M2.75 8H13.25M2.75 8L5.25 5.5M2.75 8L5.25 10.5"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Previous
+          </Button>
+          <Button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={!hasMore}
+            plain
+            aria-label="Next page"
+          >
+            Next
+            <svg className="stroke-current" data-slot="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M13.25 8L2.75 8M13.25 8L10.75 10.5M13.25 8L10.75 5.5"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Button>
+        </div>
       </div>
-      <div className="flex justify-center gap-x-2 mt-4">
-        <Button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
-          plain
-          aria-label="Previous page"
-        >
-          <svg className="stroke-current" data-slot="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M2.75 8H13.25M2.75 8L5.25 5.5M2.75 8L5.25 10.5"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Previous
-        </Button>
-        <Button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={!hasMore}
-          plain
-          aria-label="Next page"
-        >
-          Next
-          <svg className="stroke-current" data-slot="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M13.25 8L2.75 8M13.25 8L10.75 10.5M13.25 8L10.75 5.5"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Button>
-      </div>
-    </div>
+    </FadeIn>
   );
 }
 
