@@ -15,7 +15,7 @@ const TableContext = createContext<{
   sticky: boolean;
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
-  onSort?: (field: string, order: 'asc' | 'desc') => void;
+  onSort?: (field: string) => void;
 }>({
   bleed: false,
   dense: false,
@@ -47,7 +47,7 @@ export function Table({
   sticky?: boolean;
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
-  onSort?: (field: string, order: 'asc' | 'desc') => void;
+  onSort?: (field: string) => void;
 } & React.ComponentPropsWithoutRef<'div'>) {
   return (
     <TableContext.Provider value={{ bleed, dense, grid, striped, sticky, sortField, sortOrder, onSort } as React.ContextType<typeof TableContext>}>
@@ -131,24 +131,17 @@ export function TableHeader({
           <div className="flex flex-col">
             <Button 
               className="group inline-flex cursor-pointer" 
-              onClick={() => onSort?.(field, 'asc')}
+              onClick={() => onSort?.(field)}
             >
-              <span className={clsx(
-                "ml-2 flex-none rounded-sm",
-                sortField === field && sortOrder === 'asc' ? "text-gray-400" : "text-gray-500"
-              )}>
-                <ChevronUpIcon aria-hidden="true" className="size-5" />
-              </span>
-            </Button>
-            <Button 
-              className="group inline-flex cursor-pointer" 
-              onClick={() => onSort?.(field, 'desc')}
-            >
-              <span className={clsx(
-                "ml-2 flex-none rounded-sm",
-                sortField === field && sortOrder === 'desc' ? "text-gray-400" : "text-gray-500"
-              )}>
-                <ChevronDownIcon aria-hidden="true" className="size-5" />
+              <span className="ml-2 flex-none rounded-sm">
+                <ChevronUpIcon aria-hidden="true" className={clsx(
+                "size-5",
+                sortField === field && sortOrder === 'asc' ? "dark:text-gray-300 text-gray-700" : "dark:text-gray-500 text-gray-300"
+              )} />
+              <ChevronDownIcon aria-hidden="true" className={clsx(
+                "size-5",
+                sortField === field && sortOrder === 'desc' ? "dark:text-gray-300 text-gray-700" : "dark:text-gray-500 text-gray-300"
+              )} />
               </span>
             </Button>
           </div>

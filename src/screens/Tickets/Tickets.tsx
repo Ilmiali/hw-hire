@@ -18,7 +18,6 @@ type Ticket = Document & {
 const fields: Field<Ticket>[] = [
   { 
     key: 'subject',
-    sortable: true,
     label: 'Subject',
     render: (item: Ticket) => (
       <div className="flex items-start gap-3">

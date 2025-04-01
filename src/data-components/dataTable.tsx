@@ -21,7 +21,7 @@ type DataTableProps<T extends { id: string }> = {
   selectable?: boolean,
   sortField?: string,
   sortOrder?: 'asc' | 'desc',
-  onSort?: (field: string, order: 'asc' | 'desc') => void,
+  onSort?: (field: string) => void,
   rootPath?: string,
   sticky?: boolean,
   isLink?: boolean

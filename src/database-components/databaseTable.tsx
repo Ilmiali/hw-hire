@@ -78,12 +78,12 @@ export function DatabaseTable<T extends Document>({
     fetchData(currentPage);
   }, [collection, currentPage, sortField, sortOrder, pageSize]);
 
-  const handleSort = (field: string, sortDirection: 'asc' | 'desc') => {
+  const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortOrder(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortOrder(sortDirection);
+      setSortOrder('asc');
     }
     setCurrentPage(1); // Reset to first page when sorting changes
     setPageCursors({}); // Reset cursors when sorting changes
