@@ -102,21 +102,23 @@ export function DatabaseTable<T extends Document>({
   }
 
   return (
-    <div className="space-y-4">
-      <DataTable
-        data={data}
-        fields={fields.map(field => ({
-          ...field,
-          onClick: () => handleSort(field.key)
-        }))}
-        selectable={selectable}
-        rootPath={rootPath}
-        isLink={isLink}
-        actions={actions}
-        onSelect={onSelect}
-        onAction={onAction}
-      />
-      <div className="flex gap-x-2">
+    <div className="flex flex-col min-h-full">
+      <div className="flex-grow">
+        <DataTable
+          data={data}
+          fields={fields.map(field => ({
+            ...field,
+            onClick: () => handleSort(field.key)
+          }))}
+          selectable={selectable}
+          rootPath={rootPath}
+          isLink={isLink}
+          actions={actions}
+          onSelect={onSelect}
+          onAction={onAction}
+        />
+      </div>
+      <div className="flex justify-center gap-x-2 mt-4">
         <Button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage <= 1}

@@ -58,7 +58,7 @@ export default function Tickets() {
             collection="tickets"
             fields={fields}
             rootPath={rootPath}
-            pageSize={4}
+            pageSize={15}
             selectable
             isLink
             actions={['view', 'delete']}
