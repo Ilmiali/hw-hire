@@ -17,7 +17,8 @@ type Ticket = Document & {
 
 const fields: Field<Ticket>[] = [
   { 
-    key: 'subject', 
+    key: 'subject',
+    sortable: true,
     label: 'Subject',
     render: (item: Ticket) => (
       <div className="flex items-start gap-3">
@@ -33,9 +34,7 @@ const fields: Field<Ticket>[] = [
       </div>
     )
   },
-  { key: 'createdAt', label: 'Requested', type: 'date', sortable: true, sortDirection: 'desc', onSort: () => {
-    console.log('onSort');
-  } },
+  { key: 'createdAt', label: 'Requested', type: 'date', sortable: true },
   { key: 'actions', label: '', type: 'actions' },
 ];
 

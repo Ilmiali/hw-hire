@@ -79,12 +79,8 @@ export function DatabaseTable<T extends Document>({
   }, [collection, currentPage, sortField, sortOrder, pageSize]);
 
   const handleSort = (field: string, sortDirection: 'asc' | 'desc') => {
-    console.log('handleSort', field, sortDirection);
-    // If the field is already sorted, toggle the direction
     if (sortField === field) {
-      console.log('toggle direction');
       setSortOrder(sortDirection === 'asc' ? 'desc' : 'asc');
-      console.log('sortOrder', sortOrder);
     } else {
       setSortField(field);
       setSortOrder(sortDirection);
@@ -110,10 +106,10 @@ export function DatabaseTable<T extends Document>({
       <div className="flex-grow" style={{ height: 'calc(100vh - 100px)' }}>
         <DataTable
           data={data}
-          fields={fields.map(field => ({
-            ...field,
-            onSort: () => handleSort(field.key, field.sortDirection)
-          }))}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          fields={fields}
           selectable={selectable}
           rootPath={rootPath}
           isLink={isLink}

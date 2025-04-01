@@ -5,14 +5,11 @@ import { EllipsisHorizontalIcon } from '@heroicons/react/16/solid'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/table'
 import React from 'react'
 import { formatTimeAgo } from '../utils/time'
-import { useLocation } from 'react-router-dom'
 export type Field<T = Record<string, unknown>> = {
   key: string
   label: string
   type?: 'text' | 'badge' | 'checkbox' | 'actions' | 'date',
   sortable?: boolean,
-  sortDirection?: 'asc' | 'desc',
-  onSort?: () => void,
   render?: (item: T) => React.ReactNode
 }
 
@@ -21,7 +18,10 @@ type Action = 'view' | 'edit' | 'delete'
 type DataTableProps<T extends { id: string }> = {
   data: T[]
   fields: Field<T>[]
-  selectable?: boolean
+  selectable?: boolean,
+  sortField?: string,
+  sortOrder?: 'asc' | 'desc',
+  onSort?: (field: string, order: 'asc' | 'desc') => void,
   rootPath?: string,
   sticky?: boolean,
   isLink?: boolean
@@ -37,6 +37,9 @@ export function DataTable<T extends { id: string; url?: string }>({
   selectable = false, 
   isLink = false,
   sticky = false,
+  sortField,
+  sortOrder,
+  onSort,
   actions = ['view', 'edit', 'delete'],
   onSelect, 
   onAction 
@@ -109,7 +112,7 @@ export function DataTable<T extends { id: string; url?: string }>({
   }
 
   return (
-    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)] h-full" bleed sticky={sticky}>
+    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)] h-full" bleed sticky={sticky} sortField={sortField} sortOrder={sortOrder} onSort={onSort}>   
       <TableHead>
         <TableRow>
           {selectable && (
@@ -121,7 +124,7 @@ export function DataTable<T extends { id: string; url?: string }>({
             </TableHeader>
           )}
           {fields.map((field) => (
-            <TableHeader key={field.key} sortable={field.sortable} sortDirection={field.sortDirection} onSort={field.onSort}>{field.label}</TableHeader>
+            <TableHeader key={field.key} sortable={field.sortable} field={field.key}>{field.label}</TableHeader>
           ))}
         </TableRow>
       </TableHead>

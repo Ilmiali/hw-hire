@@ -4,13 +4,27 @@ import clsx from 'clsx'
 import type React from 'react'
 import { createContext, useContext, useState } from 'react'
 import { Link } from './link'
+import { Button } from '@headlessui/react'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/16/solid'
 
-const TableContext = createContext<{ bleed: boolean; dense: boolean; grid: boolean; striped: boolean; sticky: boolean }>({
+const TableContext = createContext<{ 
+  bleed: boolean; 
+  dense: boolean; 
+  grid: boolean; 
+  striped: boolean; 
+  sticky: boolean;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSort?: (field: string, order: 'asc' | 'desc') => void;
+}>({
   bleed: false,
   dense: false,
   grid: false,
   striped: false,
   sticky: false,
+  sortField: undefined,
+  sortOrder: undefined,
+  onSort: undefined,
 })
 
 export function Table({
@@ -19,12 +33,24 @@ export function Table({
   grid = false,
   striped = false,
   sticky = false,
+  sortField,
+  sortOrder,
+  onSort,
   className,
   children,
   ...props
-}: { bleed?: boolean; dense?: boolean; grid?: boolean; striped?: boolean, sticky?: boolean } & React.ComponentPropsWithoutRef<'div'>) {
+}: { 
+  bleed?: boolean; 
+  dense?: boolean; 
+  grid?: boolean; 
+  striped?: boolean; 
+  sticky?: boolean;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSort?: (field: string, order: 'asc' | 'desc') => void;
+} & React.ComponentPropsWithoutRef<'div'>) {
   return (
-    <TableContext.Provider value={{ bleed, dense, grid, striped, sticky } as React.ContextType<typeof TableContext>}>
+    <TableContext.Provider value={{ bleed, dense, grid, striped, sticky, sortField, sortOrder, onSort } as React.ContextType<typeof TableContext>}>
       <div className="flow-root h-full">
         <div {...props} className={clsx(className, '-mx-(--gutter) overflow-x-auto whitespace-nowrap')}>
           <div className={clsx('inline-block min-w-full align-middle', !bleed && 'sm:px-(--gutter)')}>
@@ -79,15 +105,13 @@ export function TableRow({
 export function TableHeader({ 
   className, 
   sortable = false,
-  sortDirection,
-  onSort,
+  field,
   ...props 
 }: { 
   sortable?: boolean;
-  sortDirection?: 'asc' | 'desc' | null;
-  onSort?: () => void;
+  field?: string;
 } & React.ComponentPropsWithoutRef<'th'>) {
-  const { bleed, grid, sticky } = useContext(TableContext)
+  const { bleed, grid, sticky, sortField, sortOrder, onSort } = useContext(TableContext)
 
   return (
     <th
@@ -103,27 +127,31 @@ export function TableHeader({
     >
       <div className="flex items-center gap-1">
         {props.children}
-        {sortable && (
-          <button
-            onClick={onSort}
-            className="ml-1 inline-flex items-center justify-center rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            aria-label={`Sort ${sortDirection === 'asc' ? 'descending' : 'ascending'}`}
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+        {sortable && field && (
+          <div className="flex flex-col">
+            <Button 
+              className="group inline-flex cursor-pointer" 
+              onClick={() => onSort?.(field, 'asc')}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={sortDirection === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
-              />
-            </svg>
-          </button>
+              <span className={clsx(
+                "ml-2 flex-none rounded-sm",
+                sortField === field && sortOrder === 'asc' ? "text-gray-400" : "text-gray-500"
+              )}>
+                <ChevronUpIcon aria-hidden="true" className="size-5" />
+              </span>
+            </Button>
+            <Button 
+              className="group inline-flex cursor-pointer" 
+              onClick={() => onSort?.(field, 'desc')}
+            >
+              <span className={clsx(
+                "ml-2 flex-none rounded-sm",
+                sortField === field && sortOrder === 'desc' ? "text-gray-400" : "text-gray-500"
+              )}>
+                <ChevronDownIcon aria-hidden="true" className="size-5" />
+              </span>
+            </Button>
+          </div>
         )}
       </div>
     </th>
