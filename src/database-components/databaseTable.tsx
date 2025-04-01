@@ -10,6 +10,7 @@ interface DatabaseTableProps<T extends Document> {
   pageSize?: number;
   selectable?: boolean;
   isLink?: boolean;
+  sticky?: boolean;
   rootPath?: string;
   actions?: ('view' | 'edit' | 'delete')[];
   onSelect?: (selectedIds: string[]) => void;
@@ -25,6 +26,7 @@ export function DatabaseTable<T extends Document>({
   pageSize = 10,
   selectable = false,
   isLink = false,
+  sticky = false,
   rootPath,
   actions = ['view', 'edit', 'delete'],
   onSelect,
@@ -116,6 +118,7 @@ export function DatabaseTable<T extends Document>({
           actions={actions}
           onSelect={onSelect}
           onAction={onAction}
+          sticky={sticky}
         />
       </div>
       <div className="flex justify-center gap-x-2 mt-4">

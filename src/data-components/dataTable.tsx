@@ -19,7 +19,8 @@ type DataTableProps<T extends { id: string }> = {
   data: T[]
   fields: Field<T>[]
   selectable?: boolean
-  rootPath?: string
+  rootPath?: string,
+  sticky?: boolean,
   isLink?: boolean
   actions?: Action[]
   onSelect?: (selectedIds: string[]) => void
@@ -32,6 +33,7 @@ export function DataTable<T extends { id: string; url?: string }>({
   rootPath,
   selectable = false, 
   isLink = false,
+  sticky = false,
   actions = ['view', 'edit', 'delete'],
   onSelect, 
   onAction 
@@ -104,7 +106,7 @@ export function DataTable<T extends { id: string; url?: string }>({
   }
 
   return (
-    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)] h-full" bleed>
+    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)] h-full" bleed sticky={sticky}>
       <TableHead>
         <TableRow>
           {selectable && (

@@ -60,6 +60,7 @@ export default function Tickets() {
             rootPath={rootPath}
             pageSize={15}
             selectable
+            sticky
             isLink
             actions={['view', 'delete']}
             defaultSortField="createdAt"
