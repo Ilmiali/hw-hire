@@ -2,18 +2,16 @@ export interface Ticket {
   id: string;
   subject: string;
   snippet: string;
-  status: 'open' | 'closed';
+  channel: string;
+  status: 'new' | 'open' | 'closed' | 'pending' | 'resolved' | 'archived';
+  groupId: string;
   priority: string;
-  createdAt: Date;
+  tags: string[];
   updatedAt: Date;
   requestedAt: Date;
   assignedTo?: string;
-  from: Array<{
+  requestedBy: {
     email: string;
     name: string;
-  }>;
-  to: Array<{
-    email: string;
-    name: string;
-  }>;
+  }
 } 

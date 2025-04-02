@@ -1,10 +1,26 @@
 export interface Message {
   id: string;
   content: string;
-  sender: {
-    name: string;
+  cc: {
+    email: string;
+    name?: string;
     avatar?: string;
-    isCurrentUser: boolean;
-  };
-  timestamp: string;
-} 
+  }[];
+  bcc: {
+    email: string;
+    name?: string;
+    avatar?: string;
+  }[];
+  from: {
+    email: string;
+    name?: string;
+    avatar?: string;
+  },
+  to: {
+    email: string;
+    name?: string;
+    avatar?: string;
+  },
+  sentAt: Date;
+  ticketId: string;
+}

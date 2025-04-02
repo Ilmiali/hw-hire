@@ -10,7 +10,8 @@ import {
   Firestore,
   orderBy,
   limit as firestoreLimit,
-  startAfter
+  startAfter,
+  addDoc
 } from 'firebase/firestore';
 import { Database, Document, QueryOptions } from '../../types/database';
 
@@ -39,7 +40,7 @@ export class FirestoreDatabase implements Database {
     
     return {
       id: docSnap.id,
-      ...rest,
+      data: rest,
       createdAt: createdAt?.toDate(),
       updatedAt: updatedAt?.toDate()
     };
@@ -55,11 +56,27 @@ export class FirestoreDatabase implements Database {
       
       return {
         id: doc.id,
-        ...rest,
+        data: rest,
         createdAt: createdAt?.toDate(),
         updatedAt: updatedAt?.toDate()
       };
     });
+  }
+
+  async addDocument(collectionName: string, data: Record<string, unknown>): Promise<Document> {
+    const collectionRef = collection(this.db, collectionName);
+    const docRef = await addDoc(collectionRef, {
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    return {
+      id: docRef.id,
+      data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
   }
 
   async buildQuery(collectionName: string, options?: QueryOptions): Promise<FirestoreQuery<DocumentData>> {

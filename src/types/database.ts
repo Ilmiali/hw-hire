@@ -25,6 +25,7 @@ export type QueryConstraint = {
 // Document interface
 export interface Document {
   id: string;
+  data: Record<string, unknown>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -33,5 +34,6 @@ export interface Document {
 export interface Database {
   getDocument(collection: string, id: string): Promise<Document | null>;
   getDocuments(collection: string, options?: QueryOptions): Promise<Document[]>;
+  addDocument(collection: string, data: Record<string, unknown>): Promise<Document>;
   buildQuery(collection: string, options?: QueryOptions): Promise<unknown>;
 } 

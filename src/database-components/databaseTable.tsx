@@ -58,9 +58,13 @@ export function DatabaseTable<T extends Document>({
         limit: pageSize,
         startAfter: page > 1 ? pageCursors[page - 1] : undefined,
       };
-
       const items = await databaseService.getDocuments<T>(collection, options);
-      setData(items);
+      setData(items.map(item => ({
+        ...item.data,
+        id: item.id,
+        createdAt: item.createdAt ? new Date(item.createdAt) : undefined,
+        updatedAt: item.updatedAt ? new Date(item.updatedAt) : undefined
+      } as T)));
       setHasMore(items.length === pageSize);
       
       if (items.length > 0) {

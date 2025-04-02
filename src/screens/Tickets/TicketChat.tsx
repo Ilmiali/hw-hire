@@ -1,81 +1,145 @@
-import { Menu, MenuItem, MenuItems, MenuButton } from '@headlessui/react'
-import { Avatar } from '../../components/avatar'
-import { ChevronDownIcon } from '@heroicons/react/16/solid'
-import { useState } from 'react'
-
-interface Message {
-  id: string
-  content: string
-  sender: {
-    name: string
-    avatar?: string
-    isCurrentUser: boolean
-  }
-  timestamp: string
-}
+import { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { fetchMessagesByTicketId } from '../../store/slices/messagesSlice';
+import { getDatabaseService } from '../../services/databaseService';
+import { Avatar } from '../../components/avatar';
+import type { Message } from '../../types/message';
+import { formatTimeAgo } from '../../utils/time';
 
 interface TicketChatProps {
-  messages: Message[]
-  onSendMessage: (content: string) => void
+  ticketId: string;
 }
 
-export function TicketChat({ messages, onSendMessage }: TicketChatProps) {
-  const [newMessage, setNewMessage] = useState('')
+const getInitials = (name?: string, email?: string): string => {
+  if (name) {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return email?.slice(0, 2).toUpperCase() || '??';
+};
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (newMessage.trim()) {
-      onSendMessage(newMessage.trim())
-      setNewMessage('')
+export function TicketChat({ ticketId }: TicketChatProps) {
+  const [newMessage, setNewMessage] = useState('');
+  const dispatch = useAppDispatch();
+  const { messages, loading, error } = useAppSelector((state) => ({
+    messages: state.messages.messages[ticketId] || [],
+    loading: state.messages.loading,
+    error: state.messages.error
+  }));
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(fetchMessagesByTicketId(ticketId));
+  }, [dispatch, ticketId]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    try {
+      const db = getDatabaseService();
+      const message: Omit<Message, 'id'> = {
+        content: newMessage.trim(),
+        from: { email: 'user@example.com', name: 'Current User' },
+        to: { email: 'support@example.com', name: 'Support Team' },
+        cc: [],
+        bcc: [],
+        sentAt: new Date(),
+        ticketId
+      };
+      
+      await db.addDocument('messages', message);
+      setNewMessage('');
+      dispatch(fetchMessagesByTicketId(ticketId));
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
+  };
+
+  if (loading) {
+    return <div className="flex h-full items-center justify-center">Loading messages...</div>;
+  }
+
+  if (error) {
+    return <div className="flex h-full items-center justify-center text-red-500">Error: {error}</div>;
   }
 
   return (
-    <div className="flex h-full flex-col justify-between">
-      {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+    <div className="flex h-screen flex-col justify-between bg-white dark:bg-zinc-900">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 h-screen">
+        {messages.map((message: Message) => (
           <div
             key={message.id}
-            className={`flex ${message.sender.isCurrentUser ? 'justify-end' : 'justify-start'}`}
+            className="space-y-2"
           >
-            <div
-              className={`flex max-w-[80%] items-start gap-3 ${
-                message.sender.isCurrentUser ? 'flex-row-reverse' : 'flex-row'
-              }`}
-            >
-              <Avatar
-                src={message.sender.avatar || null}
-                alt={message.sender.name}
-                className="size-8 bg-blue-500 text-white"
-                initials={message.sender.name.split(' ').map(n => n[0]).join('')}
-              />
-              <div className="flex flex-col gap-1">
+            {/* Header */}
+            <div className="flex items-start gap-3">
+              <div className="flex items-center gap-2">
+                <Avatar
+                  src={message.from.avatar}
+                  initials={getInitials(message.from.name, message.from.email)}
+                  alt={message.from.name || message.from.email}
+                  className="bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200 size-10"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-zinc-900 dark:text-white">
-                    {message.sender.name}
+                  <span className="font-medium text-zinc-900 dark:text-white">
+                    {message.from.name || message.from.email}
                   </span>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {message.timestamp}
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                    {formatTimeAgo(message.sentAt as Date)}
                   </span>
                 </div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
+                  To: {
+                    message.to.map(to => to.name || to.email).join(', ')
+                  }
+                  {message.cc.length > 0 && (
+                    <>
+                      <br />
+                      CC: {message.cc.map(cc => cc.name || cc.email).join(', ')}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Content - Chat Bubble */}
+            <div className="pl-[52px]">
+              <div className="inline-block max-w-[85%] rounded-2xl bg-blue-50 dark:bg-blue-900/20 px-4 py-2 text-sm text-zinc-900 dark:text-zinc-100">
                 <div
-                  className={`rounded-lg px-4 py-2 ${
-                    message.sender.isCurrentUser
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white'
-                  }`}
-                >
-                  <p className="text-sm">{message.content}</p>
-                </div>
+                  className="prose prose-sm dark:prose-invert prose-p:leading-normal prose-p:my-0 overflow-hidden [&_*]:break-words [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_img]:max-w-full [&_table]:max-w-full [&_table]:w-full [&_table]:overflow-x-auto [&_table]:block dark:[&_*]:!bg-transparent dark:[&_*]:!text-white/90 dark:[&_code]:!text-white/90 dark:[&_pre]:!text-white/90 dark:[&_a]:!text-blue-300 dark:[&_strong]:!text-white dark:[&_em]:!text-white/90 dark:[&_ul]:!text-white/90 dark:[&_ol]:!text-white/90 dark:[&_li]:!text-white/90 dark:[&_blockquote]:!text-white/80 dark:[&_h1]:!text-white dark:[&_h2]:!text-white dark:[&_h3]:!text-white dark:[&_h4]:!text-white dark:[&_h5]:!text-white dark:[&_h6]:!text-white dark:[&_td]:!text-white/90 dark:[&_th]:!text-white dark:[&_tr]:!border-zinc-700 dark:[&_td]:!border-zinc-700 dark:[&_th]:!border-zinc-700"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(message.content, {
+                      ALLOWED_TAGS: ['div', 'b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'code', 'img', 'pre', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'thead', 'tbody', 'tr', 'td', 'th', 'table'],
+                      ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'align', 'style', 'valign', 'width', 'height', 'border', 'cellpadding', 'cellspacing', 'text', 'face', 'dir', 'lang', 'xml:lang'],
+                      ADD_ATTR: ['target'],
+                      FORBID_ATTR: ['style'],
+                    })
+                  }}
+                />
               </div>
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <form onSubmit={handleSubmit} className="border-t border-zinc-200 p-4 dark:border-zinc-800">
+      <form onSubmit={handleSubmit} className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
         <div className="relative">
           <textarea
             value={newMessage}
@@ -84,37 +148,15 @@ export function TicketChat({ messages, onSendMessage }: TicketChatProps) {
             className="w-full min-h-[60px] pr-32 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none"
             rows={8}
           />
-          <div className="absolute right-4 bottom-4 inline-flex rounded-md shadow-xs">
-            <button
-              type="submit"
-              className="relative inline-flex items-center rounded-l-md bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-semibold text-zinc-900 dark:text-white ring-1 ring-zinc-300 dark:ring-zinc-700 ring-inset hover:bg-zinc-50 dark:hover:bg-zinc-800 focus:z-10"
-            >
-              Submit
-            </button>
-            <Menu as="div" className="relative -ml-px block">
-              <MenuButton className="relative inline-flex items-center rounded-r-md bg-white dark:bg-zinc-900 px-2 py-2 text-zinc-400 dark:text-zinc-500 ring-1 ring-zinc-300 dark:ring-zinc-700 ring-inset hover:bg-zinc-50 dark:hover:bg-zinc-800 focus:z-10">
-                <span className="sr-only">Open options</span>
-                <ChevronDownIcon aria-hidden="true" className="size-5" />
-              </MenuButton>
-              <MenuItems
-                transition
-                className="absolute bottom-full right-0 z-10 mb-2 -mr-1 w-56 origin-bottom-right rounded-md bg-white dark:bg-zinc-900 ring-1 shadow-lg ring-black/5 dark:ring-white/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-              >
-                <div className="py-1">
-                  <MenuItem>
-                    <a
-                      href=""
-                      className="block px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 data-focus:bg-zinc-100 dark:data-focus:bg-zinc-800 data-focus:text-zinc-900 dark:data-focus:text-white data-focus:outline-hidden"
-                    >
-                      Test
-                    </a>
-                  </MenuItem>
-                </div>
-              </MenuItems>
-            </Menu>
-          </div>
+          <button
+            type="submit"
+            className="absolute right-4 bottom-4 inline-flex items-center rounded-md bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!newMessage.trim()}
+          >
+            Send
+          </button>
         </div>
       </form>
     </div>
-  )
+  );
 } 

@@ -50,7 +50,7 @@ export function MainSidebar() {
     <SidebarSection className="max-lg:hidden">
       <SidebarHeading>{group.name}</SidebarHeading>
       {group.routes.map((route) => {
-        const isActive = location.pathname === route.path;
+        const isActive = location.pathname === route.path || location.pathname.startsWith(route.path);
         return (
           <SidebarItem 
             href={route.path}

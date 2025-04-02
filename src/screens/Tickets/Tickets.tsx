@@ -1,33 +1,48 @@
 import { SplitTwoLayout } from '../../components/split-two-layout';
 import { TicketChat } from './TicketChat';
-import { Message } from '../../types/message';
 import { DatabaseTable } from '../../database-components/databaseTable';
 import { Field } from '../../data-components/dataTable';
 import { Badge } from '../../components/badge';
-import { Document } from '../../services/databaseService';
+import { Ticket } from '../../types/ticket';
 import { useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 
-type Ticket = Document & {
-  subject: string;
-  status: 'open' | 'closed';
-  access: string;
-  from: Array<{ name?: string; email: string }>;
-  createdAt: Date;
+
+const getBadgeColor = (status: string) => {
+  switch (status) {
+    case 'new':
+      return 'yellow';
+    case 'open':
+      return 'red';
+    case 'closed':
+      return 'zinc';
+    case 'pending':
+      return 'blue';
+    case 'resolved':
+      return 'green';
+    case 'archived':
+      return 'zinc';
+    default:
+      return 'zinc';
+  }
 }
-
+const getBadgeText = (status: string) => {
+  // Get the first letter of the status
+  return status.charAt(0).toUpperCase()
+}
 const fields: Field<Ticket>[] = [
   { 
     key: 'subject',
     label: 'Subject',
     render: (item: Ticket) => (
       <div className="flex items-start gap-3">
-        <Badge color={item.status === 'open' ? 'lime' : 'zinc'}>
-          {item.status}
+        <Badge color={getBadgeColor(item.status)}>
+          {getBadgeText(item.status)}
         </Badge>
         <div className="flex flex-col">
           <span className="font-medium text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px]">{item.subject}</span>
           <span className="text-sm text-zinc-500 dark:text-zinc-400 text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px] capitalize">
-            {item.from[0].name || item.from[0].email}
+            {item.requestedBy.name || item.requestedBy.email}
           </span>
         </div>
       </div>
@@ -48,11 +63,16 @@ export default function Tickets() {
   };
 
   // TODO: Implement messages state management with Redux
-  const messages: Message[] = [];
+  const [ticketId, setTicketId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ticketId = pathname.split('/')[2];
+    setTicketId(ticketId);
+  }, [pathname]);
 
   return (
     <SplitTwoLayout
-      leftColumnWidth="550px"
+      leftColumnWidth="450px"
       leftColumn={
         <div className="h-screen p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">
           <DatabaseTable<Ticket>
@@ -60,7 +80,7 @@ export default function Tickets() {
             fields={fields}
             rootPath={rootPath}
             pageSize={15}
-            selectable
+            selectable={false}
             sticky
             isLink
             actions={['view', 'delete']}
@@ -81,7 +101,7 @@ export default function Tickets() {
       }
       rightColumn={
         <div className="h-full">
-          <TicketChat messages={messages} onSendMessage={handleSendMessage} />
+          <TicketChat ticketId={ticketId} onSendMessage={handleSendMessage} />
         </div>
       }
     />
