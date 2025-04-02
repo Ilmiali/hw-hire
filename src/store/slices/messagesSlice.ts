@@ -23,7 +23,7 @@ export const fetchMessagesByTicketId = createAsyncThunk(
       const db = getDatabaseService();
       const payload = await db.getDocuments<Document>('messages', {
         constraints: [{ field: 'ticketId', operator: '==', value: ticketId }],
-        sortBy: { field: 'createdAt', order: 'desc' }
+        sortBy: { field: 'createdAt', order: 'asc' }
       });
       const messages = payload.map(item => {
         return {

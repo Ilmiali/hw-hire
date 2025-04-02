@@ -6,30 +6,12 @@ import { Badge } from '../../components/badge';
 import { Ticket } from '../../types/ticket';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-
-
-const getBadgeColor = (status: string) => {
-  switch (status) {
-    case 'new':
-      return 'yellow';
-    case 'open':
-      return 'red';
-    case 'closed':
-      return 'zinc';
-    case 'pending':
-      return 'blue';
-    case 'resolved':
-      return 'green';
-    case 'archived':
-      return 'zinc';
-    default:
-      return 'zinc';
-  }
-}
+import { getBadgeColor } from '../../utils/states';
 const getBadgeText = (status: string) => {
   // Get the first letter of the status
   return status.charAt(0).toUpperCase()
 }
+
 const fields: Field<Ticket>[] = [
   { 
     key: 'subject',
