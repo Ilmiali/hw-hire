@@ -20,7 +20,7 @@ export interface Message {
     email: string;
     name?: string;
     avatar?: string;
-  },
+  }[],
   sentAt: Date;
   ticketId: string;
 }
