@@ -94,7 +94,7 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     <div className="flex h-screen flex-col justify-between bg-white dark:bg-zinc-900">
       <div className="flex-1 overflow-y-auto h-screen">
         {/* Header with blur effect */}
-        <div className="sticky top-0 z-10 backdrop-blur-md bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="sticky top-0 z-10 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800">
           <div className="px-4 py-3">
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-white truncate text-ellipsis overflow-hidden whitespace-nowrap" style={{ maxWidth: '70%' }}>
               {currentTicket.subject}
@@ -159,16 +159,13 @@ export function TicketChat({ ticketId }: TicketChatProps) {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <form onSubmit={handleSubmit} className="sticky bottom-5 z-10">
         <div className="relative">
           <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type your message..."
-            className="w-full min-h-[60px] pr-32 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none"
+            className="w-full min-h-[60px] pr-32 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white/85 dark:bg-zinc-900/85 px-4 py-2 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none backdrop-blur-md backdrop-filter"
             rows={8}
           />
           <button
@@ -180,6 +177,8 @@ export function TicketChat({ ticketId }: TicketChatProps) {
           </button>
         </div>
       </form>
+        </div>
+      </div>
     </div>
   );
 } 
