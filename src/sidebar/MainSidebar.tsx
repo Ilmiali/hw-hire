@@ -5,6 +5,7 @@ import { Dropdown, DropdownDivider, DropdownItem, DropdownLabel, DropdownMenu, D
 import { Avatar } from '../components/avatar';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { getTeamDropdownConfig } from '../config/dropdowns';
+import { ViewsSidebarSection } from './ViewsSidebarSection';
 
 export function MainSidebar() {
   const location = useLocation();
@@ -76,6 +77,7 @@ export function MainSidebar() {
         )}
       </SidebarHeader>
       <SidebarBody>
+        <ViewsSidebarSection />
         {routesBySection.body?.map(renderRouteGroup)}
       </SidebarBody>
       <SidebarSpacer />

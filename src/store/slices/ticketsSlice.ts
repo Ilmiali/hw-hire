@@ -74,6 +74,46 @@ export const fetchTicketById = createAsyncThunk(
   }
 );
 
+// Async thunk for fetching tickets by groupId
+export const fetchTicketsByGroupId = createAsyncThunk(
+  'tickets/fetchTicketsByGroupId',
+  async (groupId: string, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const tickets = await db.getDocuments<Ticket>('tickets', {
+        constraints: [{ field: 'groupId', operator: '==', value: groupId }],
+        sortBy: { field: 'createdAt', order: 'desc' }
+      });
+      return tickets;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch tickets by groupId');
+    }
+  }
+);
+
+// Async thunk for fetching tickets by members
+export const fetchTicketsByMembers = createAsyncThunk(
+  'tickets/fetchTicketsByMembers',
+  async (memberIds: string[], { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const tickets = await db.getDocuments<Ticket>('tickets', {
+        constraints: [{ field: 'assignee', operator: 'in', value: memberIds }],
+        sortBy: { field: 'createdAt', order: 'desc' }
+      });
+      return tickets;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch tickets by members');
+    }
+  }
+);
+
 const ticketsSlice = createSlice({
   name: 'tickets',
   initialState,
@@ -112,6 +152,32 @@ const ticketsSlice = createSlice({
         state.currentTicket = action.payload;
       })
       .addCase(fetchTicketById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch tickets by groupId
+      .addCase(fetchTicketsByGroupId.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTicketsByGroupId.fulfilled, (state, action) => {
+        state.loading = false;
+        state.tickets = action.payload;
+      })
+      .addCase(fetchTicketsByGroupId.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch tickets by members
+      .addCase(fetchTicketsByMembers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTicketsByMembers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.tickets = action.payload;
+      })
+      .addCase(fetchTicketsByMembers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
