@@ -1,12 +1,9 @@
-import { Group } from './group';
-
-export interface View {
+export interface Group {
   id: string;
   name: string;
   organizationId: string;
   totalNumTickets: number;
   members: string[];
-  groups: Group[];
   createdAt: Date;
   updatedAt: Date;
 } 

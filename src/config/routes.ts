@@ -36,8 +36,15 @@ export const additionalRoutes: RouteConfig[] = [
     layout: 'authenticated',
     isAuthProtected: true,
   },
+  {
+    path: '/views/:id',
+    name: 'View Details',
+    icon: TicketIcon,
+    component: Tickets,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
 ];
-
 // Main navigation routes (authenticated)
 export const mainRoutes: RouteGroup[] = [
   // Header section

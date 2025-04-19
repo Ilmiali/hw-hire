@@ -1,0 +1,145 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { Document, getDatabaseService } from '../../services/databaseService';
+import { View } from '../../types/view';
+import { Group } from '../../types/group';
+import { RootState } from '../index';
+
+interface ViewsState {
+  views: View[];
+  currentView: View | null;
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: ViewsState = {
+  views: [],
+  currentView: null,
+  loading: false,
+  error: null
+};
+
+export const fetchOrganizationViews = createAsyncThunk(
+  'views/fetchOrganizationViews',
+  async ({ organizationId, userId }: { organizationId: string; userId: string }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const views = await db.getDocuments<Document>('views', {
+        constraints: [
+          {
+            field: 'organizationId',
+            operator: '==',
+            value: organizationId
+          },
+          {
+            field: 'members',
+            operator: 'array-contains',
+            value: userId
+          }
+        ]
+      });
+      // Fetch group data for each view
+      const viewsWithGroups = await Promise.all(views.map(async (view) => {
+        const groupIds = view.data.groups as string[];
+        const groups = await Promise.all(groupIds.map(async (groupId) => {
+          const groupDoc = await db.getDocument<Document>('groups', groupId);
+          if (!groupDoc) return null;
+          return {
+            id: groupDoc.id,
+            name: groupDoc.data.name as string,
+            totalNumTickets: groupDoc.data.totalNumTickets as number,
+            organizationId: groupDoc.data.organizationId as string,
+            members: groupDoc.data.members as string[],
+            createdAt: groupDoc.createdAt || new Date(),
+            updatedAt: groupDoc.updatedAt || new Date()
+          } as Group;
+        }));
+        
+        // Filter out null groups and groups where user is not a member
+        const validGroups = groups.filter((group): group is Group => 
+          group !== null && group.members.includes(userId)
+        );
+        
+        const totalNumTickets = validGroups.reduce((sum, group) => sum + (group.totalNumTickets || 0), 0);
+        
+        return {
+          createdAt: view.createdAt || new Date(),
+          updatedAt: view.updatedAt || new Date(),
+          id: view.id,
+          name: view.data.name as string,
+          organizationId: view.data.organizationId as string,
+          members: view.data.members as View['members'],
+          groups: validGroups,
+          totalNumTickets
+        };
+      }));
+      console.log('viewsWithGroups', viewsWithGroups);
+      return viewsWithGroups;
+    } catch (error) {
+      console.error('Error fetching views:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch views';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const viewsSlice = createSlice({
+  name: 'views',
+  initialState,
+  reducers: {
+    setCurrentView: (state, action) => {
+      const viewId = action.payload;
+      state.currentView = state.views.find(view => view.id === viewId) || null;
+    },
+    clearViews: (state) => {
+      state.views = [];
+      state.currentView = null;
+    },
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+    },
+    clearError: (state) => {
+      state.error = null;
+    }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchOrganizationViews.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrganizationViews.fulfilled, (state, action) => {
+        state.loading = false;
+        state.views = action.payload;
+        // Set the first view as the current one if none is selected
+        if (!state.currentView && action.payload.length > 0) {
+          state.currentView = action.payload[0];
+        }
+      })
+      .addCase(fetchOrganizationViews.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+  }
+});
+
+// Export actions
+export const { 
+  setCurrentView, 
+  clearViews,
+  setLoading,
+  setError,
+  clearError
+} = viewsSlice.actions;
+
+// Selectors
+export const selectViews = (state: RootState) => state.views.views;
+export const selectCurrentView = (state: RootState) => state.views.currentView;
+export const selectViewsLoading = (state: RootState) => state.views.loading;
+export const selectViewsError = (state: RootState) => state.views.error;
+export const selectViewById = (state: RootState, viewId: string) => 
+  state.views.views.find(view => view.id === viewId) || null;
+
+export default viewsSlice.reducer; 

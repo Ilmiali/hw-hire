@@ -1,14 +1,15 @@
 import { SidebarSection, SidebarItem, SidebarLabel, SidebarHeading } from '../components/sidebar';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
-import { fetchOrganizationViews } from '../store/slices/viewSlice';
+import { fetchOrganizationViews } from '../store/slices/viewsSlice';
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
-import { selectViews, selectViewLoading } from '../store/slices/viewSlice';
+import { selectViews, selectViewsLoading } from '../store/slices/viewsSlice';
 import { useLocation } from 'react-router-dom';
 import { AppDispatch } from '../store';
 import { RootState } from '../store';
 import { Avatar } from '../components/avatar';
 import { PlusIcon } from '@heroicons/react/16/solid';
+import { Badge } from '../components/badge';
 
 const getInitials = (name: string): string => {
   return name
@@ -24,7 +25,7 @@ export function ViewsSidebarSection() {
   const location = useLocation();
   const currentOrganization = useSelector(selectCurrentOrganization);
   const views = useSelector(selectViews);
-  const loading = useSelector(selectViewLoading);
+  const loading = useSelector(selectViewsLoading);
   const userId = useSelector((state: RootState) => state.auth.user?.uid);
 
   useEffect(() => {
@@ -56,6 +57,9 @@ export function ViewsSidebarSection() {
             className="bg-blue-500 text-white"
           />
           <SidebarLabel>{view.name}</SidebarLabel>
+          <Badge className="ml-auto bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            {view.totalNumTickets}
+          </Badge>
         </SidebarItem>
       ))}
       <SidebarItem

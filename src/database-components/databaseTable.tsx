@@ -58,6 +58,7 @@ export function DatabaseTable<T extends Document>({
         limit: pageSize,
         startAfter: page > 1 ? pageCursors[page - 1] : undefined,
       };
+      console.log('options are', options);
       const items = await databaseService.getDocuments<T>(collection, options);
       setData(items.map(item => ({
         ...item.data,
@@ -82,7 +83,7 @@ export function DatabaseTable<T extends Document>({
 
   useEffect(() => {
     fetchData(currentPage);
-  }, [collection, currentPage, sortField, sortOrder, pageSize]);
+  }, [collection, currentPage, sortField, sortOrder, queryOptions, pageSize]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {

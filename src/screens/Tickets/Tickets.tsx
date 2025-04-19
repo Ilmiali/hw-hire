@@ -7,6 +7,10 @@ import { Ticket } from '../../types/ticket';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getBadgeColor } from '../../utils/states';
+import { useDispatch, useSelector } from 'react-redux';
+import { setCurrentView } from '../../store/slices/viewsSlice';
+import { RootState } from '../../store';
+
 const getBadgeText = (status: string) => {
   // Get the first letter of the status
   return status.charAt(0).toUpperCase()
@@ -35,22 +39,44 @@ const fields: Field<Ticket>[] = [
 ];
 
 export default function Tickets() {
-  // Get current path from react router dom
-  const pathname = useLocation().pathname;
-  // Root path
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const pathname = location.pathname;
   const rootPath = pathname.split('/')[1];
+  const currentView = useSelector((state: RootState) => state.views.currentView);
+  const groupIds = currentView?.groups.map(group => group.id) || [];
+  const [ticketId, setTicketId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if(rootPath === 'tickets') {
+      const ticketId = pathname.split('/')[2];
+      setTicketId(ticketId);
+    }
+    if(rootPath === 'views') {
+      const viewId = pathname.split('/')[2];
+      dispatch(setCurrentView(viewId));
+    }
+  }, [pathname, rootPath, dispatch]);
+
+
   const handleSendMessage = (content: string) => {
     // TODO: Implement send message functionality with Redux
     console.log('Sending message:', content);
   };
 
-  // TODO: Implement messages state management with Redux
-  const [ticketId, setTicketId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const ticketId = pathname.split('/')[2];
-    setTicketId(ticketId);
-  }, [pathname]);
+  const getQueryOptions = () => {
+    if (rootPath === 'views' && currentView) {
+      console.log('groupIds', groupIds);
+      return {
+        constraints: [{
+          field: 'groupId',
+          operator: 'in',
+          value: groupIds
+        }]
+      };
+    }
+    return null;
+  };
 
   return (
     <SplitTwoLayout
@@ -68,6 +94,7 @@ export default function Tickets() {
             actions={['view', 'delete']}
             defaultSortField="createdAt"
             defaultSortOrder="desc"
+            queryOptions={getQueryOptions()}
             onAction={(action, item) => {
               switch (action) {
                 case 'view':
@@ -83,7 +110,7 @@ export default function Tickets() {
       }
       rightColumn={
         <div className="h-full">
-          <TicketChat ticketId={ticketId} onSendMessage={handleSendMessage} />
+          {ticketId && <TicketChat ticketId={ticketId} onSendMessage={handleSendMessage} />}
         </div>
       }
     />
