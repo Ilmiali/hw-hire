@@ -2,7 +2,7 @@
 export type DatabaseEngine = 'firestore' | 'mongodb';
 
 // Query operators
-export type QueryOperator = '==' | '!=' | '>' | '<' | '>=' | '<=';
+export type QueryOperator = '==' | '!=' | '>' | '<' | '>=' | '<=' | 'array-contains' | 'array-contains-any' | 'in' | 'not-in';
 export type SortOrder = 'asc' | 'desc';
 
 // Query options

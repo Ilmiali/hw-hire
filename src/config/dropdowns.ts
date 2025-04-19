@@ -6,39 +6,29 @@ import {
 import { DropdownConfig } from '../types/dropdown';
 import { logoutUser } from '../store/slices/authSlice';
 import { store } from '../store';
+import { selectCurrentOrganization, selectOrganizations, setCurrentOrganization } from '../store/slices/organizationSlice';
+import { Organization } from '../types/organization';
 
 const handleLogout = () => {
   store.dispatch(logoutUser());
 };
 
-export const teamDropdownConfig: DropdownConfig = {
-  trigger: {
+const getOrganizationDropdownItems = (organizations: Organization[], currentOrg: Organization | null) => {
+  const items = organizations.map(org => ({
+    label: org.name,
+    href: `/organizations/${org.id}`,
     avatar: {
-      initials: "HR",
+      initials: org.name.split(' ').map(word => word[0]).join('').toUpperCase(),
       className: "bg-blue-500 text-white",
     },
-    label: "Hoiwa HR",
-  },
-  items: [
+    onClick: () => store.dispatch(setCurrentOrganization(org)),
+  }));
+
+  return [
+    ...items,
     {
-      label: "Hoiwa HR",
-      href: "/teams/1",
-      avatar: {
-        initials: "HR",
-        className: "bg-blue-500 text-white",
-      },
-    },
-    {
-      label: "Hoiwa Payroll",
-      href: "/teams/2",
-      avatar: {
-        initials: "HP",
-        className: "bg-purple-500 text-white",
-      },
-    },
-    {
-      label: "New team...",
-      href: "/teams/create",
+      label: "New organization...",
+      href: "/organizations/create",
       icon: PlusIcon,
     },
     {
@@ -46,7 +36,7 @@ export const teamDropdownConfig: DropdownConfig = {
     },
     {
       label: "Settings",
-      href: "/teams/1/settings",
+      href: currentOrg ? `/organizations/${currentOrg.id}/settings` : "/organizations/settings",
       icon: Cog8ToothIcon,
     },
     {
@@ -54,5 +44,22 @@ export const teamDropdownConfig: DropdownConfig = {
       icon: ArrowRightStartOnRectangleIcon,
       onClick: handleLogout,
     },
-  ],
+  ];
+};
+
+export const getTeamDropdownConfig = (): DropdownConfig => {
+  const state = store.getState();
+  const organizations = selectOrganizations(state);
+  const currentOrg = selectCurrentOrganization(state);
+
+  return {
+    trigger: {
+      avatar: {
+        initials: currentOrg ? currentOrg.name.split(' ').map(word => word[0]).join('').toUpperCase() : "NA",
+        className: "bg-blue-500 text-white",
+      },
+      label: currentOrg?.name || "No organization selected",
+    },
+    items: getOrganizationDropdownItems(organizations, currentOrg),
+  };
 }; 
