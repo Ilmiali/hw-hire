@@ -76,7 +76,7 @@ export function MainSidebar() {
           routesBySection.header.map(renderRouteGroup)
         )}
       </SidebarHeader>
-      <SidebarBody>
+        <SidebarBody>
         <ViewsSidebarSection />
         {routesBySection.body?.map(renderRouteGroup)}
       </SidebarBody>

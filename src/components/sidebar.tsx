@@ -8,7 +8,7 @@ import { TouchTarget } from './button'
 import { Link } from './link'
 
 export function Sidebar({ className, ...props }: React.ComponentPropsWithoutRef<'nav'>) {
-  return <nav {...props} className={clsx(className, 'flex h-full min-h-0 flex-col')} />
+  return <nav {...props} className={clsx(className, 'flex flex-col h-screen')} />
 }
 
 export function SidebarHeader({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
@@ -17,7 +17,7 @@ export function SidebarHeader({ className, ...props }: React.ComponentPropsWitho
       {...props}
       className={clsx(
         className,
-        'flex flex-col border-b border-zinc-950/5 p-4 dark:border-white/5 [&>[data-slot=section]+[data-slot=section]]:mt-2.5'
+        'shrink-0 flex flex-col border-b border-zinc-950/5 p-4 dark:border-white/5 [&>[data-slot=section]+[data-slot=section]]:mt-2.5'
       )}
     />
   )
@@ -29,7 +29,7 @@ export function SidebarBody({ className, ...props }: React.ComponentPropsWithout
       {...props}
       className={clsx(
         className,
-        'flex flex-1 flex-col overflow-y-auto p-4 [&>[data-slot=section]+[data-slot=section]]:mt-8'
+        'grow overflow-y-auto p-4 [&>[data-slot=section]+[data-slot=section]]:mt-8'
       )}
     />
   )
@@ -41,7 +41,7 @@ export function SidebarFooter({ className, ...props }: React.ComponentPropsWitho
       {...props}
       className={clsx(
         className,
-        'flex flex-col border-t border-zinc-950/5 p-4 dark:border-white/5 [&>[data-slot=section]+[data-slot=section]]:mt-2.5'
+        'shrink-0 flex flex-col border-t border-zinc-950/5 p-4 dark:border-white/5 [&>[data-slot=section]+[data-slot=section]]:mt-2.5'
       )}
     />
   )
