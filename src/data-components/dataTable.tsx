@@ -28,6 +28,7 @@ type DataTableProps<T extends { id: string }> = {
   actions?: Action[]
   onSelect?: (selectedIds: string[]) => void
   onAction?: (action: Action, item: T) => void
+  selectedId?: string | null
 }
 
 export function DataTable<T extends { id: string; url?: string }>({ 
@@ -42,7 +43,8 @@ export function DataTable<T extends { id: string; url?: string }>({
   onSort,
   actions = ['view', 'edit', 'delete'],
   onSelect, 
-  onAction 
+  onAction,
+  selectedId = null
 }: DataTableProps<T>) {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
 
@@ -130,7 +132,11 @@ export function DataTable<T extends { id: string; url?: string }>({
       </TableHead>
       <TableBody>
         {data.map((item) => (
-          <TableRow key={item.id} onClick={() => onAction?.('view', item)}>
+          <TableRow 
+            key={item.id} 
+            onClick={() => onAction?.('view', item)}
+            className={selectedId === item.id ? 'bg-zinc-100 dark:bg-zinc-700' : ''}
+          >
             {selectable && (
               <TableCell>
                 <Checkbox

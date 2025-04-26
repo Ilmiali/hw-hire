@@ -47,6 +47,7 @@ export default function Tickets() {
   const rootPath = pathname.split('/')[1];
   const currentView = useSelector((state: RootState) => state.views.currentView);
   const [ticketId, setTicketId] = useState<string | null>(null);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const queryOptions = useMemo(() => ({
     constraints: [{
@@ -60,6 +61,7 @@ export default function Tickets() {
     const ticketIdFromQuery = searchParams.get('ticket');
     if (ticketIdFromQuery) {
       setTicketId(ticketIdFromQuery);
+      setSelectedTicketId(ticketIdFromQuery);
     }
     if(rootPath === 'views') {
       const viewId = pathname.split('/')[2];
@@ -91,6 +93,7 @@ export default function Tickets() {
             onAction={(action, item) => {
               switch (action) {
                 case 'view':
+                  setSelectedTicketId(item.id);
                   navigate(`?ticket=${item.id}`);
                   break;
                 case 'delete':
@@ -98,6 +101,7 @@ export default function Tickets() {
                   break;
               }
             }}
+            selectedId={selectedTicketId}
           />
         </div>
       }

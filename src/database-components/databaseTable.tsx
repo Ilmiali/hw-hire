@@ -19,6 +19,7 @@ interface DatabaseTableProps<T extends Document> {
   queryOptions?: Omit<QueryOptions, 'limit' | 'startAfter'>;
   defaultSortField?: string;
   defaultSortOrder?: 'asc' | 'desc';
+  selectedId?: string | null;
 }
 
 export function DatabaseTable<T extends Document>({
@@ -35,6 +36,7 @@ export function DatabaseTable<T extends Document>({
   queryOptions = {},
   defaultSortField,
   defaultSortOrder = 'asc',
+  selectedId = null,
 }: DatabaseTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,6 +130,7 @@ export function DatabaseTable<T extends Document>({
             onSelect={onSelect}
             onAction={onAction}
             sticky={sticky}
+            selectedId={selectedId}
           />
         </div>
         <div className="flex justify-center gap-x-2 mt-4">
