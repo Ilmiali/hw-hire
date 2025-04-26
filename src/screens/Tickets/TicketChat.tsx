@@ -11,6 +11,62 @@ import { formatTimeAgo } from '../../utils/time';
 import { getBadgeColor } from '../../utils/states';
 import { Badge } from '../../components/badge';
 
+// Mock data for groups
+const mockGroups = [
+  { id: 1, name: 'Asiakas phone', members: [
+    { id: '1-1', name: 'John Doe' },
+    { id: '1-2', name: 'Jane Smith' }
+  ]},
+  { id: 2, name: 'Hoiwa Health', members: [
+    { id: '2-1', name: 'Alice Johnson' },
+    { id: '2-2', name: 'Bob Wilson' }
+  ]},
+  { id: 3, name: 'Hoiwa Health Rekry', members: [
+    { id: '3-1', name: 'Carol Brown' },
+    { id: '3-2', name: 'David Miller' }
+  ]},
+  { id: 4, name: 'HR', members: [
+    { id: '4-1', name: 'Eva Davis' },
+    { id: '4-2', name: 'Frank White' }
+  ]},
+  { id: 5, name: 'HR Phone', members: [
+    { id: '5-1', name: 'Grace Lee' },
+    { id: '5-2', name: 'Henry Clark' }
+  ]},
+  { id: 6, name: 'IT Tuki', members: [
+    { id: '6-1', name: 'Ilmi Ali' },
+    { id: '6-2', name: 'Lari Juva' }
+  ]},
+  { id: 7, name: 'Liitteet', members: [
+    { id: '7-1', name: 'Kelly Chen' },
+    { id: '7-2', name: 'Larry Moore' }
+  ]},
+  { id: 8, name: 'Oiwa HR', members: [
+    { id: '8-1', name: 'Mary Wilson' },
+    { id: '8-2', name: 'Nick Davis' }
+  ]},
+  { id: 9, name: 'Oiwa Rekry', members: [
+    { id: '9-1', name: 'Oliver Brown' },
+    { id: '9-2', name: 'Pam White' }
+  ]},
+  { id: 10, name: 'Palautteet', members: [
+    { id: '10-1', name: 'Quinn Lee' },
+    { id: '10-2', name: 'Rachel Kim' }
+  ]},
+  { id: 11, name: 'Palkka&Laskut', members: [
+    { id: '11-1', name: 'Sam Johnson' },
+    { id: '11-2', name: 'Tina Chen' }
+  ]},
+  { id: 12, name: 'Peruutukset', members: [
+    { id: '12-1', name: 'Uma Patel' },
+    { id: '12-2', name: 'Victor Garcia' }
+  ]},
+  { id: 13, name: 'Rekry', members: [
+    { id: '13-1', name: 'Walter Scott' },
+    { id: '13-2', name: 'Xena Liu' }
+  ]},
+];
+
 interface TicketChatProps {
   ticketId: string;
 }
@@ -29,6 +85,9 @@ const getInitials = (name?: string, email?: string): string => {
 
 export function TicketChat({ ticketId }: TicketChatProps) {
   const [newMessage, setNewMessage] = useState('');
+  const [selectedGroupId, setSelectedGroupId] = useState<number>();
+  const [selectedMemberId, setSelectedMemberId] = useState<string>();
+  
   const dispatch = useAppDispatch();
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
     messages: state.messages.messages[ticketId] || [],
@@ -79,6 +138,13 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     }
   };
 
+  const handleAssign = ({ groupId, memberId }: { groupId: number; memberId?: string }) => {
+    setSelectedGroupId(groupId);
+    setSelectedMemberId(memberId);
+    // Here you would typically make an API call to update the assignment
+    console.log('Assigned to:', { groupId, memberId });
+  };
+
   if (messagesLoading || ticketLoading) {
     return <div className="flex h-full items-center justify-center">Loading...</div>;
   }
@@ -112,7 +178,12 @@ export function TicketChat({ ticketId }: TicketChatProps) {
                 </div>
               </div>
               <div className="ml-4">
-                <GroupSelector />
+                <GroupSelector
+                  groups={mockGroups}
+                  selectedGroupId={selectedGroupId}
+                  selectedMemberId={selectedMemberId}
+                  onAssign={handleAssign}
+                />
               </div>
             </div>
           </div>
