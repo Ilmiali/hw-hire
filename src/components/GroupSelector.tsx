@@ -1,30 +1,98 @@
-import { useState } from 'react';
-import { ChevronUpDownIcon, ChevronLeftIcon, UserGroupIcon, UserCircleIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronUpDownIcon, ChevronLeftIcon, UserGroupIcon, UserCircleIcon, ChevronRightIcon, CheckIcon } from '@heroicons/react/20/solid';
+
+interface Member {
+  id: string;
+  name: string;
+}
+
+interface Group {
+  id: number;
+  name: string;
+  members: Member[];
+}
 
 // Mock data for groups
-const groups = [
-  { id: 1, name: 'Asiakas phone', members: ['John Doe', 'Jane Smith'] },
-  { id: 2, name: 'Hoiwa Health', members: ['Alice Johnson', 'Bob Wilson'] },
-  { id: 3, name: 'Hoiwa Health Rekry', members: ['Carol Brown', 'David Miller'] },
-  { id: 4, name: 'HR', members: ['Eva Davis', 'Frank White'] },
-  { id: 5, name: 'HR Phone', members: ['Grace Lee', 'Henry Clark'] },
-  { id: 6, name: 'IT Tuki', members: ['Ilmi Ali', 'Lari Juva'] },
-  { id: 7, name: 'Liitteet', members: ['Kelly Chen', 'Larry Moore'] },
-  { id: 8, name: 'Oiwa HR', members: ['Mary Wilson', 'Nick Davis'] },
-  { id: 9, name: 'Oiwa Rekry', members: ['Oliver Brown', 'Pam White'] },
-  { id: 10, name: 'Palautteet', members: ['Quinn Lee', 'Rachel Kim'] },
-  { id: 11, name: 'Palkka&Laskut', members: ['Sam Johnson', 'Tina Chen'] },
-  { id: 12, name: 'Peruutukset', members: ['Uma Patel', 'Victor Garcia'] },
-  { id: 13, name: 'Rekry', members: ['Walter Scott', 'Xena Liu'] },
+const groups: Group[] = [
+  { id: 1, name: 'Asiakas phone', members: [
+    { id: '1-1', name: 'John Doe' },
+    { id: '1-2', name: 'Jane Smith' }
+  ]},
+  { id: 2, name: 'Hoiwa Health', members: [
+    { id: '2-1', name: 'Alice Johnson' },
+    { id: '2-2', name: 'Bob Wilson' }
+  ]},
+  { id: 3, name: 'Hoiwa Health Rekry', members: [
+    { id: '3-1', name: 'Carol Brown' },
+    { id: '3-2', name: 'David Miller' }
+  ]},
+  { id: 4, name: 'HR', members: [
+    { id: '4-1', name: 'Eva Davis' },
+    { id: '4-2', name: 'Frank White' }
+  ]},
+  { id: 5, name: 'HR Phone', members: [
+    { id: '5-1', name: 'Grace Lee' },
+    { id: '5-2', name: 'Henry Clark' }
+  ]},
+  { id: 6, name: 'IT Tuki', members: [
+    { id: '6-1', name: 'Ilmi Ali' },
+    { id: '6-2', name: 'Lari Juva' }
+  ]},
+  { id: 7, name: 'Liitteet', members: [
+    { id: '7-1', name: 'Kelly Chen' },
+    { id: '7-2', name: 'Larry Moore' }
+  ]},
+  { id: 8, name: 'Oiwa HR', members: [
+    { id: '8-1', name: 'Mary Wilson' },
+    { id: '8-2', name: 'Nick Davis' }
+  ]},
+  { id: 9, name: 'Oiwa Rekry', members: [
+    { id: '9-1', name: 'Oliver Brown' },
+    { id: '9-2', name: 'Pam White' }
+  ]},
+  { id: 10, name: 'Palautteet', members: [
+    { id: '10-1', name: 'Quinn Lee' },
+    { id: '10-2', name: 'Rachel Kim' }
+  ]},
+  { id: 11, name: 'Palkka&Laskut', members: [
+    { id: '11-1', name: 'Sam Johnson' },
+    { id: '11-2', name: 'Tina Chen' }
+  ]},
+  { id: 12, name: 'Peruutukset', members: [
+    { id: '12-1', name: 'Uma Patel' },
+    { id: '12-2', name: 'Victor Garcia' }
+  ]},
+  { id: 13, name: 'Rekry', members: [
+    { id: '13-1', name: 'Walter Scott' },
+    { id: '13-2', name: 'Xena Liu' }
+  ]},
 ];
 
-export function GroupSelector() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<typeof groups[0] | null>(null);
-  const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const [showingMembers, setShowingMembers] = useState(false);
+interface GroupSelectorProps {
+  onAssign?: (selection: { groupId: number; memberId?: string }) => void;
+}
 
-  const handleGroupClick = (group: typeof groups[0]) => {
+export function GroupSelector({ onAssign }: GroupSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [showingMembers, setShowingMembers] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleGroupClick = (group: Group) => {
     setSelectedGroup(group);
     setShowingMembers(true);
   };
@@ -37,29 +105,30 @@ export function GroupSelector() {
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
     if (!isOpen) {
-      setShowingMembers(false);
+      // If we have a selected group, open directly to its members
+      setShowingMembers(!!selectedGroup);
     }
   };
 
-  const handleAssign = (member?: string) => {
-    if (member) {
+  const handleAssign = (member?: Member) => {
+    if (member && selectedGroup) {
       setSelectedMember(member);
-      console.log(`Assigning to member: ${member}`);
-    } else {
+      onAssign?.({ groupId: selectedGroup.id, memberId: member.id });
+    } else if (selectedGroup) {
       setSelectedMember(null);
-      console.log(`Assigning to group: ${selectedGroup?.name}`);
+      onAssign?.({ groupId: selectedGroup.id });
     }
     setIsOpen(false);
   };
 
   const getDisplayText = () => {
     if (!selectedGroup) return "Assignee";
-    if (selectedMember) return `${selectedGroup.name}/${selectedMember}`;
+    if (selectedMember) return `${selectedGroup.name}/${selectedMember.name}`;
     return selectedGroup.name;
   };
 
   return (
-    <div className="w-72">
+    <div className="w-72" ref={containerRef}>
       <button
         onClick={toggleDropdown}
         className="relative w-full cursor-pointer rounded-lg bg-white dark:bg-zinc-900 py-2 pl-3 pr-10 text-left border border-gray-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm text-gray-900 dark:text-white"
@@ -96,22 +165,28 @@ export function GroupSelector() {
               {/* Group name */}
               <button
                 onClick={() => handleAssign()}
-                className="w-full flex items-center px-3 py-2 border-b border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-900 dark:text-white"
+                className="w-full flex items-center px-3 py-2 border-b border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-900 dark:text-white relative"
               >
                 <UserGroupIcon className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
                 <span className="font-medium">Assign to {selectedGroup.name}</span>
+                {selectedGroup && !selectedMember && (
+                  <CheckIcon className="h-5 w-5 text-blue-500 absolute right-3" />
+                )}
               </button>
 
               {/* Members list */}
               <div className="py-1">
-                {selectedGroup.members.map((member, index) => (
+                {selectedGroup.members.map((member) => (
                   <button
-                    key={index}
+                    key={member.id}
                     onClick={() => handleAssign(member)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer flex items-center text-gray-900 dark:text-white"
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer flex items-center text-gray-900 dark:text-white relative"
                   >
                     <UserCircleIcon className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
-                    {member}
+                    <span>{member.name}</span>
+                    {selectedMember?.id === member.id && (
+                      <CheckIcon className="h-5 w-5 text-blue-500 absolute right-3" />
+                    )}
                   </button>
                 ))}
               </div>
