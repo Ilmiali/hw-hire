@@ -4,6 +4,7 @@ import ticketsReducer from './slices/ticketsSlice';
 import messagesReducer from './slices/messagesSlice';
 import organizationReducer from './slices/organizationSlice';
 import viewsReducer from './slices/viewsSlice';
+import groupsReducer from './slices/groupsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     messages: messagesReducer,
     organization: organizationReducer,
     views: viewsReducer,
+    groups: groupsReducer,
   },
 });
 

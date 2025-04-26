@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
+import { useSelector } from 'react-redux';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchMessagesByTicketId } from '../../store/slices/messagesSlice';
 import { fetchTicketById } from '../../store/slices/ticketsSlice';
+import { fetchGroups, fetchGroupById } from '../../store/slices/groupsSlice';
+import { fetchUserById } from '../../store/slices/usersSlice';
 import { getDatabaseService } from '../../services/databaseService';
 import { Avatar } from '../../components/avatar';
 import { GroupSelector } from '../../components/GroupSelector';
@@ -10,62 +13,10 @@ import type { Message } from '../../types/message';
 import { formatTimeAgo } from '../../utils/time';
 import { getBadgeColor } from '../../utils/states';
 import { Badge } from '../../components/badge';
-
-// Mock data for groups
-const mockGroups = [
-  { id: 1, name: 'Asiakas phone', members: [
-    { id: '1-1', name: 'John Doe' },
-    { id: '1-2', name: 'Jane Smith' }
-  ]},
-  { id: 2, name: 'Hoiwa Health', members: [
-    { id: '2-1', name: 'Alice Johnson' },
-    { id: '2-2', name: 'Bob Wilson' }
-  ]},
-  { id: 3, name: 'Hoiwa Health Rekry', members: [
-    { id: '3-1', name: 'Carol Brown' },
-    { id: '3-2', name: 'David Miller' }
-  ]},
-  { id: 4, name: 'HR', members: [
-    { id: '4-1', name: 'Eva Davis' },
-    { id: '4-2', name: 'Frank White' }
-  ]},
-  { id: 5, name: 'HR Phone', members: [
-    { id: '5-1', name: 'Grace Lee' },
-    { id: '5-2', name: 'Henry Clark' }
-  ]},
-  { id: 6, name: 'IT Tuki', members: [
-    { id: '6-1', name: 'Ilmi Ali' },
-    { id: '6-2', name: 'Lari Juva' }
-  ]},
-  { id: 7, name: 'Liitteet', members: [
-    { id: '7-1', name: 'Kelly Chen' },
-    { id: '7-2', name: 'Larry Moore' }
-  ]},
-  { id: 8, name: 'Oiwa HR', members: [
-    { id: '8-1', name: 'Mary Wilson' },
-    { id: '8-2', name: 'Nick Davis' }
-  ]},
-  { id: 9, name: 'Oiwa Rekry', members: [
-    { id: '9-1', name: 'Oliver Brown' },
-    { id: '9-2', name: 'Pam White' }
-  ]},
-  { id: 10, name: 'Palautteet', members: [
-    { id: '10-1', name: 'Quinn Lee' },
-    { id: '10-2', name: 'Rachel Kim' }
-  ]},
-  { id: 11, name: 'Palkka&Laskut', members: [
-    { id: '11-1', name: 'Sam Johnson' },
-    { id: '11-2', name: 'Tina Chen' }
-  ]},
-  { id: 12, name: 'Peruutukset', members: [
-    { id: '12-1', name: 'Uma Patel' },
-    { id: '12-2', name: 'Victor Garcia' }
-  ]},
-  { id: 13, name: 'Rekry', members: [
-    { id: '13-1', name: 'Walter Scott' },
-    { id: '13-2', name: 'Xena Liu' }
-  ]},
-];
+import { Group } from '../../types/group';
+import { selectCurrentOrganization } from '../../store/slices/organizationSlice';
+import { RootState } from '../../store';
+import { User } from '../../store/slices/usersSlice';
 
 interface TicketChatProps {
   ticketId: string;
@@ -87,6 +38,9 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<number>();
   const [selectedMemberId, setSelectedMemberId] = useState<string>();
+  const [groupMembers, setGroupMembers] = useState<Record<string, User>>({});
+  const currentOrganization = useSelector(selectCurrentOrganization);
+  const userId = useSelector((state: RootState) => state.auth.user?.uid);
   
   const dispatch = useAppDispatch();
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
@@ -99,12 +53,68 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     loading: state.tickets.loading,
     error: state.tickets.error
   }));
+  const { groups, loading: groupLoading, error: groupError } = useAppSelector((state) => ({
+    groups: state.groups.groups,
+    loading: state.groups.loading,
+    error: state.groups.error
+  }));
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch all groups where user is a member
+  useEffect(() => {
+    // TODO: Replace with actual organizationId and userId
+    const organizationId = currentOrganization?.id;
+    if (organizationId && userId) {
+      console.log('Fetching groups for organization:', organizationId, 'and user:', userId);
+      dispatch(fetchGroups({ organizationId, userId }));
+    }
+  }, [dispatch, currentOrganization?.id, userId]);
 
   useEffect(() => {
     dispatch(fetchTicketById(ticketId));
     dispatch(fetchMessagesByTicketId(ticketId));
   }, [dispatch, ticketId]);
+
+  // Fetch current group when ticket is loaded
+  useEffect(() => {
+    if (currentTicket?.groupId) {
+      dispatch(fetchGroupById(currentTicket.groupId));
+    }
+  }, [dispatch, currentTicket?.groupId]);
+
+  // Set the selected group ID from the current ticket
+  useEffect(() => {
+    if (currentTicket?.groupId) {
+      setSelectedGroupId(parseInt(currentTicket.groupId));
+    }
+  }, [currentTicket?.groupId]);
+
+  // Fetch user data for group members
+  useEffect(() => {
+    const fetchGroupMembers = async () => {
+      if (currentTicket?.groupId) {
+        const group = groups.find((g: Group) => g.id === currentTicket.groupId);
+        if (group) {
+          const memberPromises = group.members.map((memberId: string) => 
+            dispatch(fetchUserById(memberId)).unwrap()
+          );
+          
+          try {
+            const members = await Promise.all(memberPromises);
+            const membersMap = members.reduce((acc: Record<string, User>, user: User) => {
+              acc[user.id] = user;
+              return acc;
+            }, {} as Record<string, User>);
+            setGroupMembers(membersMap);
+          } catch (error) {
+            console.error('Failed to fetch group members:', error);
+          }
+        }
+      }
+    };
+
+    fetchGroupMembers();
+  }, [dispatch, currentTicket?.groupId, groups]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -145,17 +155,32 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     console.log('Assigned to:', { groupId, memberId });
   };
 
-  if (messagesLoading || ticketLoading) {
+  if (messagesLoading || ticketLoading || groupLoading) {
     return <div className="flex h-full items-center justify-center">Loading...</div>;
   }
 
-  if (messagesError || ticketError) {
-    return <div className="flex h-full items-center justify-center text-red-500">Error: {messagesError || ticketError}</div>;
+  if (messagesError || ticketError || groupError) {
+    return <div className="flex h-full items-center justify-center text-red-500">Error: {messagesError || ticketError || groupError}</div>;
   }
 
   if (!currentTicket) {
     return <div className="flex h-full items-center justify-center text-red-500">Ticket not found</div>;
   }
+
+  // Transform groups into the format expected by GroupSelector
+  const transformedGroups = groups.map((group: Group) => ({
+    id: group.id,
+    name: group.name,
+    members: group.members.map((memberId: string) => {
+      const member = groupMembers[memberId];
+      return {
+        id: memberId,
+        name: member?.name || memberId,
+        email: member?.email || '',
+        role: member?.role || ''
+      };
+    })
+  }));
 
   return (
     <div className="flex h-screen flex-col justify-between bg-white dark:bg-zinc-900">
@@ -179,7 +204,7 @@ export function TicketChat({ ticketId }: TicketChatProps) {
               </div>
               <div className="ml-4">
                 <GroupSelector
-                  groups={mockGroups}
+                  groups={transformedGroups}
                   selectedGroupId={selectedGroupId}
                   selectedMemberId={selectedMemberId}
                   onAssign={handleAssign}
