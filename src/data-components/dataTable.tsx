@@ -130,7 +130,7 @@ export function DataTable<T extends { id: string; url?: string }>({
       </TableHead>
       <TableBody>
         {data.map((item) => (
-          <TableRow key={item.id} href={isLink ? `/${rootPath}/${item.id}` : undefined}>
+          <TableRow key={item.id} onClick={() => onAction?.('view', item)}>
             {selectable && (
               <TableCell>
                 <Checkbox

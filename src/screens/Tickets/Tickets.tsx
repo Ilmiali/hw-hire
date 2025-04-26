@@ -4,7 +4,7 @@ import { DatabaseTable } from '../../database-components/databaseTable';
 import { Field } from '../../data-components/dataTable';
 import { Badge } from '../../components/badge';
 import { Ticket } from '../../types/ticket';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getBadgeColor } from '../../utils/states';
 import { useDispatch, useSelector } from 'react-redux';
@@ -39,24 +39,21 @@ const fields: Field<Ticket>[] = [
 ];
 
 export default function Tickets() {
-  const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const pathname = location.pathname;
+  const searchParams = new URLSearchParams(location.search);
   const rootPath = pathname.split('/')[1];
   const currentView = useSelector((state: RootState) => state.views.currentView);
   const groupIds = currentView?.groups.map(group => group.id) || [];
   const [ticketId, setTicketId] = useState<string | null>(null);
 
   useEffect(() => {
-    if(rootPath === 'tickets') {
-      const ticketId = pathname.split('/')[2];
-      setTicketId(ticketId);
+    const ticketIdFromQuery = searchParams.get('ticket');
+    if (ticketIdFromQuery) {
+      setTicketId(ticketIdFromQuery);
     }
-    if(rootPath === 'views') {
-      const viewId = pathname.split('/')[2];
-      dispatch(setCurrentView(viewId));
-    }
-  }, [pathname, rootPath, dispatch]);
+  }, [searchParams]);
 
 
   const handleSendMessage = (content: string) => {
@@ -98,7 +95,7 @@ export default function Tickets() {
             onAction={(action, item) => {
               switch (action) {
                 case 'view':
-                  window.location.href = `/tickets/${item.id}`;
+                  navigate(`?ticket=${item.id}`);
                   break;
                 case 'delete':
                   // Handle delete
