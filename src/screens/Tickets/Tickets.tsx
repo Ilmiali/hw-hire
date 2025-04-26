@@ -5,7 +5,7 @@ import { Field } from '../../data-components/dataTable';
 import { Badge } from '../../components/badge';
 import { Ticket } from '../../types/ticket';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getBadgeColor } from '../../utils/states';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentView } from '../../store/slices/viewsSlice';
@@ -46,8 +46,15 @@ export default function Tickets() {
   const pathname = location.pathname;
   const rootPath = pathname.split('/')[1];
   const currentView = useSelector((state: RootState) => state.views.currentView);
-  const groupIds = currentView?.groups.map(group => group.id) || [];
   const [ticketId, setTicketId] = useState<string | null>(null);
+
+  const queryOptions = useMemo(() => ({
+    constraints: [{
+      field: 'groupId',
+      operator: 'in',
+      value: currentView?.groups.map(group => group.id) || []
+    }]
+  }), [currentView?.groups]);
 
   useEffect(() => {
     const ticketIdFromQuery = searchParams.get('ticket');
@@ -56,30 +63,13 @@ export default function Tickets() {
     }
     if(rootPath === 'views') {
       const viewId = pathname.split('/')[2];
-      if(!currentView || viewId !== currentView?.id) {
-        dispatch(setCurrentView(viewId));
-      }
+      dispatch(setCurrentView(viewId));
     }
   }, [pathname, rootPath, dispatch, currentView, searchParams]);
-
 
   const handleSendMessage = (content: string) => {
     // TODO: Implement send message functionality with Redux
     console.log('Sending message:', content);
-  };
-
-  const getQueryOptions = () => {
-    if (rootPath === 'views' && currentView) {
-      console.log('groupIds', groupIds);
-      return {
-        constraints: [{
-          field: 'groupId',
-          operator: 'in',
-          value: groupIds
-        }]
-      };
-    }
-    return null;
   };
 
   return (
@@ -90,7 +80,6 @@ export default function Tickets() {
           <DatabaseTable<Ticket>
             collection="tickets"
             fields={fields}
-            rootPath={rootPath}
             pageSize={15}
             selectable={false}
             sticky
@@ -98,7 +87,7 @@ export default function Tickets() {
             actions={['view', 'delete']}
             defaultSortField="createdAt"
             defaultSortOrder="desc"
-            queryOptions={getQueryOptions()}
+            queryOptions={queryOptions}
             onAction={(action, item) => {
               switch (action) {
                 case 'view':
