@@ -39,10 +39,11 @@ const fields: Field<Ticket>[] = [
 ];
 
 export default function Tickets() {
+  const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
-  const pathname = location.pathname;
   const searchParams = new URLSearchParams(location.search);
+  const pathname = location.pathname;
   const rootPath = pathname.split('/')[1];
   const currentView = useSelector((state: RootState) => state.views.currentView);
   const groupIds = currentView?.groups.map(group => group.id) || [];
@@ -53,7 +54,13 @@ export default function Tickets() {
     if (ticketIdFromQuery) {
       setTicketId(ticketIdFromQuery);
     }
-  }, [searchParams]);
+    if(rootPath === 'views') {
+      const viewId = pathname.split('/')[2];
+      if(!currentView || viewId !== currentView?.id) {
+        dispatch(setCurrentView(viewId));
+      }
+    }
+  }, [pathname, rootPath, dispatch, currentView, searchParams]);
 
 
   const handleSendMessage = (content: string) => {
