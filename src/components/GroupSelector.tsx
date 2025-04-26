@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Avatar } from './avatar';
 import { ChevronUpDownIcon, ChevronLeftIcon, UserGroupIcon, UserCircleIcon, ChevronRightIcon, CheckIcon } from '@heroicons/react/20/solid';
 
 interface Member {
@@ -27,6 +28,7 @@ export function GroupSelector({
 }: GroupSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showingMembers, setShowingMembers] = useState(false);
+  const [viewedGroup, setViewedGroup] = useState<Group | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Derive selected group and member from props with safety checks
@@ -53,29 +55,31 @@ export function GroupSelector({
 
   const handleGroupClick = (group: Group) => {
     if (!group) return;
-    onAssign({ groupId: group.id });
+    setViewedGroup(group);
     setShowingMembers(true);
   };
 
   const handleBackToGroups = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowingMembers(false);
+    setViewedGroup(null);
   };
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
     if (!isOpen && selectedGroup) {
+      setViewedGroup(selectedGroup);
       setShowingMembers(true);
     }
   };
 
   const handleAssign = (member?: Member) => {
-    if (!selectedGroup) return;
+    if (!viewedGroup) return;
     
     if (member) {
-      onAssign({ groupId: selectedGroup.id, memberId: member.id });
+      onAssign({ groupId: viewedGroup.id, memberId: member.id });
     } else {
-      onAssign({ groupId: selectedGroup.id });
+      onAssign({ groupId: viewedGroup.id });
     }
     setIsOpen(false);
   };
@@ -108,7 +112,7 @@ export function GroupSelector({
 
       {isOpen && (
         <div className="absolute z-10 mt-1 w-[280px] -ml-[4px] overflow-auto rounded-md bg-white dark:bg-zinc-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 focus:outline-none max-h-[85vh]">
-          {showingMembers && selectedGroup ? (
+          {showingMembers && viewedGroup ? (
             <div>
               {/* Header with back button */}
               <div className="flex items-center px-3 py-2 border-b border-gray-200 dark:border-zinc-800">
@@ -127,23 +131,26 @@ export function GroupSelector({
                 className="w-full flex items-center px-3 py-2 border-b border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-900 dark:text-white relative"
               >
                 <UserGroupIcon className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
-                <span className="font-medium">Assign to {selectedGroup.name}</span>
-                {selectedGroup && !selectedMember && (
+                <span className="font-medium">Assign to {viewedGroup.name}</span>
+                {selectedGroup?.id === viewedGroup.id && !selectedMember && (
                   <CheckIcon className="h-5 w-5 text-blue-500 absolute right-3" />
                 )}
               </button>
 
               {/* Members list */}
               <div className="py-1">
-                {selectedGroup.members?.map((member) => (
+                {viewedGroup.members?.map((member) => (
                   <button
                     key={member.id}
                     onClick={() => handleAssign(member)}
                     className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer flex items-center text-gray-900 dark:text-white relative"
                   >
-                    <UserCircleIcon className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
+                    <Avatar
+                      initials={member.name.split(' ').map(n => n[0]).join('')}
+                      className="mr-2 h-5 w-5"
+                    />
                     <span>{member.name}</span>
-                    {selectedMember?.id === member.id && (
+                    {selectedMember?.id === member.id && selectedGroup?.id === viewedGroup.id && (
                       <CheckIcon className="h-5 w-5 text-blue-500 absolute right-3" />
                     )}
                   </button>
