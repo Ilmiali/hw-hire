@@ -111,7 +111,7 @@ export function GroupSelector({
       </button>
 
       {isOpen && (
-        <div className="absolute z-10 mt-1 w-[280px] -ml-[4px] overflow-auto rounded-md bg-white dark:bg-zinc-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 focus:outline-none max-h-[85vh]">
+        <div className="absolute z-10 mt-1 w-72 overflow-auto rounded-md bg-white dark:bg-zinc-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 focus:outline-none max-h-[85vh]">
           {showingMembers && viewedGroup ? (
             <div>
               {/* Header with back button */}
