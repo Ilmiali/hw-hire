@@ -203,6 +203,7 @@ export function TicketChat({ ticketId }: TicketChatProps) {
                 </div>
               </div>
               <div className="ml-4">
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Assignee</label>
                 <GroupSelector
                   groups={transformedGroups}
                   selectedGroupId={selectedGroupId}
