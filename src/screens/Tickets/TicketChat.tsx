@@ -183,7 +183,7 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   }));
 
   return (
-    <div className="flex h-screen flex-col justify-between bg-white dark:bg-zinc-900">
+    <div className="flex h-screen flex-col justify-between">
       <div className="flex-1 overflow-y-auto h-screen">
         {/* Header with blur effect */}
         <div className="sticky top-0 z-10 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800">
@@ -202,8 +202,12 @@ export function TicketChat({ ticketId }: TicketChatProps) {
                   </span>
                 </div>
               </div>
-              <div className="ml-4">
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Assignee</label>
+            </div>
+          </div>
+          <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Assignee</label>
                 <GroupSelector
                   groups={transformedGroups}
                   selectedGroupId={selectedGroupId}
@@ -211,6 +215,7 @@ export function TicketChat({ ticketId }: TicketChatProps) {
                   onAssign={handleAssign}
                 />
               </div>
+              {/* Space for other actions */}
             </div>
           </div>
         </div>
