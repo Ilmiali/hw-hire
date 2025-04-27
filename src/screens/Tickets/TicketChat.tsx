@@ -1,22 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import { useSelector } from 'react-redux';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchMessagesByTicketId } from '../../store/slices/messagesSlice';
 import { fetchTicketById } from '../../store/slices/ticketsSlice';
-import { fetchGroups, fetchGroupById } from '../../store/slices/groupsSlice';
-import { fetchUserById } from '../../store/slices/usersSlice';
 import { getDatabaseService } from '../../services/databaseService';
 import { Avatar } from '../../components/avatar';
-import { GroupSelector } from '../../components/GroupSelector';
+import { AssignSelector } from '../../data-components/assignSelector';
 import type { Message } from '../../types/message';
 import { formatTimeAgo } from '../../utils/time';
 import { getBadgeColor } from '../../utils/states';
 import { Badge } from '../../components/badge';
-import { Group } from '../../types/group';
-import { selectCurrentOrganization } from '../../store/slices/organizationSlice';
-import { RootState } from '../../store';
-import { User } from '../../store/slices/usersSlice';
 
 interface TicketChatProps {
   ticketId: string;
@@ -36,12 +29,6 @@ const getInitials = (name?: string, email?: string): string => {
 
 export function TicketChat({ ticketId }: TicketChatProps) {
   const [newMessage, setNewMessage] = useState('');
-  const [selectedGroupId, setSelectedGroupId] = useState<number>();
-  const [selectedMemberId, setSelectedMemberId] = useState<string>();
-  const [groupMembers, setGroupMembers] = useState<Record<string, User>>({});
-  const currentOrganization = useSelector(selectCurrentOrganization);
-  const userId = useSelector((state: RootState) => state.auth.user?.uid);
-  
   const dispatch = useAppDispatch();
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
     messages: state.messages.messages[ticketId] || [],
@@ -53,68 +40,12 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     loading: state.tickets.loading,
     error: state.tickets.error
   }));
-  const { groups, loading: groupLoading, error: groupError } = useAppSelector((state) => ({
-    groups: state.groups.groups,
-    loading: state.groups.loading,
-    error: state.groups.error
-  }));
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Fetch all groups where user is a member
-  useEffect(() => {
-    // TODO: Replace with actual organizationId and userId
-    const organizationId = currentOrganization?.id;
-    if (organizationId && userId) {
-      console.log('Fetching groups for organization:', organizationId, 'and user:', userId);
-      dispatch(fetchGroups({ organizationId, userId }));
-    }
-  }, [dispatch, currentOrganization?.id, userId]);
 
   useEffect(() => {
     dispatch(fetchTicketById(ticketId));
     dispatch(fetchMessagesByTicketId(ticketId));
   }, [dispatch, ticketId]);
-
-  // Fetch current group when ticket is loaded
-  useEffect(() => {
-    if (currentTicket?.groupId) {
-      dispatch(fetchGroupById(currentTicket.groupId));
-    }
-  }, [dispatch, currentTicket?.groupId]);
-
-  // Set the selected group ID from the current ticket
-  useEffect(() => {
-    if (currentTicket?.groupId) {
-      setSelectedGroupId(parseInt(currentTicket.groupId));
-    }
-  }, [currentTicket?.groupId]);
-
-  // Fetch user data for group members
-  useEffect(() => {
-    const fetchGroupMembers = async () => {
-      if (currentTicket?.groupId) {
-        const group = groups.find((g: Group) => g.id === currentTicket.groupId);
-        if (group) {
-          const memberPromises = group.members.map((memberId: string) => 
-            dispatch(fetchUserById(memberId)).unwrap()
-          );
-          
-          try {
-            const members = await Promise.all(memberPromises);
-            const membersMap = members.reduce((acc: Record<string, User>, user: User) => {
-              acc[user.id] = user;
-              return acc;
-            }, {} as Record<string, User>);
-            setGroupMembers(membersMap);
-          } catch (error) {
-            console.error('Failed to fetch group members:', error);
-          }
-        }
-      }
-    };
-
-    fetchGroupMembers();
-  }, [dispatch, currentTicket?.groupId, groups]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -149,38 +80,21 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   };
 
   const handleAssign = ({ groupId, memberId }: { groupId: number; memberId?: string }) => {
-    setSelectedGroupId(groupId);
-    setSelectedMemberId(memberId);
     // Here you would typically make an API call to update the assignment
     console.log('Assigned to:', { groupId, memberId });
   };
 
-  if (messagesLoading || ticketLoading || groupLoading) {
+  if (messagesLoading || ticketLoading) {
     return <div className="flex h-full items-center justify-center">Loading...</div>;
   }
 
-  if (messagesError || ticketError || groupError) {
-    return <div className="flex h-full items-center justify-center text-red-500">Error: {messagesError || ticketError || groupError}</div>;
+  if (messagesError || ticketError) {
+    return <div className="flex h-full items-center justify-center text-red-500">Error: {messagesError || ticketError}</div>;
   }
 
   if (!currentTicket) {
     return <div className="flex h-full items-center justify-center text-red-500">Ticket not found</div>;
   }
-
-  // Transform groups into the format expected by GroupSelector
-  const transformedGroups = groups.map((group: Group) => ({
-    id: group.id,
-    name: group.name,
-    members: group.members.map((memberId: string) => {
-      const member = groupMembers[memberId];
-      return {
-        id: memberId,
-        name: member?.name || memberId,
-        email: member?.email || '',
-        role: member?.role || ''
-      };
-    })
-  }));
 
   return (
     <div className="flex h-screen flex-col justify-between">
@@ -206,15 +120,10 @@ export function TicketChat({ ticketId }: TicketChatProps) {
           </div>
           <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-800">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Assignee</label>
-                <GroupSelector
-                  groups={transformedGroups}
-                  selectedGroupId={selectedGroupId}
-                  selectedMemberId={selectedMemberId}
-                  onAssign={handleAssign}
-                />
-              </div>
+              <AssignSelector
+                currentTicket={currentTicket}
+                onAssign={handleAssign}
+              />
               {/* Space for other actions */}
             </div>
           </div>
