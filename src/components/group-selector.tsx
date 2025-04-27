@@ -8,16 +8,16 @@ interface Member {
 }
 
 interface Group {
-  id: number;
+  id: string;
   name: string;
   members: Member[];
 }
 
 interface GroupSelectorProps {
   groups: Group[];
-  selectedGroupId?: number;
+  selectedGroupId?: string;
   selectedMemberId?: string;
-  onAssign: (selection: { groupId: number; memberId?: string }) => void;
+  onAssign: (selection: { groupId: string; memberId?: string }) => void;
 }
 
 export function GroupSelector({ 

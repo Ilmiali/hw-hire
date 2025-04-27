@@ -84,6 +84,11 @@ export class DatabaseService {
   public async buildQuery(collection: string, constraints?: QueryConstraint[]): Promise<unknown> {
     return this.database.buildQuery(collection, constraints);
   }
+
+  public async updateDocument<T>(collection: string, id: string, data: Partial<T>): Promise<T> {
+    const doc = await this.database.updateDocument(collection, id, data);
+    return doc as T;
+  }
 }
 
 // Export the class and a function to get the instance

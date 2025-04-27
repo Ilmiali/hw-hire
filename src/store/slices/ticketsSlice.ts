@@ -51,7 +51,7 @@ export const fetchTicketById = createAsyncThunk(
         subject: document.data.subject,
         status: document.data.status,
         priority: document.data.priority,
-        assignee: document.data.assignee,
+        assignedTo: document.data.assignedTo,
         snippet: document.data.snippet,
         channel: document.data.channel,
         groupId: document.data.groupId,
@@ -101,7 +101,7 @@ export const fetchTicketsByMembers = createAsyncThunk(
     try {
       const db = getDatabaseService();
       const tickets = await db.getDocuments<Ticket>('tickets', {
-        constraints: [{ field: 'assignee', operator: 'in', value: memberIds }],
+        constraints: [{ field: 'assignedTo', operator: 'in', value: memberIds }],
         sortBy: { field: 'createdAt', order: 'desc' }
       });
       return tickets;
@@ -110,6 +110,23 @@ export const fetchTicketsByMembers = createAsyncThunk(
         return rejectWithValue(error.message);
       }
       return rejectWithValue('Failed to fetch tickets by members');
+    }
+  }
+);
+
+// Async thunk for updating a ticket
+export const updateTicket = createAsyncThunk(
+  'tickets/updateTicket',
+  async ({ id, data }: { id: string; data: Partial<Ticket> }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const updatedTicket = await db.updateDocument('tickets', id, data);
+      return updatedTicket;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to update ticket');
     }
   }
 );
@@ -178,6 +195,27 @@ const ticketsSlice = createSlice({
         state.tickets = action.payload;
       })
       .addCase(fetchTicketsByMembers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Update ticket
+      .addCase(updateTicket.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateTicket.fulfilled, (state) => {
+        state.loading = false;
+        // Update the ticket in the tickets array if it exists
+      /*  const index = state.tickets.findIndex(ticket => ticket.id === action.payload.id);
+        if (index !== -1) {
+          state.tickets[index] = { ...state.tickets[index], ...action.payload };
+        }
+        // Update currentTicket if it's the one being updated
+        if (state.currentTicket?.id === action.payload.id) {
+          state.currentTicket = { ...state.currentTicket, ...action.payload };
+        }*/
+      })
+      .addCase(updateTicket.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

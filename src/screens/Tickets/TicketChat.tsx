@@ -79,11 +79,6 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     }
   };
 
-  const handleAssign = ({ groupId, memberId }: { groupId: number; memberId?: string }) => {
-    // Here you would typically make an API call to update the assignment
-    console.log('Assigned to:', { groupId, memberId });
-  };
-
   if (messagesLoading || ticketLoading) {
     return <div className="flex h-full items-center justify-center">Loading...</div>;
   }
@@ -122,7 +117,6 @@ export function TicketChat({ ticketId }: TicketChatProps) {
             <div className="flex items-center gap-4">
               <AssignSelector
                 currentTicket={currentTicket}
-                onAssign={handleAssign}
               />
               {/* Space for other actions */}
             </div>

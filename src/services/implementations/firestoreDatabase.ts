@@ -11,7 +11,8 @@ import {
   orderBy,
   limit as firestoreLimit,
   startAfter,
-  addDoc
+  addDoc,
+  updateDoc
 } from 'firebase/firestore';
 import { Database, Document, QueryOptions } from '../../types/database';
 
@@ -77,6 +78,22 @@ export class FirestoreDatabase implements Database {
       createdAt: new Date(),
       updatedAt: new Date()
     };
+  }
+
+  async updateDocument(collectionName: string, id: string, data: Record<string, unknown>): Promise<Document> {
+    const docRef = doc(this.db, collectionName, id);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: new Date()
+    });
+    
+    // Fetch the updated document to return
+    const updatedDoc = await this.getDocument(collectionName, id);
+    if (!updatedDoc) {
+      throw new Error('Failed to fetch updated document');
+    }
+    
+    return updatedDoc;
   }
 
   async buildQuery(collectionName: string, options?: QueryOptions): Promise<FirestoreQuery<DocumentData>> {
