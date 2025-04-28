@@ -7,6 +7,7 @@ interface TicketsState {
   currentTicket: Ticket | null;
   loading: boolean;
   error: string | null;
+  activeListeners: { [key: string]: () => void }; // Track active listeners by ticket ID
 }
 
 const initialState: TicketsState = {
@@ -14,6 +15,7 @@ const initialState: TicketsState = {
   currentTicket: null,
   loading: false,
   error: null,
+  activeListeners: {},
 };
 
 // Async thunk for fetching tickets
@@ -131,6 +133,71 @@ export const updateTicket = createAsyncThunk(
   }
 );
 
+// Async thunk for listening to ticket changes
+export const listenToTicketChanges = createAsyncThunk(
+  'tickets/listenToTicketChanges',
+  async (ticketId: string, { dispatch, rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const unsubscribe = db.onDocumentChange('tickets', ticketId, (document) => {
+        if (document) {
+          const ticket = {
+            id: document.id,
+            updatedAt: document.updatedAt,
+            subject: document.data.subject,
+            status: document.data.status,
+            priority: document.data.priority,
+            assignedTo: document.data.assignedTo,
+            snippet: document.data.snippet,
+            channel: document.data.channel,
+            groupId: document.data.groupId,
+            tags: document.data.tags,
+            type: document.data.type,
+            source: document.data.source,
+            requestedAt: document.createdAt,
+            requestedBy: document.data.from,
+          } as Ticket;
+          
+          // Update current ticket if it's the one being listened to
+          dispatch(setCurrentTicket(ticket));
+          
+          // Update ticket in tickets array if it exists
+          dispatch(updateTicketInList(ticket));
+        }
+      });
+      
+      return { ticketId, unsubscribe };
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to listen to ticket changes');
+    }
+  }
+);
+
+// Async thunk for unregistering from ticket changes
+export const unregisterTicketListener = createAsyncThunk(
+  'tickets/unregisterTicketListener',
+  async (ticketId: string, { getState, rejectWithValue }) => {
+    try {
+      const state = getState() as { tickets: TicketsState };
+      const unsubscribe = state.tickets.activeListeners[ticketId];
+      
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      
+      return ticketId;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to unregister ticket listener');
+    }
+  }
+);
+
 const ticketsSlice = createSlice({
   name: 'tickets',
   initialState,
@@ -142,6 +209,15 @@ const ticketsSlice = createSlice({
     },
     clearCurrentTicket: (state) => {
       state.currentTicket = null;
+    },
+    setCurrentTicket: (state, action) => {
+      state.currentTicket = action.payload;
+    },
+    updateTicketInList: (state, action) => {
+      const index = state.tickets.findIndex(ticket => ticket.id === action.payload.id);
+      if (index !== -1) {
+        state.tickets[index] = action.payload;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -218,9 +294,26 @@ const ticketsSlice = createSlice({
       .addCase(updateTicket.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Listen to ticket changes
+      .addCase(listenToTicketChanges.fulfilled, (state, action) => {
+        const { ticketId, unsubscribe } = action.payload;
+        state.activeListeners[ticketId] = unsubscribe;
+      })
+      .addCase(listenToTicketChanges.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+      
+      // Unregister ticket listener
+      .addCase(unregisterTicketListener.fulfilled, (state, action) => {
+        const ticketId = action.payload;
+        delete state.activeListeners[ticketId];
+      })
+      .addCase(unregisterTicketListener.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { clearTickets, clearCurrentTicket } = ticketsSlice.actions;
+export const { clearTickets, clearCurrentTicket, setCurrentTicket, updateTicketInList } = ticketsSlice.actions;
 export default ticketsSlice.reducer; 

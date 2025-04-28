@@ -89,6 +89,12 @@ export class DatabaseService {
     const doc = await this.database.updateDocument(collection, id, data);
     return doc as T;
   }
+
+  public onDocumentChange<T>(collection: string, id: string, callback: (document: T | null) => void): () => void {
+    return this.database.onDocumentChange(collection, id, (document) => {
+      callback(document as T);
+    });
+  }
 }
 
 // Export the class and a function to get the instance

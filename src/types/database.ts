@@ -37,4 +37,5 @@ export interface Database {
   addDocument(collection: string, data: Record<string, unknown>): Promise<Document>;
   updateDocument(collection: string, id: string, data: Record<string, unknown>): Promise<Document>;
   buildQuery(collection: string, options?: QueryOptions): Promise<unknown>;
+  onDocumentChange(collection: string, id: string, callback: (document: Document | null) => void): () => void;
 } 

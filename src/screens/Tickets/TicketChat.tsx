@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchMessagesByTicketId } from '../../store/slices/messagesSlice';
-import { fetchTicketById } from '../../store/slices/ticketsSlice';
+import {listenToTicketChanges, unregisterTicketListener } from '../../store/slices/ticketsSlice';
 import { getDatabaseService } from '../../services/databaseService';
 import { Avatar } from '../../components/avatar';
 import { AssignSelector } from '../../data-components/assignSelector';
@@ -43,8 +43,12 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    dispatch(fetchTicketById(ticketId));
     dispatch(fetchMessagesByTicketId(ticketId));
+    dispatch(listenToTicketChanges(ticketId));
+
+    return () => {
+      dispatch(unregisterTicketListener(ticketId));
+    };
   }, [dispatch, ticketId]);
 
   const scrollToBottom = () => {
@@ -79,7 +83,7 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     }
   };
 
-  if (messagesLoading || ticketLoading) {
+  if (messagesLoading || ticketLoading && !currentTicket) {
     return <div className="flex h-full items-center justify-center">Loading...</div>;
   }
 

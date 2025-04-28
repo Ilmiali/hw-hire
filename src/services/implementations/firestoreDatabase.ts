@@ -12,7 +12,8 @@ import {
   limit as firestoreLimit,
   startAfter,
   addDoc,
-  updateDoc
+  updateDoc,
+  onSnapshot
 } from 'firebase/firestore';
 import { Database, Document, QueryOptions } from '../../types/database';
 
@@ -131,5 +132,28 @@ export class FirestoreDatabase implements Database {
     }
 
     return query(collectionRef, ...queryConstraints);
+  }
+
+  onDocumentChange(collectionName: string, id: string, callback: (document: Document | null) => void): () => void {
+    const docRef = doc(this.db, collectionName, id);
+    
+    return onSnapshot(docRef, (docSnap) => {
+      if (!docSnap.exists()) {
+        callback(null);
+        return;
+      }
+
+      const data = docSnap.data() as FirestoreDocumentData;
+      const { createdAt, updatedAt, ...rest } = data;
+      
+      const document: Document = {
+        id: docSnap.id,
+        data: rest,
+        createdAt: createdAt?.toDate(),
+        updatedAt: updatedAt?.toDate()
+      };
+      
+      callback(document);
+    });
   }
 } 
