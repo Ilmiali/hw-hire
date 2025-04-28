@@ -121,7 +121,7 @@ export function TableHeader({
         'border-b border-b-zinc-950/10 px-4 py-2 font-medium first:pl-(--gutter,--spacing(2)) last:pr-(--gutter,--spacing(2)) dark:border-b-white/10',
         grid && 'border-l border-l-zinc-950/5 first:border-l-0 dark:border-l-white/5',
         !bleed && 'sm:first:pl-1 sm:last:pr-1',
-        sticky && 'sticky top-0 z-10 bg-white/75 dark:bg-zinc-800/75 backdrop-blur-sm backdrop-filter',
+        sticky && 'sticky top-0 z-10 bg-white/75 dark:bg-black/75 backdrop-blur-sm backdrop-filter',
         sortable && 'cursor-pointer select-none'
       )}
     >

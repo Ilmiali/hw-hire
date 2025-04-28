@@ -1,6 +1,6 @@
 import { SidebarSection, SidebarItem, SidebarLabel, SidebarHeading } from '../components/sidebar';
 import { useDispatch, useSelector } from 'react-redux';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchOrganizationViews } from '../store/slices/viewsSlice';
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
 import { selectViews, selectViewsLoading } from '../store/slices/viewsSlice';
@@ -10,6 +10,7 @@ import { RootState } from '../store';
 import { Avatar } from '../components/avatar';
 import { PlusIcon } from '@heroicons/react/16/solid';
 import { Badge } from '../components/badge';
+import { CreateViewDialog } from '../database-components/createViewDialog';
 
 const getInitials = (name: string): string => {
   return name
@@ -27,6 +28,12 @@ export function ViewsSidebarSection() {
   const views = useSelector(selectViews);
   const loading = useSelector(selectViewsLoading);
   const userId = useSelector((state: RootState) => state.auth.user?.uid);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  const createView = (name: string) => {
+    console.log('createView with name:', name);
+    // TODO: Implement view creation logic
+  };
 
   useEffect(() => {
     if (currentOrganization && userId) {
@@ -63,12 +70,17 @@ export function ViewsSidebarSection() {
         </SidebarItem>
       ))}
       <SidebarItem
-        href="/views/new"
+        onClick={() => setIsCreateDialogOpen(true)}
         className="text-zinc-500 hover:text-zinc-600 dark:text-zinc-800 dark:hover:text-zinc-300"
       >
         <PlusIcon />
         <SidebarLabel className="text-zinc-500 dark:text-zinc-400">Add new</SidebarLabel>
       </SidebarItem>
+      <CreateViewDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onCreate={createView}
+      />
     </SidebarSection>
   );
 } 

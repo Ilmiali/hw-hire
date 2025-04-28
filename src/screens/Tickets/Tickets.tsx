@@ -78,31 +78,39 @@ export default function Tickets() {
     <SplitTwoLayout
       leftColumnWidth="450px"
       leftColumn={
-        <div className="h-screen p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">
-          <DatabaseTable<Ticket>
-            collection="tickets"
-            fields={fields}
-            pageSize={15}
-            selectable={false}
-            sticky
-            isLink
-            actions={['view', 'delete']}
-            defaultSortField="createdAt"
-            defaultSortOrder="desc"
-            queryOptions={queryOptions}
-            onAction={(action, item) => {
-              switch (action) {
-                case 'view':
-                  setSelectedTicketId(item.id);
-                  navigate(`?ticket=${item.id}`);
-                  break;
-                case 'delete':
-                  // Handle delete
-                  break;
-              }
-            }}
-            selectedId={selectedTicketId}
-          />
+        <div className="h-screen flex flex-col">
+          <div className="p-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 text-white">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🎯</span>
+              <h2 className="text-xl font-semibold">{currentView?.name || 'All Tickets'}</h2>
+            </div>
+          </div>
+          <div className="flex-1 p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">
+            <DatabaseTable<Ticket>
+              collection="tickets"
+              fields={fields}
+              pageSize={15}
+              selectable={false}
+              sticky
+              isLink
+              actions={['view', 'delete']}
+              defaultSortField="createdAt"
+              defaultSortOrder="desc"
+              queryOptions={queryOptions}
+              onAction={(action, item) => {
+                switch (action) {
+                  case 'view':
+                    setSelectedTicketId(item.id);
+                    navigate(`?ticket=${item.id}`);
+                    break;
+                  case 'delete':
+                    // Handle delete
+                    break;
+                }
+              }}
+              selectedId={selectedTicketId}
+            />
+          </div>
         </div>
       }
       rightColumn={

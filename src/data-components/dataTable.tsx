@@ -29,6 +29,7 @@ type DataTableProps<T extends { id: string }> = {
   onSelect?: (selectedIds: string[]) => void
   onAction?: (action: Action, item: T) => void
   selectedId?: string | null
+  dense?: boolean
 }
 
 export function DataTable<T extends { id: string; url?: string }>({ 
@@ -44,7 +45,8 @@ export function DataTable<T extends { id: string; url?: string }>({
   actions = ['view', 'edit', 'delete'],
   onSelect, 
   onAction,
-  selectedId = null
+  selectedId = null,
+  dense = false
 }: DataTableProps<T>) {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
 
@@ -114,7 +116,7 @@ export function DataTable<T extends { id: string; url?: string }>({
   }
 
   return (
-    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)] h-full" bleed sticky={sticky} sortField={sortField} sortOrder={sortOrder} onSort={onSort}>   
+    <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)] h-full" bleed sticky={sticky} sortField={sortField} sortOrder={sortOrder} onSort={onSort} dense={dense}>   
       <TableHead>
         <TableRow>
           {selectable && (
