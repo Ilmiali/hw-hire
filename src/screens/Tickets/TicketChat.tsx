@@ -5,7 +5,7 @@ import { fetchMessagesByTicketId } from '../../store/slices/messagesSlice';
 import {listenToTicketChanges, unregisterTicketListener } from '../../store/slices/ticketsSlice';
 import { getDatabaseService } from '../../services/databaseService';
 import { Avatar } from '../../components/avatar';
-import { AssignSelector } from '../../data-components/assignSelector';
+import { AssignSelector } from '../../database-components/assignSelector';
 import type { Message } from '../../types/message';
 import { formatTimeAgo } from '../../utils/time';
 import { getBadgeColor } from '../../utils/states';

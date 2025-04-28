@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGroups, fetchGroupById } from '../store/slices/groupsSlice';
 import { fetchUserById } from '../store/slices/usersSlice';
-import { GroupSelector } from '../components/group-selector';
+import { GroupSelector } from '../data-components/groupSelector';
 import { Group } from '../types/group';
 import { User } from '../store/slices/usersSlice';
 import { useSelector } from 'react-redux';
@@ -23,6 +23,7 @@ export function AssignSelector({ currentTicket, onAssign }: AssignSelectorProps)
   const [selectedGroupId, setSelectedGroupId] = useState<string>();
   const [selectedMemberId, setSelectedMemberId] = useState<string>();
   const [groupMembers, setGroupMembers] = useState<Record<string, User>>({});
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const currentOrganization = useSelector(selectCurrentOrganization);
   const userId = useSelector((state: RootState) => state.auth.user?.uid);
   
@@ -62,6 +63,7 @@ export function AssignSelector({ currentTicket, onAssign }: AssignSelectorProps)
   useEffect(() => {
     const fetchGroupMembers = async () => {
       if (currentTicket?.groupId) {
+        setIsLoadingMembers(true);
         const group = groups.find((g: Group) => g.id === currentTicket.groupId);
         if (group) {
           const memberPromises = group.members.map((memberId: string) => 
@@ -77,6 +79,8 @@ export function AssignSelector({ currentTicket, onAssign }: AssignSelectorProps)
             setGroupMembers(membersMap);
           } catch (error) {
             console.error('Failed to fetch group members:', error);
+          } finally {
+            setIsLoadingMembers(false);
           }
         }
       }
@@ -93,7 +97,7 @@ export function AssignSelector({ currentTicket, onAssign }: AssignSelectorProps)
       id: currentTicket.id, 
       data: { 
         groupId,
-        assignedTo: memberId
+        assignedTo: memberId || null
       } 
     })).unwrap();
     
@@ -103,8 +107,15 @@ export function AssignSelector({ currentTicket, onAssign }: AssignSelectorProps)
     }
   };
 
-  if (groupLoading) {
-    return <div>Loading...</div>;
+  if (groupLoading || isLoadingMembers) {
+    return (
+      <div className="flex items-center gap-2">
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Assignee</label>
+        <div className="w-72 h-10 flex items-center justify-center rounded-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
   }
 
   if (groupError) {

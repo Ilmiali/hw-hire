@@ -9,7 +9,7 @@ export interface Ticket {
   tags: string[];
   updatedAt: Date;
   requestedAt: Date;
-  assignedTo?: string;
+  assignedTo?: string | null;
   requestedBy: {
     email: string;
     name: string;

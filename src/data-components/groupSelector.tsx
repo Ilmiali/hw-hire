@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Avatar } from './avatar';
+import { Avatar } from '../components/avatar';
 import { ChevronUpDownIcon, ChevronLeftIcon, UserGroupIcon, UserCircleIcon, ChevronRightIcon, CheckIcon } from '@heroicons/react/20/solid';
 
 interface Member {
