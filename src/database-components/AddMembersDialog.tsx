@@ -1,46 +1,16 @@
 import { Dialog, DialogTitle, DialogBody, DialogActions } from '../components/dialog';
 import { Button } from '../components/button';
-import { Autosuggest, BaseItem } from '../components/autosuggest';
+import { BaseItem } from '../components/autosuggest';
+import { DatabaseAutosuggest } from './databaseAutosuggest';
 import { useState } from 'react';
-
+import { DatabaseFactory } from '../services/factories/databaseFactory';
+import { Avatar } from '../components/avatar';
 interface Member extends BaseItem {
   name: string;
   email: string;
   role: string;
   avatarUrl?: string;
 }
-
-// Mock data for possible members
-const mockMembers: Member[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'Admin',
-    avatarUrl: 'https://i.pravatar.cc/150?img=1'
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    role: 'Editor',
-    avatarUrl: 'https://i.pravatar.cc/150?img=2'
-  },
-  {
-    id: '3',
-    name: 'Bob Johnson',
-    email: 'bob@example.com',
-    role: 'Viewer',
-    avatarUrl: 'https://i.pravatar.cc/150?img=3'
-  },
-  {
-    id: '4',
-    name: 'Elmi',
-    email: 'elmi@example.com',
-    role: 'Member',
-    avatarUrl: ''
-  }
-];
 
 interface AddMembersDialogProps {
   isOpen: boolean;
@@ -50,6 +20,7 @@ interface AddMembersDialogProps {
 
 export function AddMembersDialog({ isOpen, onClose, onAdd }: AddMembersDialogProps) {
   const [selectedMembers, setSelectedMembers] = useState<Member[]>([]);
+  const database = DatabaseFactory.getInstance().getDatabase('firestore');
 
   const handleSelect = (member: Member) => {
     setSelectedMembers(prev => [...prev, member]);
@@ -68,21 +39,42 @@ export function AddMembersDialog({ isOpen, onClose, onAdd }: AddMembersDialogPro
     }
   };
 
+  const renderMember = (member: Member) => (
+    <div className="flex items-center">
+      <Avatar
+        src={member.avatarUrl}
+        initials={member.name.split(' ').map(name => name[0]).join('')}
+        className="w-6 h-6 mr-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+      />
+      <div>
+        <div className="flex items-center">
+          <div className="font-medium text-zinc-900 dark:text-zinc-100 capitalize mr-2">{member.name}</div>
+          <div className="text-sm text-zinc-500">{member.role}</div>
+        </div>
+        <div className="text-sm text-zinc-500">{member.email}</div>
+      </div>
+    </div>
+  );
+
   return (
     <Dialog open={isOpen} onClose={onClose}>
       <DialogTitle>Add Team Members</DialogTitle>
       <DialogBody>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Autosuggest<Member>
-            items={mockMembers}
+          <DatabaseAutosuggest<Member>
+            collectionName="users"
+            database={database}
             selectedItems={selectedMembers}
             onSelect={handleSelect}
             onRemove={handleRemove}
             placeholder="Type a name or email..."
-            filterItem={(member, query) =>
-              member.name.toLowerCase().includes(query.toLowerCase()) ||
-              member.email.toLowerCase().includes(query.toLowerCase())
-            }
+            searchField="name"
+            queryOptions={{
+              constraints: [
+              
+              ]
+            }}
+            renderItem={renderMember}
           />
           <DialogActions>
             <Button type="submit" disabled={selectedMembers.length === 0}>Add Members</Button>

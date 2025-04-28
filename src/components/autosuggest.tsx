@@ -1,6 +1,7 @@
 import { Input } from './input';
 import { Avatar } from './avatar';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { Combobox } from '@headlessui/react';
 
 // Base type that all items must have
 export interface BaseItem {
@@ -43,8 +44,6 @@ export function Autosuggest<T extends BaseItem>({
   className = '',
 }: AutosuggestProps<T>) {
   const [query, setQuery] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Default filter function if none provided
   const defaultFilterItem = (item: T, query: string) => {
@@ -63,22 +62,6 @@ export function Autosuggest<T extends BaseItem>({
       (filterItem ? filterItem(item, query) : defaultFilterItem(item, query))
   );
 
-  const handleSelect = (item: T) => {
-    onSelect(item);
-    setQuery('');
-    setDropdownOpen(false);
-    if (inputRef.current) inputRef.current.focus();
-  };
-
-  const handleInputFocus = () => {
-    setDropdownOpen(true);
-  };
-
-  const handleInputBlur = () => {
-    // Delay closing dropdown to allow click
-    setTimeout(() => setDropdownOpen(false), 100);
-  };
-
   // Default item renderer that assumes name, email, and avatarUrl properties
   const defaultRenderItem = (item: T) => {
     if (!hasUserDetails(item)) {
@@ -87,13 +70,13 @@ export function Autosuggest<T extends BaseItem>({
 
     return (
       <div className="flex items-center">
-        {item.avatarUrl && (
+        {
           <Avatar
             src={item.avatarUrl}
             initials={item.name[0]}
             className="w-6 h-6 mr-2"
           />
-        )}
+        }
         <div>
           <div className="font-medium">{item.name}</div>
           {item.email && (
@@ -124,7 +107,7 @@ export function Autosuggest<T extends BaseItem>({
 
     return (
       <span className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full px-3 py-1 text-sm">
-        {item.avatarUrl && (
+        {(
           <Avatar
             src={item.avatarUrl}
             initials={item.name[0]}
@@ -153,35 +136,42 @@ export function Autosuggest<T extends BaseItem>({
           </div>
         ))}
       </div>
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          value={query}
-          onChange={e => {
-            setQuery(e.target.value);
-            setDropdownOpen(true);
-          }}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          placeholder={placeholder}
-          className="w-full"
-          autoComplete="off"
-        />
-        {dropdownOpen && filteredItems.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-60 overflow-auto">
-            {filteredItems.map(item => (
-              <button
-                type="button"
+      <Combobox
+        as="div"
+        className="relative"
+        onChange={(item: T) => {
+          onSelect(item);
+          setQuery('');
+        }}
+      >
+        <div className="relative">
+          <Combobox.Input
+            as={Input}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={placeholder}
+            className="w-full"
+            autoComplete="off"
+          />
+        </div>
+        {filteredItems.length > 0 && (
+          <Combobox.Options className="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-60 overflow-auto">
+            {filteredItems.map((item) => (
+              <Combobox.Option
                 key={item.id}
-                className="flex items-center w-full px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left"
-                onMouseDown={() => handleSelect(item)}
+                value={item}
+                className={({ active }) =>
+                  `flex items-center w-full px-3 py-2 cursor-pointer ${
+                    active ? 'bg-zinc-100 dark:bg-zinc-800' : ''
+                  }`
+                }
               >
                 {renderItem ? renderItem(item) : defaultRenderItem(item)}
-              </button>
+              </Combobox.Option>
             ))}
-          </div>
+          </Combobox.Options>
         )}
-      </div>
+      </Combobox>
     </div>
   );
 } 
