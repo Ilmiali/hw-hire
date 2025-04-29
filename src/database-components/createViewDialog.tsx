@@ -3,8 +3,8 @@ import { Button } from '../components/button';
 import { Input } from '../components/input';
 import { Avatar } from '../components/avatar';
 import { useState } from 'react';
-import { MembersTable, Member } from './MembersTable';
-import { GroupsTable, Group } from './GroupsTable';
+import { MembersTable, Member } from './membersTable';
+import { GroupsTable, Group } from './groupsTable';
 
 interface CreateViewDialogProps {
   isOpen: boolean;
