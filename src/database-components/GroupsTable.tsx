@@ -62,7 +62,9 @@ export function GroupsTable({ groups, onGroupsChange }: GroupsTableProps) {
     <>
       <EntitiesTable<Group>
         entities={groups}
+        showChips={true}
         fields={groupFields}
+        nameField="name"
         title="Groups"
         addButtonText="Add Groups"
         onEntitiesChange={onGroupsChange}

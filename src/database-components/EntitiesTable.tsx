@@ -1,5 +1,6 @@
 import { Button } from '../components/button';
 import { DataTable, Field } from '../data-components/dataTable';
+import { EntitiesChips } from './EntitiesChips';
 
 export interface Entity {
   id: string;
@@ -21,6 +22,10 @@ interface EntitiesTableProps<T extends Entity> {
   rootPath?: string;
   actions?: ('view' | 'edit' | 'delete')[];
   onSelect?: (selectedIds: string[]) => void;
+  showChips?: boolean;
+  nameField?: keyof T;
+  avatarField?: keyof T;
+  maxChips?: number;
 }
 
 export function EntitiesTable<T extends Entity>({
@@ -38,6 +43,10 @@ export function EntitiesTable<T extends Entity>({
   rootPath,
   actions = ['view', 'edit', 'delete'],
   onSelect,
+  showChips = false,
+  nameField = 'name' as keyof T,
+  avatarField = 'avatarUrl' as keyof T,
+  maxChips,
 }: EntitiesTableProps<T>) {
   const handleEntityAction = (action: 'view' | 'edit' | 'delete', entity: T) => {
     if (action === 'delete') {
@@ -69,6 +78,14 @@ export function EntitiesTable<T extends Entity>({
           <p className="text-zinc-500 dark:text-zinc-400 text-sm">No items added yet</p>
           <p className="text-zinc-400 dark:text-zinc-500 text-xs mt-1">Click "{addButtonText}" to add new items</p>
         </div>
+      ) : showChips ? (
+        <EntitiesChips
+          entities={entities}
+          nameField={nameField}
+          avatarField={avatarField}
+          onRemove={(entity) => handleEntityAction('delete', entity)}
+          maxChips={maxChips}
+        />
       ) : (
         <DataTable
           data={entities}
