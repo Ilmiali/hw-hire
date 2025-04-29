@@ -4,22 +4,25 @@ import { Input } from '../components/input';
 import { Avatar } from '../components/avatar';
 import { useState } from 'react';
 import { MembersTable, Member } from './MembersTable';
+import { GroupsTable, Group } from './GroupsTable';
 
 interface CreateViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string, members: Member[]) => void;
+  onCreate: (name: string, groups: Group[], members: Member[]) => void;
 }
 
 export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialogProps) {
   const [name, setName] = useState('');
+  const [groups, setGroups] = useState<Group[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
-      onCreate(name.trim(), members);
+      onCreate(name.trim(), groups, members);
       setName('');
+      setGroups([]);
       setMembers([]);
       onClose();
     }
@@ -60,6 +63,11 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
                 className="flex-1"
               />
             </div>
+
+            <GroupsTable 
+              groups={groups}
+              onGroupsChange={setGroups}
+            />
 
             <MembersTable 
               members={members}
