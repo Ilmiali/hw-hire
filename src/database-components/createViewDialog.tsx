@@ -3,24 +3,27 @@ import { Button } from '../components/button';
 import { Input } from '../components/input';
 import { Avatar } from '../components/avatar';
 import { useState } from 'react';
-import { MembersTable, Member } from './membersTable';
-import { GroupsTable, Group } from './groupsTable';
+import { MembersTable, Member } from './MembersTable';
+import { GroupsTable, Group } from './GroupsTable';
+import { ColorPickerCard } from '../components/ColorPickerCard';
+import { ColorOption } from '../components/ColorPickerDialog';
 
 interface CreateViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string, groups: Group[], members: Member[]) => void;
+  onCreate: (name: string, groups: Group[], members: Member[], color: ColorOption) => void;
 }
 
 export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialogProps) {
   const [name, setName] = useState('');
   const [groups, setGroups] = useState<Group[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [selectedColor, setSelectedColor] = useState<ColorOption>({ id: 'blue', type: 'solid', value: '#64B5F6' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
-      onCreate(name.trim(), groups, members);
+      onCreate(name.trim(), groups, members, selectedColor);
       setName('');
       setGroups([]);
       setMembers([]);
@@ -51,9 +54,22 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
         <div className="text-zinc-500 text-sm mb-4">Views allow you to organize tickets and filter them by group</div>
         <DialogBody>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Cover Color */}
+            <ColorPickerCard
+              label="View Cover"
+              initialColor={selectedColor}
+              onColorChange={setSelectedColor}
+              className="mb-6"
+            />
+
             {/* Icon & Name */}
             <div className="flex items-center gap-3">
-              <Avatar initials={name ? name[0].toUpperCase() : 'T'} variant="round" className="size-10" />
+              <Avatar 
+                initials={name ? name[0].toUpperCase() : 'T'} 
+                variant="round" 
+                className="size-10"
+                style={{ background: selectedColor.value }}
+              />
               <Input
                 id="name"
                 value={name}
