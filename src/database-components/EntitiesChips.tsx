@@ -1,5 +1,5 @@
-import { Avatar } from '../components/avatar';
-import { Entity } from './EntitiesTable';
+import { Entity } from './entitiesTable';
+import { Chip } from '../components/chips';
 
 interface EntitiesChipsProps<T extends Entity> {
   entities: T[];
@@ -24,29 +24,12 @@ export function EntitiesChips<T extends Entity>({
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>
       {displayedEntities.map((entity) => (
-        <div
+        <Chip
           key={entity.id}
-          className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full px-3 py-1 text-sm"
-        >
-          <Avatar
-            src={entity.avatarUrl}
-            initials={entity[nameField].split(' ').map(name => name[0]).join('')}
-            className="w-6 h-6 mr-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-          />
-          <span className="capitalize text-zinc-900 dark:text-zinc-100">
-            {String(entity[nameField])}
-          </span>
-          {onRemove && (
-            <button
-              type="button"
-              className="ml-2 text-zinc-500 hover:text-red-500 focus:outline-none"
-              onClick={() => onRemove(entity)}
-              aria-label={`Remove ${entity[nameField]}`}
-            >
-              ×
-            </button>
-          )}
-        </div>
+          name={String(entity[nameField])}
+          avatarUrl={avatarField && entity[avatarField] ? String(entity[avatarField]) : undefined}
+          onRemove={onRemove ? () => onRemove(entity) : undefined}
+        />
       ))}
       {remainingCount > 0 && (
         <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full px-3 py-1 text-sm">

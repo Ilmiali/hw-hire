@@ -2,7 +2,7 @@ import { Avatar } from '../components/avatar';
 import { Field } from '../data-components/dataTable';
 import { useState } from 'react';
 import { AddEntitiesDialog } from './AddEntitiesDialog';
-import { EntitiesTable, Entity } from './EntitiesTable';
+import { EntitiesTable, Entity } from './entitiesTable';
 
 export interface Member extends Entity {
   id: string;
@@ -70,6 +70,7 @@ export function MembersTable({ members, onMembersChange }: MembersTableProps) {
         entities={members}
         fields={memberFields}
         title="Team Members"
+        showChips={true}
         addButtonText="Add Members"
         onEntitiesChange={onMembersChange}
         onAdd={() => setIsAddDialogOpen(true)}

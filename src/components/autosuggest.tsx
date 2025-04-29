@@ -6,6 +6,8 @@ import { Combobox } from '@headlessui/react';
 // Base type that all items must have
 export interface BaseItem {
   id: string;
+  name: string;
+  avatarUrl?: string | null;
 }
 
 // Type for items that have name, email, and avatarUrl

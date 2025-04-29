@@ -3,7 +3,8 @@ import { Database } from '../types/database';
 import { QueryOptions } from '../types/database';
 import { useEffect, useState } from 'react';
 import { Input } from '../components/input';
-import { Avatar } from '../components/avatar';
+import { Chip } from '../components/chips';
+
 interface DatabaseAutosuggestProps<T extends BaseItem> {
   collectionName: string;
   selectedItems: T[];
@@ -101,22 +102,11 @@ export function DatabaseAutosuggest<T extends BaseItem>({
         {selectedItems.map(item => (
           <div key={item.id}>
             {renderChip ? renderChip(item, onRemove) : (
-              <span className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full px-3 py-1 text-sm">
-                <Avatar
-                  src={item.avatarUrl}
-                  initials={item.name.split(' ').map(name => name[0]).join('')}
-                  className="w-6 h-6 mr-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                />
-                <span className="capitalize text-zinc-900 dark:text-zinc-100">{item.name}</span>
-                <button
-                  type="button"
-                  className="ml-2 text-zinc-500 hover:text-red-500 focus:outline-none"
-                  onClick={() => onRemove(item.id)}
-                  aria-label={`Remove ${item.id}`}
-                >
-                  ×
-                </button>
-              </span>
+              <Chip
+                name={item.name}
+                avatarUrl={item.avatarUrl}
+                onRemove={() => onRemove(item.id)}
+              />
             )}
           </div>
         ))}

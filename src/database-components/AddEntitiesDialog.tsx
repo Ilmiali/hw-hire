@@ -4,7 +4,7 @@ import { BaseItem } from '../components/autosuggest';
 import { DatabaseAutosuggest } from './databaseAutosuggest';
 import { useState } from 'react';
 import { DatabaseFactory } from '../services/factories/databaseFactory';
-import { Entity } from './EntitiesTable';
+import { Entity } from './entitiesTable';
 import { QueryOptions } from '../types/database';
 
 interface AddEntitiesDialogProps<T extends Entity & BaseItem> {
