@@ -82,6 +82,55 @@ export const fetchOrganizationViews = createAsyncThunk(
   }
 );
 
+export const createView = createAsyncThunk(
+  'views/createView',
+  async ({ 
+    name, 
+    organizationId, 
+    members,
+    groups,
+    layout
+  }: { 
+    name: string; 
+    organizationId: string; 
+    members: string[];
+    groups: string[];
+    layout: {
+      cover: string;
+      coverType: string;
+      iconType: string;
+      icon: string;
+    }
+  }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const newView: Omit<View, 'id'> = {
+        name,
+        organizationId,
+        members,
+        groups,
+        layout,
+        totalNumTickets: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const viewDoc = await db.addDocument('views', newView);
+      
+      return {
+        id: viewDoc.id,
+        ...newView,
+        createdAt: viewDoc.createdAt || new Date(),
+        updatedAt: viewDoc.updatedAt || new Date()
+      } as View;
+    } catch (error) {
+      console.error('Error creating view:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create view';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 export const viewsSlice = createSlice({
   name: 'views',
   initialState,
@@ -119,6 +168,19 @@ export const viewsSlice = createSlice({
         }
       })
       .addCase(fetchOrganizationViews.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(createView.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createView.fulfilled, (state, action) => {
+        state.loading = false;
+        state.views.push(action.payload);
+        state.currentView = action.payload;
+      })
+      .addCase(createView.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

@@ -1,3 +1,5 @@
+import { useSelector } from 'react-redux';
+import { selectCurrentOrganization } from '../store/slices/organizationSlice';
 import { Dialog, DialogTitle, DialogBody, DialogActions } from '../components/dialog';
 import { Button } from '../components/button';
 import { Input } from '../components/input';
@@ -20,6 +22,7 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedColor, setSelectedColor] = useState<ColorOption>({ id: 'blue', type: 'solid', value: '#64B5F6' });
   const [selectedEmoji, setSelectedEmoji] = useState('📋');
+  const currentOrganization = useSelector(selectCurrentOrganization);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const handleCreate = () => {
@@ -31,7 +34,7 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
         groups: groupIds,
         members: memberIds,
         name: name.trim(),
-        organizationId: 'your-organization-id',
+        organizationId: currentOrganization?.id,
         layout: {
           cover: selectedColor.value,
           coverType: selectedColor.type === 'gradient' ? 'gradient' : 'flat',
