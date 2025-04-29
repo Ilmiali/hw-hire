@@ -1,17 +1,17 @@
 import { Dialog, DialogTitle, DialogBody, DialogActions } from '../components/dialog';
 import { Button } from '../components/button';
 import { Input } from '../components/input';
-import { Avatar } from '../components/avatar';
 import { useState } from 'react';
 import { MembersTable, Member } from './MembersTable';
 import { GroupsTable, Group } from './GroupsTable';
 import { ColorPickerCard } from '../components/ColorPickerCard';
 import { ColorOption } from '../components/ColorPickerDialog';
+import { EmojiPicker } from '../components/EmojiPicker';
 
 interface CreateViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string, groups: Group[], members: Member[], color: ColorOption) => void;
+  onCreate: (name: string, groups: Group[], members: Member[], color: ColorOption, emoji: string) => void;
 }
 
 export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialogProps) {
@@ -19,11 +19,13 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
   const [groups, setGroups] = useState<Group[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedColor, setSelectedColor] = useState<ColorOption>({ id: 'blue', type: 'solid', value: '#64B5F6' });
+  const [selectedEmoji, setSelectedEmoji] = useState('📋');
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
-      onCreate(name.trim(), groups, members, selectedColor);
+      onCreate(name.trim(), groups, members, selectedColor, selectedEmoji);
       setName('');
       setGroups([]);
       setMembers([]);
@@ -62,14 +64,22 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
               className="mb-6"
             />
 
-            {/* Icon & Name */}
+            {/* Emoji & Name */}
             <div className="flex items-center gap-3">
-              <Avatar 
-                initials={name ? name[0].toUpperCase() : 'T'} 
-                variant="round" 
-                className="size-10"
+              <button
+                type="button"
+                onClick={() => setIsEmojiPickerOpen(true)}
+                className="relative group h-10 w-10 flex items-center justify-center rounded-lg text-2xl"
                 style={{ background: selectedColor.value }}
-              />
+              >
+                <span className="transform group-hover:scale-110 transition-transform">
+                  {selectedEmoji}
+                </span>
+                <div className="absolute inset-0 rounded-lg ring-2 ring-transparent group-hover:ring-blue-500 transition-all" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-xs text-white bg-black/50 px-2 py-1 rounded">Change</span>
+                </div>
+              </button>
               <Input
                 id="name"
                 value={name}
@@ -96,6 +106,12 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
           </form>
         </DialogBody>
       </div>
+
+      <EmojiPicker
+        isOpen={isEmojiPickerOpen}
+        onClose={() => setIsEmojiPickerOpen(false)}
+        onEmojiSelect={setSelectedEmoji}
+      />
     </Dialog>
   );
 } 
