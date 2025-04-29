@@ -22,9 +22,24 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
   const [selectedEmoji, setSelectedEmoji] = useState('📋');
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = () => {
     if (name.trim()) {
+      const groupIds = groups.map(group => group.id);
+      const memberIds = members.map(member => member.id);
+      
+      console.log({
+        groups: groupIds,
+        members: memberIds,
+        name: name.trim(),
+        organizationId: 'your-organization-id',
+        layout: {
+          cover: selectedColor.value,
+          coverType: selectedColor.type === 'gradient' ? 'gradient' : 'flat',
+          iconType: 'emoji',
+          icon: selectedEmoji
+        }
+      });
+
       onCreate(name.trim(), groups, members, selectedColor, selectedEmoji);
       setName('');
       setGroups([]);
@@ -32,6 +47,8 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
       onClose();
     }
   };
+
+  const isCreateDisabled = !name.trim() || groups.length === 0;
 
   return (
     <Dialog open={isOpen} onClose={onClose}>
@@ -55,7 +72,7 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
         <DialogTitle>Create a new view</DialogTitle>
         <div className="text-zinc-500 text-sm mb-4">Views allow you to organize tickets and filter them by group</div>
         <DialogBody>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             {/* Cover Color */}
             <ColorPickerCard
               label="View Cover"
@@ -101,9 +118,16 @@ export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialog
             />
 
             <DialogActions>
-              <Button type="submit" color="blue">Create view</Button>
+              <Button 
+                type="button" 
+                onClick={handleCreate} 
+                color="blue"
+                disabled={isCreateDisabled}
+              >
+                Create view
+              </Button>
             </DialogActions>
-          </form>
+          </div>
         </DialogBody>
       </div>
 
