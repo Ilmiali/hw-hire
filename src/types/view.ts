@@ -7,6 +7,12 @@ export interface View {
   totalNumTickets: number;
   members: string[];
   groups: Group[];
+  layout: {
+    cover: string;
+    coverType: string;
+    iconType: string;
+    icon: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 } 

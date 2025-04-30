@@ -30,11 +30,6 @@ export function ViewsSidebarSection() {
   const userId = useSelector((state: RootState) => state.auth.user?.uid);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const createView = (name: string) => {
-    console.log('createView with name:', name);
-    // TODO: Implement view creation logic
-  };
-
   useEffect(() => {
     if (currentOrganization && userId) {
       dispatch(fetchOrganizationViews({ 
@@ -57,12 +52,24 @@ export function ViewsSidebarSection() {
           href={`/views/${view.id}`}
           current={location.pathname === `/views/${view.id}`}
         >
-          <Avatar 
-            variant="square"
-            light={true}
-            initials={getInitials(view.name)}
-            className="bg-blue-500 text-white"
-          />
+          {view.layout?.iconType === 'emoji' ? (
+            <div 
+              className="h-6 w-6 flex items-center justify-center rounded-lg text-lg"
+              style={{ 
+                background: view.layout?.cover || '#64B5F6',
+                backgroundImage: view.layout?.coverType === 'gradient' ? `linear-gradient(${view.layout?.cover})` : undefined
+              }}
+            >
+              {view.layout?.icon || getInitials(view.name)}
+            </div>
+          ) : (
+            <Avatar 
+              variant="square"
+              light={true}
+              initials={getInitials(view.name)}
+              className="bg-blue-500 text-white"
+            />
+          )}
           <SidebarLabel>{view.name}</SidebarLabel>
           <Badge className="ml-auto bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
             {view.totalNumTickets}
@@ -79,7 +86,6 @@ export function ViewsSidebarSection() {
       <CreateViewDialog
         isOpen={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
-        onCreate={createView}
       />
     </SidebarSection>
   );

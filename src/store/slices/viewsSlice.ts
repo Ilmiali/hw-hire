@@ -65,6 +65,7 @@ export const fetchOrganizationViews = createAsyncThunk(
           createdAt: view.createdAt || new Date(),
           updatedAt: view.updatedAt || new Date(),
           id: view.id,
+          layout: view.data.layout as View['layout'],
           name: view.data.name as string,
           organizationId: view.data.organizationId as string,
           members: view.data.members as View['members'],
@@ -72,7 +73,6 @@ export const fetchOrganizationViews = createAsyncThunk(
           totalNumTickets
         };
       }));
-      console.log('viewsWithGroups', viewsWithGroups);
       return viewsWithGroups;
     } catch (error) {
       console.error('Error fetching views:', error);
@@ -108,21 +108,14 @@ export const createView = createAsyncThunk(
         name,
         organizationId,
         members,
-        groups,
+        groups, // Convert string IDs to Group objects
         layout,
         totalNumTickets: 0,
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
-      const viewDoc = await db.addDocument('views', newView);
-      
-      return {
-        id: viewDoc.id,
-        ...newView,
-        createdAt: viewDoc.createdAt || new Date(),
-        updatedAt: viewDoc.updatedAt || new Date()
-      } as View;
+      await db.addDocument('views', newView);
     } catch (error) {
       console.error('Error creating view:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create view';
@@ -175,10 +168,8 @@ export const viewsSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(createView.fulfilled, (state, action) => {
+      .addCase(createView.fulfilled, (state) => {
         state.loading = false;
-        state.views.push(action.payload);
-        state.currentView = action.payload;
       })
       .addCase(createView.rejected, (state, action) => {
         state.loading = false;

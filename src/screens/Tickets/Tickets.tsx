@@ -79,9 +79,21 @@ export default function Tickets() {
       leftColumnWidth="450px"
       leftColumn={
         <div className="h-screen flex flex-col">
-          <div className="p-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 text-white">
+          <div 
+            className="p-4 text-white"
+            style={{ 
+              background: currentView?.layout?.cover || 'linear-gradient(to right, #ec4899, #8b5cf6, #3b82f6)',
+              backgroundImage: currentView?.layout?.coverType === 'gradient' 
+                ? `linear-gradient(${currentView.layout.cover})` 
+                : undefined
+            }}
+          >
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🎯</span>
+              {currentView?.layout?.iconType === 'emoji' ? (
+                <span className="text-2xl">{currentView.layout.icon}</span>
+              ) : (
+                <span className="text-2xl">🎯</span>
+              )}
               <h2 className="text-xl font-semibold">{currentView?.name || 'All Tickets'}</h2>
             </div>
           </div>

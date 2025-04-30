@@ -1,5 +1,6 @@
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
+import { createView, fetchOrganizationViews } from '../store/slices/viewsSlice';
 import { Dialog, DialogTitle, DialogBody, DialogActions } from '../components/dialog';
 import { Button } from '../components/button';
 import { Input } from '../components/input';
@@ -9,41 +10,44 @@ import { GroupsTable, Group } from './GroupsTable';
 import { ColorPickerCard } from '../components/ColorPickerCard';
 import { ColorOption } from '../components/ColorPickerDialog';
 import { EmojiPicker } from '../components/EmojiPicker';
+import { AppDispatch, RootState } from '../store';
 
 interface CreateViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string, groups: Group[], members: Member[], color: ColorOption, emoji: string) => void;
 }
 
-export function CreateViewDialog({ isOpen, onClose, onCreate }: CreateViewDialogProps) {
+export function CreateViewDialog({ isOpen, onClose }: CreateViewDialogProps) {
+  const dispatch = useDispatch<AppDispatch>();
   const [name, setName] = useState('');
   const [groups, setGroups] = useState<Group[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedColor, setSelectedColor] = useState<ColorOption>({ id: 'blue', type: 'solid', value: '#64B5F6' });
   const [selectedEmoji, setSelectedEmoji] = useState('📋');
   const currentOrganization = useSelector(selectCurrentOrganization);
+  const user = useSelector((state: RootState) => state.auth.user);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const handleCreate = () => {
-    if (name.trim()) {
+    if (name.trim() && currentOrganization) {
       const groupIds = groups.map(group => group.id);
       const memberIds = members.map(member => member.id);
       
-      console.log({
-        groups: groupIds,
-        members: memberIds,
+      dispatch(createView({
         name: name.trim(),
-        organizationId: currentOrganization?.id,
+        organizationId: currentOrganization.id,
+        members: memberIds,
+        groups: groupIds,
         layout: {
           cover: selectedColor.value,
           coverType: selectedColor.type === 'gradient' ? 'gradient' : 'flat',
           iconType: 'emoji',
           icon: selectedEmoji
         }
-      });
+      }));
 
-      onCreate(name.trim(), groups, members, selectedColor, selectedEmoji);
+      dispatch(fetchOrganizationViews({ organizationId: currentOrganization.id, userId: user.uid }));
+
       setName('');
       setGroups([]);
       setMembers([]);
