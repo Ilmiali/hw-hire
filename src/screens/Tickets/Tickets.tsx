@@ -80,9 +80,9 @@ export default function Tickets() {
       leftColumn={
         <div className="h-screen flex flex-col">
           <div 
-            className="p-4 text-white"
+            className="p-4"
             style={{ 
-              background: currentView?.layout?.cover || 'linear-gradient(to right, #ec4899, #8b5cf6, #3b82f6)',
+              background: currentView?.layout?.cover || 'transparent',
               backgroundImage: currentView?.layout?.coverType === 'gradient' 
                 ? `linear-gradient(${currentView.layout.cover})` 
                 : undefined
@@ -90,11 +90,15 @@ export default function Tickets() {
           >
             <div className="flex items-center gap-2">
               {currentView?.layout?.iconType === 'emoji' ? (
-                <span className="text-2xl">{currentView.layout.icon}</span>
+                <span className={`text-2xl ${!currentView?.layout?.cover ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'}`}>
+                  {currentView.layout.icon}
+                </span>
               ) : (
-                <span className="text-2xl">🎯</span>
+                <span className="text-2xl"></span>
               )}
-              <h2 className="text-xl font-semibold">{currentView?.name || 'All Tickets'}</h2>
+              <h2 className={`text-xl font-semibold ${!currentView?.layout?.cover ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'}`}>
+                {currentView?.name || 'All Tickets'}
+              </h2>
             </div>
           </div>
           <div className="flex-1 p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">

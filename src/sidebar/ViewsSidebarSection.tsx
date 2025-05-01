@@ -31,6 +31,7 @@ export function ViewsSidebarSection() {
   const loading = useSelector(selectViewsLoading);
   const userId = useSelector((state: RootState) => state.auth.user?.uid);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingViewId, setEditingViewId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentOrganization && userId) {
@@ -83,7 +84,10 @@ export function ViewsSidebarSection() {
                 <EllipsisHorizontalIcon className="h-3 w-3 text-gray-400 dark:text-gray-500" />
               </DropdownButton>
               <DropdownMenu className="min-w-48" anchor="bottom end">
-                <DropdownItem>
+                <DropdownItem onClick={() => {
+                  setEditingViewId(view.id);
+                  setIsCreateDialogOpen(true);
+                }}>
                   <PencilIcon />
                   <DropdownLabel>Edit view</DropdownLabel>
                 </DropdownItem>
@@ -97,7 +101,10 @@ export function ViewsSidebarSection() {
         </div>
       ))}
       <SidebarItem
-        onClick={() => setIsCreateDialogOpen(true)}
+        onClick={() => {
+          setEditingViewId(null);
+          setIsCreateDialogOpen(true);
+        }}
         className="text-zinc-500 hover:text-zinc-600 dark:text-zinc-800 dark:hover:text-zinc-300"
       >
         <PlusIcon />
@@ -105,7 +112,11 @@ export function ViewsSidebarSection() {
       </SidebarItem>
       <CreateViewDialog
         isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
+        onClose={() => {
+          setIsCreateDialogOpen(false);
+          setEditingViewId(null);
+        }}
+        viewId={editingViewId || undefined}
       />
     </SidebarSection>
   );

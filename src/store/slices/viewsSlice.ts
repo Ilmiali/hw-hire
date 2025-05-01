@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { Document, getDatabaseService } from '../../services/databaseService';
-import { View } from '../../types/view';
+import { View, DatabaseView } from '../../types/view';
 import { Group } from '../../types/group';
 import { RootState } from '../index';
 
@@ -71,7 +71,7 @@ export const fetchOrganizationViews = createAsyncThunk(
           members: view.data.members as View['members'],
           groups: validGroups,
           totalNumTickets
-        };
+        } as View;
       }));
       return viewsWithGroups;
     } catch (error) {
@@ -104,11 +104,11 @@ export const createView = createAsyncThunk(
   }, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const newView: Omit<View, 'id'> = {
+      const newView: Omit<DatabaseView, 'id'> = {
         name,
         organizationId,
         members,
-        groups, // Convert string IDs to Group objects
+        groups,
         layout,
         totalNumTickets: 0,
         createdAt: new Date(),
@@ -119,6 +119,25 @@ export const createView = createAsyncThunk(
     } catch (error) {
       console.error('Error creating view:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create view';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const updateView = createAsyncThunk(
+  'views/updateView',
+  async ({ id, data }: { id: string; data: Partial<View> }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const updateData: Partial<DatabaseView> = {
+        ...data,
+        groups: data.groups ? (data.groups as Group[]).map(group => group.id) : undefined,
+        updatedAt: new Date()
+      };
+      await db.updateDocument('views', id, updateData);
+    } catch (error) {
+      console.error('Error updating view:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update view';
       return rejectWithValue(errorMessage);
     }
   }
@@ -172,6 +191,17 @@ export const viewsSlice = createSlice({
         state.loading = false;
       })
       .addCase(createView.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(updateView.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateView.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(updateView.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

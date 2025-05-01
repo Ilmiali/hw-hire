@@ -1,50 +1,112 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
-import { createView, fetchOrganizationViews } from '../store/slices/viewsSlice';
+import { createView, fetchOrganizationViews, selectViewById } from '../store/slices/viewsSlice';
 import { Dialog, DialogTitle, DialogBody, DialogActions } from '../components/dialog';
 import { Button } from '../components/button';
 import { Input } from '../components/input';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MembersTable, Member } from './MembersTable';
-import { GroupsTable, Group } from './GroupsTable';
+import { GroupsTable, Group as TableGroup } from './GroupsTable';
 import { ColorPickerCard } from '../components/ColorPickerCard';
 import { ColorOption } from '../components/ColorPickerDialog';
 import { EmojiPicker } from '../components/EmojiPicker';
 import { AppDispatch, RootState } from '../store';
+import { updateView } from '../store/slices/viewsSlice';
+import { Group } from '../types/group';
 
 interface CreateViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  viewId?: string;
 }
 
-export function CreateViewDialog({ isOpen, onClose }: CreateViewDialogProps) {
+export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [name, setName] = useState('');
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [groups, setGroups] = useState<TableGroup[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedColor, setSelectedColor] = useState<ColorOption>({ id: 'blue', type: 'solid', value: '#64B5F6' });
   const [selectedEmoji, setSelectedEmoji] = useState('📋');
   const currentOrganization = useSelector(selectCurrentOrganization);
   const user = useSelector((state: RootState) => state.auth.user);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const existingView = useSelector((state: RootState) => viewId ? selectViewById(state, viewId) : null);
+
+  useEffect(() => {
+    if (existingView) {
+      setName(existingView.name);
+      setGroups(existingView.groups.map(group => ({
+        id: group.id,
+        name: group.name,
+        totalNumTickets: group.totalNumTickets,
+        organizationId: group.organizationId,
+        members: group.members
+      })));
+      setMembers(existingView.members.map(id => ({ 
+        id, 
+        name: '', 
+        email: '', 
+        role: 'member' 
+      }))); // We'll need to fetch member details
+      setSelectedColor({
+        id: 'custom',
+        type: existingView.layout.coverType === 'gradient' ? 'gradient' : 'solid',
+        value: existingView.layout.cover
+      });
+      setSelectedEmoji(existingView.layout.icon);
+    } else {
+      setName('');
+      setGroups([]);
+      setMembers([]);
+      setSelectedColor({ id: 'blue', type: 'solid', value: '#64B5F6' });
+      setSelectedEmoji('📋');
+    }
+  }, [existingView]);
 
   const handleCreate = () => {
-    if (name.trim() && currentOrganization) {
+    if (name.trim() && currentOrganization && user) {
       const groupIds = groups.map(group => group.id);
       const memberIds = members.map(member => member.id);
       
-      dispatch(createView({
-        name: name.trim(),
-        organizationId: currentOrganization.id,
-        members: memberIds,
-        groups: groupIds,
-        layout: {
-          cover: selectedColor.value,
-          coverType: selectedColor.type === 'gradient' ? 'gradient' : 'flat',
-          iconType: 'emoji',
-          icon: selectedEmoji
-        }
-      }));
+      if (viewId && existingView) {
+        // Update existing view
+        dispatch(updateView({
+          id: viewId,
+          data: {
+            name: name.trim(),
+            members: memberIds,
+            groups: groups.map(group => ({
+              id: group.id,
+              name: group.name,
+              totalNumTickets: group.totalNumTickets,
+              organizationId: group.organizationId,
+              members: group.members,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            } as Group)),
+            layout: {
+              cover: selectedColor.value,
+              coverType: selectedColor.type === 'gradient' ? 'gradient' : 'flat',
+              iconType: 'emoji',
+              icon: selectedEmoji
+            }
+          }
+        }));
+      } else {
+        // Create new view
+        dispatch(createView({
+          name: name.trim(),
+          organizationId: currentOrganization.id,
+          members: memberIds,
+          groups: groupIds,
+          layout: {
+            cover: selectedColor.value,
+            coverType: selectedColor.type === 'gradient' ? 'gradient' : 'flat',
+            iconType: 'emoji',
+            icon: selectedEmoji
+          }
+        }));
+      }
 
       dispatch(fetchOrganizationViews({ organizationId: currentOrganization.id, userId: user.uid }));
 
@@ -76,7 +138,7 @@ export function CreateViewDialog({ isOpen, onClose }: CreateViewDialogProps) {
             <path d="M6 6L14 14M14 6L6 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
-        <DialogTitle>Create a new view</DialogTitle>
+        <DialogTitle>{viewId ? 'Edit view' : 'Create a new view'}</DialogTitle>
         <div className="text-zinc-500 text-sm mb-4">Views allow you to organize tickets and filter them by group</div>
         <DialogBody>
           <div className="space-y-6">
@@ -131,7 +193,7 @@ export function CreateViewDialog({ isOpen, onClose }: CreateViewDialogProps) {
                 color="blue"
                 disabled={isCreateDisabled}
               >
-                Create view
+                {viewId ? 'Update view' : 'Create view'}
               </Button>
             </DialogActions>
           </div>

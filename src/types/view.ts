@@ -15,4 +15,21 @@ export interface View {
   };
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface DatabaseView {
+  id: string;
+  name: string;
+  organizationId: string;
+  totalNumTickets: number;
+  members: string[];
+  groups: string[];
+  layout: {
+    cover: string;
+    coverType: string;
+    iconType: string;
+    icon: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
 } 
