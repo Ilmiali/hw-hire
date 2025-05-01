@@ -16,6 +16,8 @@ interface AddEntitiesDialogProps<T extends Entity & BaseItem> {
   title: string;
   renderItem: (entity: T) => React.ReactNode;
   queryOptions?: QueryOptions;
+  defineRole?: boolean;
+  availableRoles?: string[];
 }
 
 export function AddEntitiesDialog<T extends Entity & BaseItem>({
@@ -27,16 +29,26 @@ export function AddEntitiesDialog<T extends Entity & BaseItem>({
   title,
   renderItem,
   queryOptions = {},
+  defineRole = false,
+  availableRoles = [],
 }: AddEntitiesDialogProps<T>) {
-  const [selectedEntities, setSelectedEntities] = useState<T[]>([]);
+  const [selectedEntities, setSelectedEntities] = useState<(T & { role?: string })[]>([]);
   const database = DatabaseFactory.getInstance().getDatabase('firestore');
 
-  const handleSelect = (entity: T) => {
+  const handleSelect = (entity: T & { role?: string }) => {
     setSelectedEntities(prev => [...prev, entity]);
   };
 
   const handleRemove = (id: string) => {
     setSelectedEntities(prev => prev.filter(e => e.id !== id));
+  };
+
+  const handleRoleChange = (id: string, role: string) => {
+    setSelectedEntities(prev => 
+      prev.map(entity => 
+        entity.id === id ? { ...entity, role } : entity
+      )
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -53,7 +65,7 @@ export function AddEntitiesDialog<T extends Entity & BaseItem>({
       <DialogTitle>{title}</DialogTitle>
       <DialogBody>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <DatabaseAutosuggest<T>
+          <DatabaseAutosuggest<T & { role?: string }>
             collectionName={collectionName}
             database={database}
             selectedItems={selectedEntities}
@@ -63,6 +75,9 @@ export function AddEntitiesDialog<T extends Entity & BaseItem>({
             searchField={searchField}
             queryOptions={queryOptions}
             renderItem={renderItem}
+            defineRole={defineRole}
+            availableRoles={availableRoles}
+            onRoleChange={handleRoleChange}
           />
           <DialogActions>
             <Button type="submit" disabled={selectedEntities.length === 0}>Add</Button>
