@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
 import { fetchOrganizationViews } from '../store/slices/viewsSlice';
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
-import { selectViews, selectViewsLoading } from '../store/slices/viewsSlice';
+import { selectViews } from '../store/slices/viewsSlice';
 import { useLocation } from 'react-router-dom';
 import { AppDispatch } from '../store';
 import { RootState } from '../store';
@@ -28,7 +28,6 @@ export function ViewsSidebarSection() {
   const location = useLocation();
   const currentOrganization = useSelector(selectCurrentOrganization);
   const views = useSelector(selectViews);
-  const loading = useSelector(selectViewsLoading);
   const userId = useSelector((state: RootState) => state.auth.user?.uid);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingViewId, setEditingViewId] = useState<string | null>(null);
@@ -42,7 +41,7 @@ export function ViewsSidebarSection() {
     }
   }, [dispatch, currentOrganization, userId]);
 
-  if (!currentOrganization || !userId || loading) {
+  if (!currentOrganization || !userId) {
     return null;
   }
 
@@ -55,15 +54,17 @@ export function ViewsSidebarSection() {
             href={`/views/${view.id}`}
             current={location.pathname === `/views/${view.id}`}
           >
-            {view.layout?.iconType === 'emoji' ? (
+            {view.layout?.icon && view.layout?.icon.type === 'emoji' ? (
               <div 
                 className="h-6 w-6 flex items-center justify-center rounded-lg text-lg"
                 style={{ 
-                  background: view.layout?.cover || '#64B5F6',
-                  backgroundImage: view.layout?.coverType === 'gradient' ? `linear-gradient(${view.layout?.cover})` : undefined
+                  background: view.layout?.cover ? view.layout?.cover.value : '#64B5F6',
+                  ...(view.layout?.cover?.type === 'gradient' && {
+                    backgroundImage: `linear-gradient(${view.layout?.cover?.value})`
+                  })
                 }}
               >
-                {view.layout?.icon || getInitials(view.name)}
+                {view.layout?.icon.value || getInitials(view.name)}
               </div>
             ) : (
               <Avatar 

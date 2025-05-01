@@ -96,10 +96,15 @@ export const createView = createAsyncThunk(
     members: string[];
     groups: string[];
     layout: {
-      cover: string;
-      coverType: string;
-      iconType: string;
-      icon: string;
+      cover: {
+        id: string;
+        type: string;
+        value: string;
+      };
+      icon: {
+        type: string;
+        value: string;
+      };
     }
   }, { rejectWithValue }) => {
     try {
@@ -136,7 +141,6 @@ export const updateView = createAsyncThunk(
       };
       await db.updateDocument('views', id, updateData);
     } catch (error) {
-      console.error('Error updating view:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to update view';
       return rejectWithValue(errorMessage);
     }

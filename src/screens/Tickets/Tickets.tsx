@@ -82,16 +82,16 @@ export default function Tickets() {
           <div 
             className="p-4"
             style={{ 
-              background: currentView?.layout?.cover || 'transparent',
-              backgroundImage: currentView?.layout?.coverType === 'gradient' 
-                ? `linear-gradient(${currentView.layout.cover})` 
+              background: currentView?.layout?.cover ? currentView.layout.cover.value : 'transparent',
+              backgroundImage: currentView?.layout?.cover?.type === 'gradient' 
+                ? `linear-gradient(${currentView.layout.cover.value})` 
                 : undefined
             }}
           >
             <div className="flex items-center gap-2">
-              {currentView?.layout?.iconType === 'emoji' ? (
+              {currentView?.layout?.icon && currentView.layout.icon.type === 'emoji' ? (
                 <span className={`text-2xl ${!currentView?.layout?.cover ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'}`}>
-                  {currentView.layout.icon}
+                  {currentView.layout.icon.value}
                 </span>
               ) : (
                 <span className="text-2xl"></span>

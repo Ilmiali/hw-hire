@@ -41,7 +41,6 @@ export const fetchUsers = createAsyncThunk(
         ],
         sortBy: { field: 'name', order: 'asc' }
       });
-
       return users.map(user => ({
         id: user.id,
         name: user.data.name as string,
@@ -52,6 +51,7 @@ export const fetchUsers = createAsyncThunk(
         updatedAt: user.updatedAt || new Date()
       })) as User[];
     } catch (error) {
+      console.error('Error fetching users:', error);
       if (error instanceof Error) {
         return rejectWithValue(error.message);
       }

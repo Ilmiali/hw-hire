@@ -8,10 +8,15 @@ export interface View {
   members: string[];
   groups: Group[];
   layout: {
-    cover: string;
-    coverType: string;
-    iconType: string;
-    icon: string;
+    cover: {
+      id: string;
+      type: string;
+      value: string;
+    };
+    icon: {
+      type: string;
+      value: string;
+    };
   };
   createdAt: Date;
   updatedAt: Date;
@@ -25,10 +30,15 @@ export interface DatabaseView {
   members: string[];
   groups: string[];
   layout: {
-    cover: string;
-    coverType: string;
-    iconType: string;
-    icon: string;
+    cover: {
+      id: string;
+      type: string;
+      value: string;
+    };
+    icon: {
+      type: string;
+      value: string;
+    };
   };
   createdAt: Date;
   updatedAt: Date;

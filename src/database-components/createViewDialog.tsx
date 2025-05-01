@@ -13,6 +13,7 @@ import { EmojiPicker } from '../components/EmojiPicker';
 import { AppDispatch, RootState } from '../store';
 import { updateView } from '../store/slices/viewsSlice';
 import { Group } from '../types/group';
+import { fetchUsers } from '../store/slices/usersSlice';
 
 interface CreateViewDialogProps {
   isOpen: boolean;
@@ -42,18 +43,31 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
         organizationId: group.organizationId,
         members: group.members
       })));
-      setMembers(existingView.members.map(id => ({ 
-        id, 
-        name: '', 
-        email: '', 
-        role: 'member' 
-      }))); // We'll need to fetch member details
-      setSelectedColor({
-        id: 'custom',
-        type: existingView.layout.coverType === 'gradient' ? 'gradient' : 'solid',
-        value: existingView.layout.cover
-      });
-      setSelectedEmoji(existingView.layout.icon);
+      
+      // Fetch member details
+      if (existingView.organizationId && existingView.members) {
+        dispatch(fetchUsers(existingView.organizationId))
+          .unwrap()
+          .then(users => {
+            const memberDetails = existingView.members.map(memberId => {
+              const user = users.find(u => u.id === memberId);
+              return {
+                id: memberId,
+                name: user?.name || '',
+                email: user?.email || '',
+                role: user?.role || 'member'
+              };
+            });
+            setMembers(memberDetails);
+          });
+      }
+      
+      setSelectedColor(existingView.layout.cover && existingView.layout.cover.id ? {
+        id: existingView.layout.cover.id,
+        type: existingView.layout.cover.type as 'solid' | 'gradient',
+        value: existingView.layout.cover.value
+      } : { id: 'blue', type: 'solid', value: '#64B5F6' });
+      setSelectedEmoji(existingView.layout.icon ? existingView.layout.icon.value : '📋');
     } else {
       setName('');
       setGroups([]);
@@ -61,7 +75,7 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
       setSelectedColor({ id: 'blue', type: 'solid', value: '#64B5F6' });
       setSelectedEmoji('📋');
     }
-  }, [existingView]);
+  }, [existingView, currentOrganization, dispatch]);
 
   const handleCreate = () => {
     if (name.trim() && currentOrganization && user) {
@@ -85,10 +99,11 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
               updatedAt: new Date()
             } as Group)),
             layout: {
-              cover: selectedColor.value,
-              coverType: selectedColor.type === 'gradient' ? 'gradient' : 'flat',
-              iconType: 'emoji',
-              icon: selectedEmoji
+              cover: selectedColor,
+              icon: {
+                type: 'emoji',
+                value: selectedEmoji
+              }
             }
           }
         }));
@@ -100,10 +115,11 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
           members: memberIds,
           groups: groupIds,
           layout: {
-            cover: selectedColor.value,
-            coverType: selectedColor.type === 'gradient' ? 'gradient' : 'flat',
-            iconType: 'emoji',
-            icon: selectedEmoji
+            cover: selectedColor,
+            icon: {
+              type: 'emoji',
+              value: selectedEmoji
+            }
           }
         }));
       }

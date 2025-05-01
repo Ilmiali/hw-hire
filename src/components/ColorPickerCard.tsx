@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ColorPickerDialog, ColorOption } from './ColorPickerDialog';
 
 interface ColorPickerCardProps {
@@ -16,6 +16,10 @@ export function ColorPickerCard({
 }: ColorPickerCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState<ColorOption>(initialColor);
+
+  useEffect(() => {
+    setSelectedColor(initialColor);
+  }, [initialColor]);
 
   const handleColorSelect = (color: ColorOption) => {
     setSelectedColor(color);
