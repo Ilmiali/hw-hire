@@ -88,7 +88,7 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
           id: viewId,
           data: {
             name: name.trim(),
-            members: memberIds,
+            members: [...memberIds, user.uid],
             groups: groups.map(group => ({
               id: group.id,
               name: group.name,
@@ -112,7 +112,8 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
         dispatch(createView({
           name: name.trim(),
           organizationId: currentOrganization.id,
-          members: memberIds,
+          members: [...memberIds, user.uid],
+          owner: user.uid,
           groups: groupIds,
           layout: {
             cover: selectedColor,

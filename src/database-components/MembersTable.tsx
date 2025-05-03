@@ -84,8 +84,6 @@ export function MembersTable({ members, onMembersChange }: MembersTableProps) {
         collectionName="users"
         searchField="name"
         title="Add Team Members"
-        defineRole={true}
-        availableRoles={['Admin', 'Editor', 'Viewer']}
         renderItem={renderMember}
       />
     </>

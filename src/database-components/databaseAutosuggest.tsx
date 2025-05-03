@@ -36,7 +36,6 @@ export function DatabaseAutosuggest<T extends BaseItem>({
   searchField = 'name',
   defineRole = false,
   availableRoles = [],
-  onRoleChange,
 }: DatabaseAutosuggestProps<T>) {
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);

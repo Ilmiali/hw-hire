@@ -60,15 +60,16 @@ export const fetchOrganizationViews = createAsyncThunk(
         );
         
         const totalNumTickets = validGroups.reduce((sum, group) => sum + (group.totalNumTickets || 0), 0);
-        
+        const {owner, members} = view.data as {owner: string, members: string[]};
         return {
           createdAt: view.createdAt || new Date(),
           updatedAt: view.updatedAt || new Date(),
+          owner: owner,
           id: view.id,
           layout: view.data.layout as View['layout'],
           name: view.data.name as string,
           organizationId: view.data.organizationId as string,
-          members: view.data.members as View['members'],
+          members: members.filter((member) => member !== owner),
           groups: validGroups,
           totalNumTickets
         } as View;
@@ -88,12 +89,14 @@ export const createView = createAsyncThunk(
     name, 
     organizationId, 
     members,
+    owner,
     groups,
     layout
   }: { 
     name: string; 
     organizationId: string; 
     members: string[];
+    owner: string;
     groups: string[];
     layout: {
       cover: {
@@ -113,6 +116,7 @@ export const createView = createAsyncThunk(
         name,
         organizationId,
         members,
+        owner,
         groups,
         layout,
         totalNumTickets: 0,

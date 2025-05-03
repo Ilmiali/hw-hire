@@ -6,6 +6,7 @@ export interface View {
   organizationId: string;
   totalNumTickets: number;
   members: string[];
+  owner: string;
   groups: Group[];
   layout: {
     cover: {
@@ -28,6 +29,7 @@ export interface DatabaseView {
   organizationId: string;
   totalNumTickets: number;
   members: string[];
+  owner: string;
   groups: string[];
   layout: {
     cover: {
