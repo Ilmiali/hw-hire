@@ -6,6 +6,8 @@ import { LayoutGroup, motion } from 'framer-motion'
 import React, { forwardRef, useId } from 'react'
 import { TouchTarget } from './button'
 import { Link } from './link'
+import { Dropdown, DropdownButton, DropdownItem, DropdownMenu, DropdownLabel } from './dropdown'
+import { EllipsisHorizontalIcon } from '@heroicons/react/16/solid'
 
 export function Sidebar({ className, ...props }: React.ComponentPropsWithoutRef<'nav'>) {
   return <nav {...props} className={clsx(className, 'flex flex-col h-screen')} />
@@ -76,14 +78,24 @@ export const SidebarItem = forwardRef(function SidebarItem(
     current,
     className,
     children,
+    dropdownItems,
     ...props
-  }: { current?: boolean; className?: string; children: React.ReactNode } & (
+  }: { 
+    current?: boolean; 
+    className?: string; 
+    children: React.ReactNode;
+    dropdownItems?: Array<{
+      label: string;
+      icon?: React.ReactNode;
+      onClick: () => void;
+    }>;
+  } & (
     | Omit<Headless.ButtonProps, 'as' | 'className'>
     | Omit<Headless.ButtonProps<typeof Link>, 'as' | 'className'>
   ),
   ref: React.ForwardedRef<HTMLAnchorElement | HTMLButtonElement>
 ) {
-  let classes = clsx(
+  const classes = clsx(
     // Base
     'flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-base/6 font-medium text-zinc-950 sm:py-2 sm:text-sm/5',
     // Leading icon/icon-only
@@ -106,7 +118,7 @@ export const SidebarItem = forwardRef(function SidebarItem(
   )
 
   return (
-    <span className={clsx(className, 'relative')}>
+    <span className={clsx(className, 'relative group')}>
       {current && (
         <motion.span
           layoutId="current-indicator"
@@ -132,6 +144,57 @@ export const SidebarItem = forwardRef(function SidebarItem(
         >
           <TouchTarget>{children}</TouchTarget>
         </Headless.Button>
+      )}
+      {dropdownItems && (
+        <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Dropdown>
+            <DropdownButton 
+              as="button" 
+              className="!bg-transparent !border-0 !shadow-none hover:!bg-gray-100 hover:dark:!bg-gray-700 p-1 rounded-md transition-all"
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                const parent = e.currentTarget.closest('.group');
+                if (parent) {
+                  parent.classList.add('bg-zinc-950/5', 'dark:bg-white/5', 'rounded-lg');
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.stopPropagation();
+                const parent = e.currentTarget.closest('.group');
+                if (parent) {
+                  parent.classList.remove('bg-zinc-950/5', 'dark:bg-white/5', 'rounded-lg');
+                }
+              }}
+            >
+              <EllipsisHorizontalIcon className="h-3 w-3 text-gray-400 dark:text-gray-500" />
+            </DropdownButton>
+            <DropdownMenu 
+              className="min-w-48" 
+              anchor="bottom end"
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                const parent = e.currentTarget.closest('.group');
+                if (parent) {
+                  parent.classList.add('bg-zinc-950/5', 'dark:bg-white/5');
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.stopPropagation();
+                const parent = e.currentTarget.closest('.group');
+                if (parent) {
+                  parent.classList.remove('bg-zinc-950/5', 'dark:bg-white/5');
+                }
+              }}
+            >
+              {dropdownItems.map((item, index) => (
+                <DropdownItem key={index} onClick={item.onClick}>
+                  {item.icon}
+                  <DropdownLabel>{item.label}</DropdownLabel>
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+        </div>
       )}
     </span>
   )
