@@ -3,6 +3,7 @@ import { TicketChat } from './TicketChat';
 import { DatabaseTable } from '../../database-components/databaseTable';
 import { Field } from '../../data-components/dataTable';
 import { Badge } from '../../components/badge';
+import { Avatar } from '../../components/avatar';
 import { Ticket } from '../../types/ticket';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
@@ -74,6 +75,64 @@ export default function Tickets() {
     console.log('Sending message:', content);
   };
 
+  const renderGroups = () => {
+    if (!currentView?.groups || currentView.groups.length === 0) return null;
+    
+    const visibleGroups = currentView.groups.slice(0, 2);
+    const remainingGroups = currentView.groups.slice(2);
+    
+    return (
+      <div className="flex flex-wrap gap-2">
+        {visibleGroups.map((group) => (
+          <div
+            key={group.id}
+            className={`flex items-center gap-2 px-2 py-1 rounded-full backdrop-blur-sm shadow-sm ${
+              currentView?.layout?.cover
+                ? 'bg-black/20 text-white shadow-black/10'
+                : 'bg-zinc-100/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 shadow-zinc-900/5 dark:shadow-zinc-100/5'
+            }`}
+          >
+            <Avatar
+              initials={group.name.split(' ').map(name => name[0]).join('').toUpperCase()}
+              variant="round"
+              className="size-5"
+              light={!currentView?.layout?.cover}
+            />
+            <span className="text-sm font-medium capitalize">{group.name}</span>
+          </div>
+        ))}
+        {remainingGroups.length > 0 && (
+          <div className="relative group">
+            <div
+              className={`flex items-center gap-2 px-2 py-1 rounded-full backdrop-blur-sm shadow-sm cursor-pointer ${
+                currentView?.layout?.cover
+                  ? 'bg-black/20 text-white shadow-black/10'
+                  : 'bg-zinc-100/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 shadow-zinc-900/5 dark:shadow-zinc-100/5'
+              }`}
+            >
+              <span className="text-sm font-medium">+{remainingGroups.length}</span>
+            </div>
+            <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-100">
+              <div className={`p-2 rounded-lg shadow-lg min-w-[200px] bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700`}>
+                {remainingGroups.map((group) => (
+                  <div key={group.id} className="flex items-center gap-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 rounded-md px-2">
+                    <Avatar
+                      initials={group.name.split(' ').map(name => name[0]).join('').toUpperCase()}
+                      variant="round"
+                      className="size-5"
+                      light={!currentView?.layout?.cover}
+                    />
+                    <span className="text-sm font-medium capitalize">{group.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <SplitTwoLayout
       leftColumnWidth="450px"
@@ -88,17 +147,20 @@ export default function Tickets() {
                 : undefined
             }}
           >
-            <div className="flex items-center gap-2">
-              {currentView?.layout?.icon && currentView.layout.icon.type === 'emoji' ? (
-                <span className={`text-2xl ${!currentView?.layout?.cover ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'}`}>
-                  {currentView.layout.icon.value}
-                </span>
-              ) : (
-                <span className="text-2xl"></span>
-              )}
-              <h2 className={`text-xl font-semibold ${!currentView?.layout?.cover ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'}`}>
-                {currentView?.name || 'All Tickets'}
-              </h2>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                {currentView?.layout?.icon && currentView.layout.icon.type === 'emoji' ? (
+                  <span className={`text-2xl ${!currentView?.layout?.cover ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'}`}>
+                    {currentView.layout.icon.value}
+                  </span>
+                ) : (
+                  <span className="text-2xl"></span>
+                )}
+                <h2 className={`text-xl font-semibold ${!currentView?.layout?.cover ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'}`}>
+                  {currentView?.name || 'All Tickets'}
+                </h2>
+              </div>
+              {renderGroups()}
             </div>
           </div>
           <div className="flex-1 p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">
