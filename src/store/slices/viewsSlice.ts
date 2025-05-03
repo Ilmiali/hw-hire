@@ -151,6 +151,45 @@ export const updateView = createAsyncThunk(
   }
 );
 
+export const deleteView = createAsyncThunk(
+  'views/deleteView',
+  async ({ id }: { id: string }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      await db.deleteDocument('views', id);
+    } catch (error) {
+      console.error('Error deleting view:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete view';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const exitView = createAsyncThunk(
+  'views/exitView',
+  async ({ id, userId }: { id: string; userId: string }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const view = await db.getDocument<Document>('views', id);
+      
+      if (!view) {
+        throw new Error('View not found');
+      }
+
+      const currentMembers = view.data.members as string[];
+      const updatedMembers = currentMembers.filter(member => member !== userId);
+
+      await db.updateDocument('views', id, {
+        members: updatedMembers
+      });
+    } catch (error) {
+      console.error('Error exiting view:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to exit view';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 export const viewsSlice = createSlice({
   name: 'views',
   initialState,
@@ -210,6 +249,45 @@ export const viewsSlice = createSlice({
         state.loading = false;
       })
       .addCase(updateView.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(deleteView.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteView.fulfilled, (state, action) => {
+        state.loading = false;
+        // Remove the deleted view from the state
+        state.views = state.views.filter(view => view.id !== action.meta.arg.id);
+        // If the current view was deleted, set it to null
+        if (state.currentView?.id === action.meta.arg.id) {
+          state.currentView = null;
+        }
+      })
+      .addCase(deleteView.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(exitView.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(exitView.fulfilled, (state, action) => {
+        state.loading = false;
+        // Remove the view from the state if the user is no longer a member
+        state.views = state.views.filter(view => {
+          if (view.id === action.meta.arg.id) {
+            return view.members.includes(action.meta.arg.userId);
+          }
+          return true;
+        });
+        // If the current view was exited, set it to null
+        if (state.currentView?.id === action.meta.arg.id) {
+          state.currentView = null;
+        }
+      })
+      .addCase(exitView.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

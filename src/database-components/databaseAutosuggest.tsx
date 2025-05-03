@@ -20,6 +20,7 @@ interface DatabaseAutosuggestProps<T extends BaseItem> {
   defineRole?: boolean;
   availableRoles?: string[];
   onRoleChange?: (id: string, role: string) => void;
+  ignoreList?: string[];
 }
 
 export function DatabaseAutosuggest<T extends BaseItem>({
@@ -36,6 +37,7 @@ export function DatabaseAutosuggest<T extends BaseItem>({
   searchField = 'name',
   defineRole = false,
   availableRoles = [],
+  ignoreList = [],
 }: DatabaseAutosuggestProps<T>) {
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,9 +73,12 @@ export function DatabaseAutosuggest<T extends BaseItem>({
           ...doc.data,
         })) as T[];
       
-      // Filter out already selected items
+      // Filter out already selected items and ignored items
       const selectedIds = new Set(selectedItems.map(item => item.id));
-      const filteredItems = mappedItems.filter(item => !selectedIds.has(item.id));
+      const ignoredIds = new Set(ignoreList);
+      const filteredItems = mappedItems.filter(item => 
+        !selectedIds.has(item.id) && !ignoredIds.has(item.id)
+      );
       
       setItems(filteredItems);
     } catch (error) {

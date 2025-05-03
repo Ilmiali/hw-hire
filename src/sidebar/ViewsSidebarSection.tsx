@@ -1,18 +1,19 @@
 import { SidebarSection, SidebarItem, SidebarLabel, SidebarHeading } from '../components/sidebar';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
-import { fetchOrganizationViews } from '../store/slices/viewsSlice';
+import { fetchOrganizationViews, deleteView, exitView } from '../store/slices/viewsSlice';
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
 import { selectViews } from '../store/slices/viewsSlice';
 import { useLocation } from 'react-router-dom';
 import { AppDispatch } from '../store';
 import { RootState } from '../store';
 import { Avatar } from '../components/avatar';
-import { PlusIcon, EllipsisHorizontalIcon } from '@heroicons/react/16/solid';
+import { PlusIcon, EllipsisHorizontalIcon, UserMinusIcon } from '@heroicons/react/16/solid';
 import { Badge } from '../components/badge';
 import { CreateViewDialog } from '../database-components/createViewDialog';
 import { Dropdown, DropdownButton, DropdownItem, DropdownMenu, DropdownLabel } from '../components/dropdown';
 import { PencilIcon, TrashIcon } from '@heroicons/react/16/solid';
+import { toast } from 'react-toastify';
 
 const getInitials = (name: string): string => {
   return name
@@ -40,6 +41,42 @@ export function ViewsSidebarSection() {
       }));
     }
   }, [dispatch, currentOrganization, userId]);
+
+  const handleDeleteView = async (viewId: string) => {
+    try {
+      await dispatch(deleteView({ id: viewId })).unwrap();
+      // Refresh the views list
+      if (currentOrganization && userId) {
+        dispatch(fetchOrganizationViews({ 
+          organizationId: currentOrganization.id,
+          userId
+        }));
+      }
+      toast.success('View deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete view:', error);
+      toast.error('Failed to delete view. Please try again.');
+    }
+  };
+
+  const handleExitView = async (viewId: string) => {
+    try {
+      if (!userId) return;
+      
+      await dispatch(exitView({ id: viewId, userId })).unwrap();
+      // Refresh the views list
+      if (currentOrganization && userId) {
+        dispatch(fetchOrganizationViews({ 
+          organizationId: currentOrganization.id,
+          userId
+        }));
+      }
+      toast.success('Successfully exited the view');
+    } catch (error) {
+      console.error('Failed to exit view:', error);
+      toast.error('Failed to exit view. Please try again.');
+    }
+  };
 
   if (!currentOrganization || !userId) {
     return null;
@@ -85,17 +122,26 @@ export function ViewsSidebarSection() {
                 <EllipsisHorizontalIcon className="h-3 w-3 text-gray-400 dark:text-gray-500" />
               </DropdownButton>
               <DropdownMenu className="min-w-48" anchor="bottom end">
-                <DropdownItem onClick={() => {
-                  setEditingViewId(view.id);
-                  setIsCreateDialogOpen(true);
-                }}>
-                  <PencilIcon />
-                  <DropdownLabel>Edit view</DropdownLabel>
-                </DropdownItem>
-                <DropdownItem>
-                  <TrashIcon />
-                  <DropdownLabel>Delete view</DropdownLabel>
-                </DropdownItem>
+                {view.owner === userId ? (
+                  <>
+                    <DropdownItem onClick={() => {
+                      setEditingViewId(view.id);
+                      setIsCreateDialogOpen(true);
+                    }}>
+                      <PencilIcon />
+                      <DropdownLabel>Edit view</DropdownLabel>
+                    </DropdownItem>
+                    <DropdownItem onClick={() => handleDeleteView(view.id)}>
+                      <TrashIcon />
+                      <DropdownLabel>Delete view</DropdownLabel>
+                    </DropdownItem>
+                  </>
+                ) : (
+                  <DropdownItem onClick={() => handleExitView(view.id)}>
+                    <UserMinusIcon />
+                    <DropdownLabel>Exit view</DropdownLabel>
+                  </DropdownItem>
+                )}
               </DropdownMenu>
             </Dropdown>
           </div>

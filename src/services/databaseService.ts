@@ -90,6 +90,10 @@ export class DatabaseService {
     return doc as T;
   }
 
+  public async deleteDocument(collection: string, id: string): Promise<void> {
+    await this.database.deleteDocument(collection, id);
+  }
+
   public onDocumentChange<T>(collection: string, id: string, callback: (document: T | null) => void): () => void {
     return this.database.onDocumentChange(collection, id, (document) => {
       callback(document as T);

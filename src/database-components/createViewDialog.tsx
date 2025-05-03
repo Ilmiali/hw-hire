@@ -201,6 +201,7 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
             <MembersTable 
               members={members}
               onMembersChange={setMembers}
+              ownerId={user?.uid}
             />
 
             <DialogActions>

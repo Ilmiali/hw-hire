@@ -5,6 +5,8 @@ import { fetchUserOrganizations } from './store/slices/organizationSlice';
 import { RootState } from './store';
 import AppRouter from './navigation/AppRouter';
 import type { AppDispatch } from './store';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
@@ -21,7 +23,21 @@ function App() {
   }, [dispatch, user]);
 
   return (
+    <>
       <AppRouter />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+    </>
   );
 }
 

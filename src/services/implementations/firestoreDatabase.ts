@@ -13,6 +13,7 @@ import {
   startAfter,
   addDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot
 } from 'firebase/firestore';
 import { Database, Document, QueryOptions } from '../../types/database';
@@ -95,6 +96,11 @@ export class FirestoreDatabase implements Database {
     }
     
     return updatedDoc;
+  }
+
+  async deleteDocument(collectionName: string, id: string): Promise<void> {
+    const docRef = doc(this.db, collectionName, id);
+    await deleteDoc(docRef);
   }
 
   async buildQuery(collectionName: string, options?: QueryOptions): Promise<FirestoreQuery<DocumentData>> {

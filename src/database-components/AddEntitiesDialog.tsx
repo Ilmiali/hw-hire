@@ -18,6 +18,7 @@ interface AddEntitiesDialogProps<T extends Entity & BaseItem> {
   queryOptions?: QueryOptions;
   defineRole?: boolean;
   availableRoles?: string[];
+  ignoreList?: string[];
 }
 
 export function AddEntitiesDialog<T extends Entity & BaseItem>({
@@ -31,6 +32,7 @@ export function AddEntitiesDialog<T extends Entity & BaseItem>({
   queryOptions = {},
   defineRole = false,
   availableRoles = [],
+  ignoreList = [],
 }: AddEntitiesDialogProps<T>) {
   const [selectedEntities, setSelectedEntities] = useState<(T & { role?: string })[]>([]);
   const database = DatabaseFactory.getInstance().getDatabase('firestore');
@@ -78,6 +80,7 @@ export function AddEntitiesDialog<T extends Entity & BaseItem>({
             defineRole={defineRole}
             availableRoles={availableRoles}
             onRoleChange={handleRoleChange}
+            ignoreList={ignoreList}
           />
           <DialogActions>
             <Button type="submit" disabled={selectedEntities.length === 0}>Add</Button>

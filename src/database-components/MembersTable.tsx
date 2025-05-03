@@ -15,9 +15,10 @@ export interface Member extends Entity {
 interface MembersTableProps {
   members: Member[];
   onMembersChange: (members: Member[]) => void;
+  ownerId?: string;
 }
 
-export function MembersTable({ members, onMembersChange }: MembersTableProps) {
+export function MembersTable({ members, onMembersChange, ownerId }: MembersTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const memberFields: Field<Member>[] = [
@@ -85,6 +86,7 @@ export function MembersTable({ members, onMembersChange }: MembersTableProps) {
         searchField="name"
         title="Add Team Members"
         renderItem={renderMember}
+        ignoreList={[...members.map(m => m.id), ...(ownerId ? [ownerId] : [])]}
       />
     </>
   );
