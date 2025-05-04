@@ -6,11 +6,15 @@ import { Avatar } from '../components/avatar';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { getTeamDropdownConfig } from '../config/dropdowns';
 import { ViewsSidebarSection } from './ViewsSidebarSection';
+import { useState } from 'react';
+import { Cog8ToothIcon } from '@heroicons/react/16/solid';
+import { SettingsModal } from '../screens/Settings/SettingsModal';
 
 export function MainSidebar() {
   const location = useLocation();
   const routesBySection = getSidebarRoutes();
   const dropdownConfig = getTeamDropdownConfig();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const renderDropdownMenu = () => (
     <Dropdown>
@@ -69,23 +73,30 @@ export function MainSidebar() {
   );
 
   return (
-    <Sidebar>
-      <SidebarHeader>
-        {renderDropdownMenu()}
-        {routesBySection.header?.length > 0 && (
-          routesBySection.header.map(renderRouteGroup)
-        )}
-      </SidebarHeader>
+    <>
+      <Sidebar>
+        <SidebarHeader>
+          {renderDropdownMenu()}
+          {routesBySection.header?.length > 0 && (
+            routesBySection.header.map(renderRouteGroup)
+          )}
+        </SidebarHeader>
         <SidebarBody>
-        <ViewsSidebarSection />
-        {routesBySection.body?.map(renderRouteGroup)}
-      </SidebarBody>
-      <SidebarSpacer />
-      {routesBySection.footer?.length > 0 && (
+          <ViewsSidebarSection />
+          {routesBySection.body?.map(renderRouteGroup)}
+        </SidebarBody>
+        <SidebarSpacer />
         <SidebarFooter>
-          {routesBySection.footer.map(renderRouteGroup)}
+          {routesBySection.footer?.map(renderRouteGroup)}
+          <SidebarSection>
+            <SidebarItem onClick={() => setSettingsOpen(true)}>
+              <Cog8ToothIcon className="w-5 h-5" />
+              <SidebarLabel>Settings</SidebarLabel>
+            </SidebarItem>
+          </SidebarSection>
         </SidebarFooter>
-      )}
-    </Sidebar>
+      </Sidebar>
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+    </>
   );
 }

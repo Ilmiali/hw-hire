@@ -1,7 +1,6 @@
 import {
   HomeIcon,
   UserIcon,
-  Cog6ToothIcon,
   ShieldCheckIcon,
   LightBulbIcon,
   ArrowRightStartOnRectangleIcon,
@@ -85,15 +84,6 @@ export const mainRoutes: RouteGroup[] = [
     section: 'body',
     order: 2,
     routes: [
-      {
-        path: '/settings',
-        name: 'Settings',
-        icon: Cog6ToothIcon,
-        component: Dashboard, // Replace with actual Settings component
-        layout: 'authenticated',
-        isAuthProtected: true,
-        permissions: ['settings.view'],
-      },
       {
         path: '/privacy-policy',
         name: 'Privacy Policy',
