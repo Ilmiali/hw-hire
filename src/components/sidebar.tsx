@@ -6,8 +6,7 @@ import { LayoutGroup, motion } from 'framer-motion'
 import React, { forwardRef, useId } from 'react'
 import { TouchTarget } from './button'
 import { Link } from './link'
-import { Dropdown, DropdownButton, DropdownItem, DropdownMenu, DropdownLabel } from './dropdown'
-import { EllipsisHorizontalIcon } from '@heroicons/react/16/solid'
+import { ActionDropdown, ActionItem } from './action-dropdown'
 
 export function Sidebar({ className, ...props }: React.ComponentPropsWithoutRef<'nav'>) {
   return <nav {...props} className={clsx(className, 'flex flex-col h-screen')} />
@@ -50,7 +49,7 @@ export function SidebarFooter({ className, ...props }: React.ComponentPropsWitho
 }
 
 export function SidebarSection({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
-  let id = useId()
+  const id = useId()
 
   return (
     <LayoutGroup id={id}>
@@ -78,17 +77,17 @@ export const SidebarItem = forwardRef(function SidebarItem(
     current,
     className,
     children,
-    dropdownItems,
+    onEdit,
+    onDelete,
+    customItems,
     ...props
   }: { 
     current?: boolean; 
     className?: string; 
     children: React.ReactNode;
-    dropdownItems?: Array<{
-      label: string;
-      icon?: React.ReactNode;
-      onClick: () => void;
-    }>;
+    onEdit?: () => void;
+    onDelete?: () => void;
+    customItems?: ActionItem[];
   } & (
     | Omit<Headless.ButtonProps, 'as' | 'className'>
     | Omit<Headless.ButtonProps<typeof Link>, 'as' | 'className'>
@@ -145,56 +144,13 @@ export const SidebarItem = forwardRef(function SidebarItem(
           <TouchTarget>{children}</TouchTarget>
         </Headless.Button>
       )}
-      {dropdownItems && (
-        <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Dropdown>
-            <DropdownButton 
-              as="button" 
-              className="!bg-transparent !border-0 !shadow-none hover:!bg-gray-100 hover:dark:!bg-gray-700 p-1 rounded-md transition-all"
-              onMouseEnter={(e) => {
-                e.stopPropagation();
-                const parent = e.currentTarget.closest('.group');
-                if (parent) {
-                  parent.classList.add('bg-zinc-950/5', 'dark:bg-white/5', 'rounded-lg');
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.stopPropagation();
-                const parent = e.currentTarget.closest('.group');
-                if (parent) {
-                  parent.classList.remove('bg-zinc-950/5', 'dark:bg-white/5', 'rounded-lg');
-                }
-              }}
-            >
-              <EllipsisHorizontalIcon className="h-3 w-3 text-gray-400 dark:text-gray-500" />
-            </DropdownButton>
-            <DropdownMenu 
-              className="min-w-48" 
-              anchor="bottom end"
-              onMouseEnter={(e) => {
-                e.stopPropagation();
-                const parent = e.currentTarget.closest('.group');
-                if (parent) {
-                  parent.classList.add('bg-zinc-950/5', 'dark:bg-white/5');
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.stopPropagation();
-                const parent = e.currentTarget.closest('.group');
-                if (parent) {
-                  parent.classList.remove('bg-zinc-950/5', 'dark:bg-white/5');
-                }
-              }}
-            >
-              {dropdownItems.map((item, index) => (
-                <DropdownItem key={index} onClick={item.onClick}>
-                  {item.icon}
-                  <DropdownLabel>{item.label}</DropdownLabel>
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-          </Dropdown>
-        </div>
+      {(onEdit || onDelete) && (
+        <ActionDropdown
+          className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+          onEdit={onEdit || (() => {})}
+          onDelete={onDelete || (() => {})}
+          customItems={customItems || []}
+        />
       )}
     </span>
   )

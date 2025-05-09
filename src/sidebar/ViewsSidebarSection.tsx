@@ -88,6 +88,18 @@ export function ViewsSidebarSection() {
           key={view.id}
           href={`/views/${view.id}`}
           current={location.pathname === `/views/${view.id}`}
+          onEdit={() => {
+            setEditingViewId(view.id);
+            setIsCreateDialogOpen(true);
+          }}
+          onDelete={() => handleDeleteView(view.id)}
+          customItems={view.owner === userId ? [
+            {
+              label: 'Exit view',
+              icon: <UserMinusIcon />,
+              onClick: () => handleExitView(view.id)
+            }
+          ] : []}
           dropdownItems={view.owner === userId ? [
             {
               label: 'Edit view',
