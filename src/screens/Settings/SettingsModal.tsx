@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogTitle } from '../../components/dialog';
 import { Sidebar, SidebarBody, SidebarSection, SidebarItem, SidebarLabel } from '../../components/sidebar';
 import { settingsSections } from './routes.tsx';
+import React from 'react';
 
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [activeSection, setActiveSection] = useState('account');
@@ -34,7 +35,9 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
             {settingsSections.find(s => s.key === activeSection)?.label}
           </DialogTitle>
           <div>
-            {settingsSections.find(s => s.key === activeSection)?.component()}
+            {settingsSections.find(s => s.key === activeSection)?.component && 
+              React.createElement(settingsSections.find(s => s.key === activeSection)!.component)
+            }
           </div>  
         </div>
       </div>

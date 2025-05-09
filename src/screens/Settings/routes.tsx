@@ -1,17 +1,18 @@
-import { UserCircleIcon, Cog6ToothIcon, BellIcon, UserGroupIcon, ChatBubbleLeftRightIcon, FunnelIcon } from '@heroicons/react/20/solid';
+import { UserCircleIcon, Cog6ToothIcon, BellIcon, UserGroupIcon, ChatBubbleLeftRightIcon, FunnelIcon, EyeIcon } from '@heroicons/react/20/solid';
 import { AccountSettings } from './AccountSettings';
 import { PreferencesSettings } from './PreferencesSettings';
 import { NotificationsSettings } from './NotificationsSettings';
 import { GroupsSettings } from './GroupsSettings';
 import { ChannelsSettings } from './ChannelsSettings';
 import { FiltersSettings } from './FiltersSettings';
-import { ReactNode } from 'react';
+import { ViewsSettings } from './ViewsSettings';
+import { ReactNode, ComponentType } from 'react';
 
 interface SettingsSection {
   key: string;
   label: string;
   icon: ReactNode;
-  component: () => JSX.Element;
+  component: ComponentType<Record<string, never>>;
 }
 
 export const settingsSections: SettingsSection[] = [
@@ -50,5 +51,11 @@ export const settingsSections: SettingsSection[] = [
     label: 'Filters', 
     icon: <FunnelIcon className="w-5 h-5" />,
     component: FiltersSettings
+  },
+  { 
+    key: 'views', 
+    label: 'Views', 
+    icon: <EyeIcon className="w-5 h-5" />,
+    component: ViewsSettings
   },
 ]; 
