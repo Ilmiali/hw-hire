@@ -100,27 +100,6 @@ export function ViewsSidebarSection() {
               onClick: () => handleExitView(view.id)
             }
           ] : []}
-          dropdownItems={view.owner === userId ? [
-            {
-              label: 'Edit view',
-              icon: <PencilIcon />,
-              onClick: () => {
-                setEditingViewId(view.id);
-                setIsCreateDialogOpen(true);
-              }
-            },
-            {
-              label: 'Delete view',
-              icon: <TrashIcon />,
-              onClick: () => handleDeleteView(view.id)
-            }
-          ] : [
-            {
-              label: 'Exit view',
-              icon: <UserMinusIcon />,
-              onClick: () => handleExitView(view.id)
-            }
-          ]}
         >
           {view.layout?.icon && view.layout?.icon.type === 'emoji' ? (
             <div 
