@@ -32,6 +32,7 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
   const user = useSelector((state: RootState) => state.auth.user);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const existingView = useSelector((state: RootState) => viewId ? selectViewById(state, viewId) : null);
+  
 
   useEffect(() => {
     if (existingView) {

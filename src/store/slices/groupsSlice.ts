@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getDatabaseService, Document } from '../../services/databaseService';
 import { Group } from '../../types/group';
+import { RootState } from '../index';
 
 interface GroupsState {
   groups: Group[];
@@ -74,13 +75,14 @@ export const fetchGroups = createAsyncThunk(
         ],
         sortBy: { field: 'name', order: 'asc' }
       });
-
+      
       return groups.map(group => ({
         id: group.id,
         name: group.data.name as string,
         organizationId: group.data.organizationId as string,
         totalNumTickets: group.data.totalNumTickets as number,
-        members: group.data.members as string[],
+        description: group.data.description as string,
+        members: group.data.members.filter((member: string) => member !== group.data.owner) as string[],
         createdAt: group.createdAt || new Date(),
         updatedAt: group.updatedAt || new Date()
       })) as Group[];
@@ -234,4 +236,8 @@ const groupsSlice = createSlice({
 });
 
 export const { clearGroups, clearCurrentGroup } = groupsSlice.actions;
+
+export const selectGroupById = (state: RootState, groupId: string) => 
+  state.groups.groups.find(group => group.id === groupId) || null;
+
 export default groupsSlice.reducer; 

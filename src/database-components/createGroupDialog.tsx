@@ -1,12 +1,15 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
-import { createGroup, updateGroup, fetchGroups } from '../store/slices/groupsSlice';
+import { createGroup, updateGroup, fetchGroups, selectGroupById } from '../store/slices/groupsSlice';
 import { Dialog, DialogTitle, DialogBody, DialogActions } from '../components/dialog';
 import { Button } from '../components/button';
 import { Input } from '../components/input';
+import { Textarea } from '../components/textarea';
 import { useState, useEffect } from 'react';
 import { AppDispatch, RootState } from '../store';
 import { Group } from '../types/group';
+import { MembersTable, Member } from './MembersTable';
+import { fetchUsers } from '../store/slices/usersSlice';
 
 interface CreateGroupDialogProps {
   isOpen: boolean;
@@ -19,13 +22,41 @@ export function CreateGroupDialog({ isOpen, onClose, groupId }: CreateGroupDialo
   const currentOrganization = useSelector(selectCurrentOrganization);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [members, setMembers] = useState<Member[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const existingGroup = useSelector((state: RootState) => groupId ? selectGroupById(state, groupId) : null);
 
   useEffect(() => {
-    if (groupId) {
-      // TODO: Fetch group details if editing
+    console.log('groupId', groupId);
+    console.log('existingGroup', existingGroup);
+    if (existingGroup && currentOrganization) {
+      setName(existingGroup.name);
+      setDescription(existingGroup.description || '');
+      
+      // Fetch member details
+      if (existingGroup.members) {
+        dispatch(fetchUsers(currentOrganization.id))
+          .unwrap()
+          .then(users => {
+            const memberDetails = existingGroup.members.map(memberId => {
+              const user = users.find(u => u.id === memberId);
+              return {
+                id: memberId,
+                name: user?.name || '',
+                email: user?.email || '',
+                role: user?.role || 'member'
+              };
+            });
+            setMembers(memberDetails);
+          });
+      }
+    } else {
+      setName('');
+      setDescription('');
+      setMembers([]);
     }
-  }, [groupId]);
+  }, [existingGroup, currentOrganization, groupId, dispatch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,10 +66,11 @@ export function CreateGroupDialog({ isOpen, onClose, groupId }: CreateGroupDialo
     try {
       const groupData = {
         name,
+        description,
         organizationId: currentOrganization.id,
-        totalNumTickets: 0,
-        members: [currentUser.uid],
-        createdAt: new Date(),
+        totalNumTickets: existingGroup?.totalNumTickets || 0,
+        members: [...members.map(m => m.id), currentUser.uid],
+        createdAt: existingGroup?.createdAt || new Date(),
         updatedAt: new Date()
       };
 
@@ -82,6 +114,23 @@ export function CreateGroupDialog({ isOpen, onClose, groupId }: CreateGroupDialo
                 required
               />
             </div>
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Description
+              </label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter group description"
+                rows={4}
+              />
+            </div>
+            <MembersTable 
+              members={members}
+              onMembersChange={setMembers}
+              ownerId={currentUser?.uid}
+            />
           </div>
         </DialogBody>
         <DialogActions>

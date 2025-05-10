@@ -19,10 +19,6 @@ export function GroupsSettings() {
     if (action === 'edit') {
       setEditingGroupId(group?.id || null);
       setIsCreateDialogOpen(true);
-    } else if (action === 'delete') {
-      await dispatch(deleteGroup({ id: group?.id || '' })).unwrap();
-    } else if (action === 'view') {
-      console.log(`view group:`, group);
     } else if (action === 'create') {
       setEditingGroupId(null);
       setIsCreateDialogOpen(true);

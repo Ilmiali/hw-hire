@@ -28,7 +28,6 @@ interface View extends Entity {
 }
 
 export function ViewsSettings() {
-  const dispatch = useDispatch<AppDispatch>();
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const currentOrganization = useSelector(selectCurrentOrganization);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
