@@ -5,7 +5,7 @@ import { Field } from '../data-components/dataTable';
 import CheckboxList from '../loaders/CheckboxList';
 import FadeIn from 'react-fade-in';
 import { Button } from '../components/button';
-
+import { toast } from 'react-toastify';
 interface DatabaseEntitiesTableProps<T extends Entity> {
   collection: string;
   fields: Field<T>[];
@@ -62,6 +62,16 @@ export function DatabaseEntitiesTable<T extends Entity>({
   const pageSize = 10;
 
   const databaseService = DatabaseService.getInstance();
+
+  const handleDelete = async (entity: T) => {
+    try {
+      await databaseService.deleteDocument(collection, entity.id);
+      // Remove the deleted entity from the local state
+      setEntities(prevEntities => prevEntities.filter(e => e.id !== entity.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while deleting the item');
+    }
+  };
 
   const fetchData = async (page: number) => {
     try {
@@ -133,7 +143,14 @@ export function DatabaseEntitiesTable<T extends Entity>({
           addButtonText={addButtonText}
           onEntitiesChange={handleEntitiesChange}
           onAdd={onAdd}
-          onAction={onAction}
+          onAction={(action, entity) => {
+            if (action === 'delete') {
+              handleDelete(entity);
+              toast.success('Item deleted successfully');
+            } else if (onAction) {
+              onAction(action, entity);
+            }
+          }}
           dense={dense}
           selectable={selectable}
           isLink={isLink}

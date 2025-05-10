@@ -1,5 +1,6 @@
-export interface Group {
-  id: string;
+import { Entity } from '../database-components/entitiesTable';
+
+export interface Group extends Entity {
   name: string;
   organizationId: string;
   totalNumTickets: number;

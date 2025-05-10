@@ -38,10 +38,6 @@ export function ViewsSettings() {
     if (action === 'edit') {
       setEditingViewId(view?.id || null);
       setIsCreateDialogOpen(true);
-    } else if (action === 'delete') {
-      await dispatch(deleteView({ id: view?.id || '' })).unwrap();
-    } else if (action === 'view') {
-      console.log(`view view:`, view);
     } else if (action === 'create') {
       setEditingViewId(null);
       setIsCreateDialogOpen(true);

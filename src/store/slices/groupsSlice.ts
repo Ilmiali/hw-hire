@@ -16,6 +16,43 @@ const initialState: GroupsState = {
   error: null,
 };
 
+// Async thunk for creating a group
+export const createGroup = createAsyncThunk(
+  'groups/createGroup',
+  async (groupData: Omit<Group, 'id'>, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const document = await db.addDocument('groups', groupData);
+      return {
+        id: document.id,
+        ...groupData
+      } as Group;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to create group');
+    }
+  }
+);
+
+// Async thunk for updating a group
+export const updateGroup = createAsyncThunk(
+  'groups/updateGroup',
+  async ({ id, ...groupData }: Group, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      await db.updateDocument('groups', id, groupData);
+      return { id, ...groupData } as Group;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to update group');
+    }
+  }
+);
+
 // Async thunk for fetching groups by organizationId and checking if user is a member
 export const fetchGroups = createAsyncThunk(
   'groups/fetchGroups',
@@ -87,6 +124,23 @@ export const fetchGroupById = createAsyncThunk(
   }
 );
 
+// Async thunk for deleting a group
+export const deleteGroup = createAsyncThunk(
+  'groups/deleteGroup',
+  async ({ id }: { id: string }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      await db.deleteDocument('groups', id);
+      return id;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to delete group');
+    }
+  }
+);
+
 const groupsSlice = createSlice({
   name: 'groups',
   initialState,
@@ -125,6 +179,54 @@ const groupsSlice = createSlice({
         state.currentGroup = action.payload;
       })
       .addCase(fetchGroupById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Create group
+      .addCase(createGroup.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createGroup.fulfilled, (state, action) => {
+        state.loading = false;
+        state.groups.push(action.payload);
+      })
+      .addCase(createGroup.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Update group
+      .addCase(updateGroup.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateGroup.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.groups.findIndex(group => group.id === action.payload.id);
+        if (index !== -1) {
+          state.groups[index] = action.payload;
+        }
+        if (state.currentGroup?.id === action.payload.id) {
+          state.currentGroup = action.payload;
+        }
+      })
+      .addCase(updateGroup.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Delete group
+      .addCase(deleteGroup.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteGroup.fulfilled, (state, action) => {
+        state.loading = false;
+        state.groups = state.groups.filter(group => group.id !== action.payload);
+        if (state.currentGroup?.id === action.payload) {
+          state.currentGroup = null;
+        }
+      })
+      .addCase(deleteGroup.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
