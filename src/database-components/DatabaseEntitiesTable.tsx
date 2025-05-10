@@ -101,7 +101,7 @@ export function DatabaseEntitiesTable<T extends Entity>({
 
   useEffect(() => {
     fetchData(currentPage);
-  }, [collection, currentPage, sortField, sortOrder, queryOptions]);
+  }, [collection, currentPage, queryOptions]);
 
   const handleEntitiesChange = async (newEntities: T[]) => {
     setEntities(newEntities);

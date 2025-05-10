@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { deleteView } from '../../store/slices/viewsSlice';
 import { DatabaseEntitiesTable } from '../../database-components/DatabaseEntitiesTable';
 import { Field } from '../../data-components/dataTable';
 import { CreateViewDialog } from '../../database-components/createViewDialog';
 import { Entity } from '../../database-components/entitiesTable';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../store';
 import { selectCurrentOrganization } from '../../store/slices/organizationSlice';
 import { ActionDropdown } from '../../components/action-dropdown';
 import { EyeIcon } from '@heroicons/react/16/solid';
@@ -29,17 +30,18 @@ interface View extends Entity {
 }
 
 export function ViewsSettings() {
+  const dispatch = useDispatch<AppDispatch>();
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const currentOrganization = useSelector(selectCurrentOrganization);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingViewId, setEditingViewId] = useState<string | null>(null);
 
-  const handleViewAction = (action: 'view' | 'edit' | 'delete' | 'create', view: View | null) => {
+  const handleViewAction = async(action: 'view' | 'edit' | 'delete' | 'create', view: View | null) => {
     if (action === 'edit') {
       setEditingViewId(view?.id || null);
       setIsCreateDialogOpen(true);
     } else if (action === 'delete') {
-      console.log(`delete view:`, view);
+      await dispatch(deleteView({ id: view?.id || '' })).unwrap();
     } else if (action === 'view') {
       console.log(`view view:`, view);
     } else if (action === 'create') {
@@ -134,7 +136,7 @@ export function ViewsSettings() {
         fields={viewFields}
         title="Available Views"
         addButtonText="Add New View"
-        onAction={() => handleViewAction('create', null)}
+        onAction={() => {}}
         onAdd={() =>  handleViewAction('create', null)}
         queryOptions={{
           constraints: [

@@ -5,10 +5,9 @@ import { fetchOrganizationViews, deleteView, exitView } from '../store/slices/vi
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
 import { selectViews } from '../store/slices/viewsSlice';
 import { useLocation } from 'react-router-dom';
-import { AppDispatch } from '../store';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { Avatar } from '../components/avatar';
-import { PlusIcon, PencilIcon, TrashIcon, UserMinusIcon } from '@heroicons/react/16/solid';
+import { PlusIcon, UserMinusIcon } from '@heroicons/react/16/solid';
 import { Badge } from '../components/badge';
 import { CreateViewDialog } from '../database-components/createViewDialog';
 import { toast } from 'react-toastify';
