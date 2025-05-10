@@ -7,8 +7,6 @@ import { Entity } from '../../database-components/entitiesTable';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { selectCurrentOrganization } from '../../store/slices/organizationSlice';
-import { ActionDropdown } from '../../components/action-dropdown';
-import { EyeIcon } from '@heroicons/react/16/solid';
 
 interface View extends Entity {
   name: string;
@@ -84,25 +82,7 @@ export function ViewsSettings() {
         );
       }
     },
-    {
-      key: 'actions',
-      label: '',
-      render: (view: View) => (
-        <div className="flex justify-end">
-          <ActionDropdown
-            onEdit={() => handleViewAction('edit', view)}
-            onDelete={() => handleViewAction('delete', view)}
-            customItems={[
-              {
-                label: 'View',
-                icon: <EyeIcon className="h-4 w-4" />,
-                onClick: () => handleViewAction('view', view)
-              }
-            ]}
-          />
-        </div>
-      )
-    }
+    { key: 'actions', label: '', type: 'actions' }
   ];
 
   // Don't render the table if we don't have the required data
@@ -135,9 +115,10 @@ export function ViewsSettings() {
         collection="views"
         fields={viewFields}
         title="Available Views"
+        actions={['delete', 'edit']}
         addButtonText="Add New View"
-        onAction={() => {}}
-        onAdd={() =>  handleViewAction('create', null)}
+        onAction={handleViewAction}
+        onAdd={() => handleViewAction('create', null)}
         queryOptions={{
           constraints: [
             { field: 'organizationId', operator: '==', value: currentOrganization.id },
