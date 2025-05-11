@@ -91,15 +91,16 @@ export default function Tickets() {
       // If there are other open tickets, switch to the first one
       if (remainingTickets.length > 0) {
         const nextTicketId = remainingTickets[0];
-        // Use setTimeout to ensure state is updated before navigation
-        setTimeout(() => {
-          navigate(`?ticket=${nextTicketId}`);
-        }, 0);
+        // Update all states before navigation
+        navigate(`?ticket=${nextTicketId}`);
+
       } else {
+        // Clear all states when no tickets remain
         navigate('.'); // Remove the ticket query parameter
         setTimeout(() => {
           setIsExpanded(false);
           setTicketId(null);
+          setSelectedTicketId(null);
         }, 100);
       }
       
@@ -223,9 +224,6 @@ export default function Tickets() {
                 switch (action) {
                   case 'view':
                     handleOpenTicket(item.id);
-                    break;
-                  case 'delete':
-                    // Handle delete
                     break;
                 }
               }}
