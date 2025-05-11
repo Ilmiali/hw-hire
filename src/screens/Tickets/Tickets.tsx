@@ -49,6 +49,7 @@ export default function Tickets() {
   const currentView = useSelector((state: RootState) => state.views.currentView);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const queryOptions = useMemo(() => ({
     constraints: [{
@@ -136,6 +137,7 @@ export default function Tickets() {
   return (
     <SplitTwoLayout
       leftColumnWidth="450px"
+      hideColumn={!ticketId ? 'right' : isExpanded ? 'left' : 'none'}
       leftColumn={
         <div className="h-screen flex flex-col">
           <div 
@@ -193,7 +195,13 @@ export default function Tickets() {
       }
       rightColumn={
         <div className="h-full">
-          {ticketId && <TicketChat ticketId={ticketId} onSendMessage={handleSendMessage} />}
+          {ticketId && (
+            <TicketChat 
+              ticketId={ticketId} 
+              isExpanded={isExpanded}
+              onExpandChange={setIsExpanded}
+            />
+          )}
         </div>
       }
     />

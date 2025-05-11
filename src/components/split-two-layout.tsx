@@ -8,6 +8,7 @@ interface SplitTwoLayoutProps {
   leftColumnClassName?: string
   rightColumnClassName?: string
   leftColumnWidth?: string
+  hideColumn?: 'left' | 'right' | 'none'
 }
 
 export function SplitTwoLayout({
@@ -17,15 +18,27 @@ export function SplitTwoLayout({
   leftColumnClassName,
   rightColumnClassName,
   leftColumnWidth,
+  hideColumn = 'none',
 }: SplitTwoLayoutProps) {
   return (
     <div className={clsx('flex h-full', className)}>
-      <aside style={{width: leftColumnWidth, maxWidth: '50%'}} className={clsx('hidden lg:block shrink-0 ', leftColumnClassName)}>
-        {leftColumn}
-      </aside>
-      <main className={clsx('flex-1 min-w-0', rightColumnClassName)}>
-        {rightColumn}
-      </main>
+      {hideColumn !== 'left' && (
+        <aside 
+          style={{width: hideColumn === 'right' ? '100%' : leftColumnWidth, maxWidth: hideColumn === 'right' ? '100%' : '50%'}} 
+          className={clsx('hidden lg:block shrink-0', leftColumnClassName)}
+        >
+          {leftColumn}
+        </aside>
+      )}
+      {hideColumn !== 'right' && (
+        <main 
+          className={clsx('flex-1 min-w-0', rightColumnClassName, {
+            'w-full': hideColumn === 'left'
+          })}
+        >
+          {rightColumn}
+        </main>
+      )}
     </div>
   )
 }

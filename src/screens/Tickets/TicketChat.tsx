@@ -10,9 +10,12 @@ import type { Message } from '../../types/message';
 import { formatTimeAgo } from '../../utils/time';
 import { getBadgeColor } from '../../utils/states';
 import { Badge } from '../../components/badge';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
 
 interface TicketChatProps {
   ticketId: string;
+  isExpanded: boolean;
+  onExpandChange: (expanded: boolean) => void;
 }
 
 const getInitials = (name?: string, email?: string): string => {
@@ -27,7 +30,7 @@ const getInitials = (name?: string, email?: string): string => {
   return email?.slice(0, 2).toUpperCase() || '??';
 };
 
-export function TicketChat({ ticketId }: TicketChatProps) {
+export function TicketChat({ ticketId, isExpanded, onExpandChange }: TicketChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const dispatch = useAppDispatch();
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
@@ -96,23 +99,36 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   }
 
   return (
-    <div className="flex h-screen flex-col justify-between">
+    <div className="flex h-screen flex-col justify-between transition-all duration-300 w-full">
       <div className="flex-1 overflow-y-auto h-screen">
         {/* Header with blur effect */}
         <div className="sticky top-0 z-10 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800">
           <div className="px-4 py-3">
             <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-lg font-semibold text-zinc-900 dark:text-white truncate text-ellipsis overflow-hidden whitespace-nowrap" style={{ maxWidth: '70%' }}>
-                  {currentTicket.subject}
-                </h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge color={getBadgeColor(currentTicket.status)} className="text-sm capitalize">
-                    {currentTicket.status}
-                  </Badge>
-                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                    Created {formatTimeAgo(currentTicket.requestedAt)}
-                  </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onExpandChange(!isExpanded)}
+                  className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  aria-label={isExpanded ? "Collapse view" : "Expand view"}
+                >
+                  {isExpanded ? (
+                    <ChevronLeftIcon className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                  ) : (
+                    <ChevronRightIcon className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                  )}
+                </button>
+                <div>
+                  <h1 className="text-lg font-semibold text-zinc-900 dark:text-white truncate text-ellipsis overflow-hidden whitespace-nowrap" style={{ maxWidth: '70%' }}>
+                    {currentTicket.subject}
+                  </h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge color={getBadgeColor(currentTicket.status)} className="text-sm capitalize">
+                      {currentTicket.status}
+                    </Badge>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                      Created {formatTimeAgo(currentTicket.requestedAt)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
