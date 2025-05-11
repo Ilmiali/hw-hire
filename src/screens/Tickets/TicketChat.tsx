@@ -11,12 +11,14 @@ import { formatTimeAgo } from '../../utils/time';
 import { getBadgeColor } from '../../utils/states';
 import { Badge } from '../../components/badge';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { useNavigate } from 'react-router-dom';
 
 interface TicketChatProps {
   ticketId: string;
   isExpanded: boolean;
+  openTicketIds: string[];
   onExpandChange: (expanded: boolean) => void;
-  onClose: () => void;
+  onClose: (ticketId: string) => void;
 }
 
 const getInitials = (name?: string, email?: string): string => {
@@ -31,9 +33,10 @@ const getInitials = (name?: string, email?: string): string => {
   return email?.slice(0, 2).toUpperCase() || '??';
 };
 
-export function TicketChat({ ticketId, isExpanded, onExpandChange, onClose }: TicketChatProps) {
+export function TicketChat({ ticketId, isExpanded, openTicketIds, onExpandChange, onClose }: TicketChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
     messages: state.messages.messages[ticketId] || [],
     loading: state.messages.loading,
@@ -87,6 +90,15 @@ export function TicketChat({ ticketId, isExpanded, onExpandChange, onClose }: Ti
     }
   };
 
+  const handleTabClick = (ticketId: string) => {
+    navigate(`?ticket=${ticketId}`);
+  };
+
+  const handleTabClose = (e: React.MouseEvent, tabTicketId: string) => {
+    e.stopPropagation(); // Prevent tab click when clicking close
+    onClose(tabTicketId);
+  };
+
   if (messagesLoading || ticketLoading && !currentTicket) {
     return <div className="flex h-full items-center justify-center">Loading...</div>;
   }
@@ -102,8 +114,41 @@ export function TicketChat({ ticketId, isExpanded, onExpandChange, onClose }: Ti
   return (
     <div className="flex h-screen flex-col justify-between transition-all duration-300 w-full">
       <div className="flex-1 overflow-y-auto h-screen">
+        {/* Tabs */}
+        {openTicketIds.length > 0 && (
+          <div className="sticky top-0 z-20 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="flex gap-1 px-2 py-1 overflow-x-auto">
+              {openTicketIds.map((openTicketId) => (
+                <button
+                  key={openTicketId}
+                  onClick={() => handleTabClick(openTicketId)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap group ${
+                    openTicketId === ticketId
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                      : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <span className="truncate max-w-[150px]">
+                    {openTicketId === currentTicket.id ? currentTicket.subject : `Ticket ${openTicketId}`}
+                  </span>
+                  <button
+                    onClick={(e) => handleTabClose(e, openTicketId)}
+                    className={`p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 ${
+                      openTicketId === ticketId
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-zinc-400 dark:text-zinc-500'
+                    }`}
+                    aria-label="Close tab"
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Header with blur effect */}
-        <div className="sticky top-0 z-10 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="sticky top-[41px] z-10 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800">
           <div className="px-4 py-3">
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-2">
@@ -132,13 +177,6 @@ export function TicketChat({ ticketId, isExpanded, onExpandChange, onClose }: Ti
                   </div>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                aria-label="Close chat"
-              >
-                <XMarkIcon className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
-              </button>
             </div>
           </div>
           <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-800">

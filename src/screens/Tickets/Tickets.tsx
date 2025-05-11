@@ -44,6 +44,7 @@ export default function Tickets() {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
+  const [openTicketIds, setOpenTicketIds] = useState<string[]>([]);
   const pathname = location.pathname;
   const rootPath = pathname.split('/')[1];
   const currentView = useSelector((state: RootState) => state.views.currentView);
@@ -64,6 +65,13 @@ export default function Tickets() {
     if (ticketIdFromQuery) {
       setTicketId(ticketIdFromQuery);
       setSelectedTicketId(ticketIdFromQuery);
+      // Add to open tickets if not already present
+      setOpenTicketIds(prev => {
+        if (!prev.includes(ticketIdFromQuery)) {
+          return [...prev, ticketIdFromQuery];
+        }
+        return prev;
+      });
     }
     if(rootPath === 'views') {
       const viewId = pathname.split('/')[2];
@@ -76,12 +84,38 @@ export default function Tickets() {
     console.log('Sending message:', content);
   };
 
-  const handleClose = () => {
-    navigate('.'); // This will remove the ticket query parameter
-    setTimeout(() => {
-      setIsExpanded(false);
-      setTicketId(null);
-    }, 100);
+  const handleClose = (closedTicketId: string) => {
+    setOpenTicketIds(prev => {
+      const remainingTickets = prev.filter(id => id !== closedTicketId);
+      
+      // If there are other open tickets, switch to the first one
+      if (remainingTickets.length > 0) {
+        const nextTicketId = remainingTickets[0];
+        // Use setTimeout to ensure state is updated before navigation
+        setTimeout(() => {
+          navigate(`?ticket=${nextTicketId}`);
+        }, 0);
+      } else {
+        navigate('.'); // Remove the ticket query parameter
+        setTimeout(() => {
+          setIsExpanded(false);
+          setTicketId(null);
+        }, 100);
+      }
+      
+      return remainingTickets;
+    });
+  };
+
+  const handleOpenTicket = (ticketId: string) => {
+    setSelectedTicketId(ticketId);
+    setOpenTicketIds(prev => {
+      if (!prev.includes(ticketId)) {
+        return [...prev, ticketId];
+      }
+      return prev;
+    });
+    navigate(`?ticket=${ticketId}`);
   };
 
   const renderGroups = () => {
@@ -188,8 +222,7 @@ export default function Tickets() {
               onAction={(action, item) => {
                 switch (action) {
                   case 'view':
-                    setSelectedTicketId(item.id);
-                    navigate(`?ticket=${item.id}`);
+                    handleOpenTicket(item.id);
                     break;
                   case 'delete':
                     // Handle delete
@@ -207,6 +240,7 @@ export default function Tickets() {
             <TicketChat 
               ticketId={ticketId} 
               isExpanded={isExpanded}
+              openTicketIds={openTicketIds}
               onExpandChange={setIsExpanded}
               onClose={handleClose}
             />
