@@ -76,6 +76,14 @@ export default function Tickets() {
     console.log('Sending message:', content);
   };
 
+  const handleClose = () => {
+    navigate('.'); // This will remove the ticket query parameter
+    setTimeout(() => {
+      setIsExpanded(false);
+      setTicketId(null);
+    }, 100);
+  };
+
   const renderGroups = () => {
     if (!currentView?.groups || currentView.groups.length === 0) return null;
     
@@ -200,6 +208,7 @@ export default function Tickets() {
               ticketId={ticketId} 
               isExpanded={isExpanded}
               onExpandChange={setIsExpanded}
+              onClose={handleClose}
             />
           )}
         </div>

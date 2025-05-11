@@ -10,12 +10,13 @@ import type { Message } from '../../types/message';
 import { formatTimeAgo } from '../../utils/time';
 import { getBadgeColor } from '../../utils/states';
 import { Badge } from '../../components/badge';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
+import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 interface TicketChatProps {
   ticketId: string;
   isExpanded: boolean;
   onExpandChange: (expanded: boolean) => void;
+  onClose: () => void;
 }
 
 const getInitials = (name?: string, email?: string): string => {
@@ -30,7 +31,7 @@ const getInitials = (name?: string, email?: string): string => {
   return email?.slice(0, 2).toUpperCase() || '??';
 };
 
-export function TicketChat({ ticketId, isExpanded, onExpandChange }: TicketChatProps) {
+export function TicketChat({ ticketId, isExpanded, onExpandChange, onClose }: TicketChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const dispatch = useAppDispatch();
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
@@ -112,9 +113,9 @@ export function TicketChat({ ticketId, isExpanded, onExpandChange }: TicketChatP
                   aria-label={isExpanded ? "Collapse view" : "Expand view"}
                 >
                   {isExpanded ? (
-                    <ChevronLeftIcon className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
-                  ) : (
                     <ChevronRightIcon className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                  ) : (
+                    <ChevronLeftIcon className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
                   )}
                 </button>
                 <div>
@@ -131,6 +132,13 @@ export function TicketChat({ ticketId, isExpanded, onExpandChange }: TicketChatP
                   </div>
                 </div>
               </div>
+              <button
+                onClick={onClose}
+                className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                aria-label="Close chat"
+              >
+                <XMarkIcon className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+              </button>
             </div>
           </div>
           <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-800">
