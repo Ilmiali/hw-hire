@@ -6,7 +6,7 @@ import { Badge } from '../../components/badge';
 import { Avatar } from '../../components/avatar';
 import { Ticket } from '../../types/ticket';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { getBadgeColor } from '../../utils/states';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentView } from '../../store/slices/viewsSlice';
@@ -55,6 +55,7 @@ export default function Tickets() {
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const listScrollRef = useRef<HTMLDivElement>(null);
 
   const queryOptions: Omit<QueryOptions, 'limit' | 'startAfter'> = useMemo(() => ({
     constraints: [{
@@ -101,6 +102,12 @@ export default function Tickets() {
   }, [currentTicket?.id, currentTicket?.subject]);
 
   
+  // Ensure the left list resets to top on selection/navigation
+  useEffect(() => {
+    if (listScrollRef.current) {
+      listScrollRef.current.scrollTop = 0;
+    }
+  }, [selectedTicketId, ticketId]);
 
   const handleClose = (closedTicketId: string) => {
     setOpenTabs(prev => {
@@ -201,7 +208,7 @@ export default function Tickets() {
       leftColumnWidth="450px"
       hideColumn={!ticketId ? 'right' : isExpanded ? 'left' : 'none'}
       leftColumn={
-        <div className="h-screen flex flex-col">
+        <div className="h-full flex flex-col">
           <div 
             className="p-4"
             style={{ 
@@ -227,7 +234,7 @@ export default function Tickets() {
               {renderGroups()}
             </div>
           </div>
-          <div className="flex-1 p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">
+          <div ref={listScrollRef} className="flex-1 p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden" style={{ overflowAnchor: 'none' }}>
             <DatabaseTable<TicketDoc>
               collection="tickets"
               fields={fields}

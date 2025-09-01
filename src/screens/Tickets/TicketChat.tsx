@@ -170,7 +170,7 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
         <div className="p-4 space-y-6">
           {messages.map((message: Message, index: number) => (
             <div key={message.id} className="space-y-2">
-              {index === messages.length - 1 && <div style={{ scrollMarginTop: '100px' }} ref={messagesEndRef} />}
+              {index === messages.length - 1 && <div style={{ scrollMarginTop: '1500px' }} ref={messagesEndRef} />}
               <div className="flex items-start gap-3">
                 <div className="flex items-center gap-2">
                   <Avatar
