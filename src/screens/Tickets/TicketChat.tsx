@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchMessagesByTicketId } from '../../store/slices/messagesSlice';
 import {listenToTicketChanges, unregisterTicketListener } from '../../store/slices/ticketsSlice';
-import { getDatabaseService } from '../../services/databaseService';
 import { Avatar } from '../../components/avatar';
 import { AssignSelector } from '../../database-components/assignSelector';
 import type { Message } from '../../types/message';
@@ -16,7 +15,7 @@ import { useNavigate } from 'react-router-dom';
 interface TicketChatProps {
   ticketId: string;
   isExpanded: boolean;
-  openTicketIds: string[];
+  openTabs: { id: string; subject?: string }[];
   onExpandChange: (expanded: boolean) => void;
   onClose: (ticketId: string) => void;
 }
@@ -33,8 +32,8 @@ const getInitials = (name?: string, email?: string): string => {
   return email?.slice(0, 2).toUpperCase() || '??';
 };
 
-export function TicketChat({ ticketId, isExpanded, openTicketIds, onExpandChange, onClose }: TicketChatProps) {
-  const [newMessage, setNewMessage] = useState('');
+export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onClose }: TicketChatProps) {
+  
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
@@ -66,32 +65,10 @@ export function TicketChat({ ticketId, isExpanded, openTicketIds, onExpandChange
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
+  
 
-    try {
-      const db = getDatabaseService();
-      const message: Omit<Message, 'id'> = {
-        content: newMessage.trim(),
-        from: { email: 'user@example.com', name: 'Current User' },
-        to: [{ email: 'support@example.com', name: 'Support Team' }],
-        cc: [],
-        bcc: [],
-        sentAt: new Date(),
-        ticketId
-      };
-      
-      await db.addDocument('messages', message);
-      setNewMessage('');
-      dispatch(fetchMessagesByTicketId(ticketId));
-    } catch (error) {
-      console.error('Failed to send message:', error);
-    }
-  };
-
-  const handleTabClick = (ticketId: string) => {
-    navigate(`?ticket=${ticketId}`);
+  const handleTabClick = (clickedTicketId: string) => {
+    navigate(`?ticket=${clickedTicketId}`);
   };
 
   const handleTabClose = (e: React.MouseEvent, tabTicketId: string) => {
@@ -115,26 +92,28 @@ export function TicketChat({ ticketId, isExpanded, openTicketIds, onExpandChange
     <div className="flex h-screen flex-col justify-between transition-all duration-300 w-full">
       <div className="flex-1 overflow-y-auto h-screen">
         {/* Tabs */}
-        {openTicketIds.length > 0 && (
+        {openTabs.length > 0 && (
           <div className="sticky top-0 z-20 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800">
             <div className="flex gap-1 px-2 py-1 overflow-x-auto">
-              {openTicketIds.map((openTicketId) => (
-                <button
-                  key={openTicketId}
-                  onClick={() => handleTabClick(openTicketId)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap group ${
-                    openTicketId === ticketId
+              {openTabs.map(({ id: openId, subject }) => (
+                <div
+                  key={openId}
+                  onClick={() => handleTabClick(openId)}
+                  role="tab"
+                  tabIndex={0}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap group cursor-pointer ${
+                    openId === ticketId
                       ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
                       : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
                   }`}
                 >
                   <span className="truncate max-w-[150px]">
-                    {openTicketId === currentTicket.id ? currentTicket.subject : `Ticket ${openTicketId}`}
+                    {openId === currentTicket.id ? currentTicket.subject : (subject || `Ticket ${openId}`)}
                   </span>
                   <button
-                    onClick={(e) => handleTabClose(e, openTicketId)}
+                    onClick={(e) => handleTabClose(e, openId)}
                     className={`p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 ${
-                      openTicketId === ticketId
+                      openId === ticketId
                         ? 'text-blue-600 dark:text-blue-400'
                         : 'text-zinc-400 dark:text-zinc-500'
                     }`}
@@ -142,7 +121,7 @@ export function TicketChat({ ticketId, isExpanded, openTicketIds, onExpandChange
                   >
                     <XMarkIcon className="h-4 w-4" />
                   </button>
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -238,7 +217,7 @@ export function TicketChat({ ticketId, isExpanded, openTicketIds, onExpandChange
               </div>
             </div>
           ))}
-        <form onSubmit={handleSubmit} className="sticky bottom-5 z-10">
+        {/*<form onSubmit={handleSubmit} className="sticky bottom-5 z-10">
         <div className="relative">
           <textarea
             value={newMessage}
@@ -255,7 +234,7 @@ export function TicketChat({ ticketId, isExpanded, openTicketIds, onExpandChange
             Send
           </button>
         </div>
-      </form>
+      </form>*/}
         </div>
       </div>
     </div>

@@ -11,17 +11,21 @@ import { getBadgeColor } from '../../utils/states';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentView } from '../../store/slices/viewsSlice';
 import { RootState } from '../../store';
+import { getDatabaseService, QueryOptions } from '../../services/databaseService';
+
+type TicketDoc = Ticket & { data: Record<string, unknown> };
+type RawTicketDoc = { subject?: string; data?: { subject?: string } } | null;
 
 const getBadgeText = (status: string) => {
   // Get the first letter of the status
   return status.charAt(0).toUpperCase()
 }
 
-const fields: Field<Ticket>[] = [
+const fields: Field<TicketDoc>[] = [
   { 
     key: 'subject',
     label: 'Subject',
-    render: (item: Ticket) => (
+    render: (item: TicketDoc) => (
       <div className="flex items-start gap-3">
         <Badge color={getBadgeColor(item.status)}>
           {getBadgeText(item.status)}
@@ -43,76 +47,91 @@ export default function Tickets() {
   const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
-  const searchParams = new URLSearchParams(location.search);
-  const [openTicketIds, setOpenTicketIds] = useState<string[]>([]);
+  const [openTabs, setOpenTabs] = useState<{ id: string; subject?: string }[]>([]);
   const pathname = location.pathname;
   const rootPath = pathname.split('/')[1];
   const currentView = useSelector((state: RootState) => state.views.currentView);
+  const currentTicket = useSelector((state: RootState) => state.tickets.currentTicket);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const queryOptions = useMemo(() => ({
+  const queryOptions: Omit<QueryOptions, 'limit' | 'startAfter'> = useMemo(() => ({
     constraints: [{
       field: 'groupId',
       operator: 'in',
-      value: currentView?.groups.map(group => group.id) || []
+      value: (currentView?.groups || []).map(group => group.id)
     }]
   }), [currentView?.groups]);
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
     const ticketIdFromQuery = searchParams.get('ticket');
     if (ticketIdFromQuery) {
       setTicketId(ticketIdFromQuery);
       setSelectedTicketId(ticketIdFromQuery);
-      // Add to open tickets if not already present
-      setOpenTicketIds(prev => {
-        if (!prev.includes(ticketIdFromQuery)) {
-          return [...prev, ticketIdFromQuery];
-        }
-        return prev;
+
+      setOpenTabs(prev => {
+        if (prev.some(t => t.id === ticketIdFromQuery)) return prev;
+        return [...prev, { id: ticketIdFromQuery }];
       });
+
+      // Fetch subject for the tab if not already known
+      (async () => {
+        try {
+          const db = getDatabaseService();
+          const doc = await db.getDocument<RawTicketDoc>('tickets', ticketIdFromQuery);
+          const subject: string | undefined = doc?.subject ?? doc?.data?.subject;
+          if (subject) setOpenTabs(prev => prev.map(t => t.id === ticketIdFromQuery ? { ...t, subject } : t));
+        } catch {
+          // ignore
+        }
+      })();
     }
     if(rootPath === 'views') {
       const viewId = pathname.split('/')[2];
       dispatch(setCurrentView(viewId));
     }
-  }, [pathname, rootPath, dispatch, currentView, searchParams]);
+  }, [location.search, pathname, rootPath, dispatch, currentView]);
 
-  const handleSendMessage = (content: string) => {
-    // TODO: Implement send message functionality with Redux
-    console.log('Sending message:', content);
-  };
+  // Ensure subject is cached for the currently loaded ticket
+  useEffect(() => {
+    if (!currentTicket?.id || !currentTicket.subject) return;
+    setOpenTabs(prev => prev.map(t => t.id === currentTicket.id ? { ...t, subject: t.subject || currentTicket.subject } : t));
+  }, [currentTicket?.id, currentTicket?.subject]);
+
+  
 
   const handleClose = (closedTicketId: string) => {
-    setOpenTicketIds(prev => {
-      const remainingTickets = prev.filter(id => id !== closedTicketId);
-      
-      // If there are other open tickets, switch to the first one
-      if (remainingTickets.length > 0) {
-        const nextTicketId = remainingTickets[0];
-        // Update all states before navigation
-        navigate(`?ticket=${nextTicketId}`);
+    setOpenTabs(prev => {
+      const remaining = prev.filter(t => t.id !== closedTicketId);
 
+      if (remaining.length > 0) {
+        const nextTicketId = remaining[0].id;
+        navigate(`?ticket=${nextTicketId}`);
       } else {
-        // Clear all states when no tickets remain
-        navigate('.'); // Remove the ticket query parameter
+        navigate('.');
         setTimeout(() => {
           setIsExpanded(false);
           setTicketId(null);
           setSelectedTicketId(null);
         }, 100);
       }
-      
-      return remainingTickets;
+
+      return remaining;
     });
   };
 
-  const handleOpenTicket = (ticketId: string) => {
+  const handleOpenTicket = (ticketId: string, subject?: string) => {
     setSelectedTicketId(ticketId);
-    setOpenTicketIds(prev => {
-      if (!prev.includes(ticketId)) {
-        return [...prev, ticketId];
+    setOpenTabs(prev => {
+      const exists = prev.some(t => t.id === ticketId);
+      if (!exists) {
+        return [...prev, { id: ticketId, subject }];
+      }
+      // Update subject if newly provided
+      if (subject) {
+        return prev.map(t => t.id === ticketId ? { ...t, subject: t.subject || subject } : t);
       }
       return prev;
     });
@@ -209,7 +228,7 @@ export default function Tickets() {
             </div>
           </div>
           <div className="flex-1 p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden">
-            <DatabaseTable<Ticket>
+            <DatabaseTable<TicketDoc>
               collection="tickets"
               fields={fields}
               pageSize={15}
@@ -223,7 +242,7 @@ export default function Tickets() {
               onAction={(action, item) => {
                 switch (action) {
                   case 'view':
-                    handleOpenTicket(item.id);
+                    handleOpenTicket(item.id, (item as TicketDoc).subject);
                     break;
                 }
               }}
@@ -238,7 +257,7 @@ export default function Tickets() {
             <TicketChat 
               ticketId={ticketId} 
               isExpanded={isExpanded}
-              openTicketIds={openTicketIds}
+              openTabs={openTabs}
               onExpandChange={setIsExpanded}
               onClose={handleClose}
             />
