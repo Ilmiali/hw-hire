@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchMessagesByTicketId } from '../../store/slices/messagesSlice';
@@ -11,6 +11,8 @@ import { getBadgeColor } from '../../utils/states';
 import { Badge } from '../../components/badge';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { useNavigate } from 'react-router-dom';
+import ReplyComposer from '../../components/ReplyComposer';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TicketChatProps {
   ticketId: string;
@@ -36,6 +38,7 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
   
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
     messages: state.messages.messages[ticketId] || [],
     loading: state.messages.loading,
@@ -74,6 +77,11 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
   const handleTabClose = (e: React.MouseEvent, tabTicketId: string) => {
     e.stopPropagation(); // Prevent tab click when clicking close
     onClose(tabTicketId);
+  };
+
+  const handleSendReply = (content: string) => {
+    // TODO: integrate with actual send action when available
+    console.log('Send reply to ticket', ticketId, content);
   };
 
   if (messagesLoading || ticketLoading && !currentTicket) {
@@ -217,6 +225,8 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
               </div>
             </div>
           ))}
+          {/* Spacer to ensure content not hidden behind floating button */}
+          <div className="h-24" />
         {/*<form onSubmit={handleSubmit} className="sticky bottom-5 z-10">
         <div className="relative">
           <textarea
@@ -235,6 +245,45 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
           </button>
         </div>
       </form>*/}
+        </div>
+      </div>
+      {/* Contained action area with morph */}
+      <div className="sticky bottom-0 z-20 px-4 pb-4 pt-2 bg-gradient-to-t from-white/80 to-transparent dark:from-zinc-900/80">
+        <div className="mx-auto max-w-3xl">
+          <AnimatePresence initial={false} mode="popLayout">
+            {!isComposerOpen && (
+              <motion.button
+                key="reply-button"
+                layoutId="replyCTA"
+                type="button"
+                onClick={() => setIsComposerOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.15 }}
+              >
+                Reply
+              </motion.button>
+            )}
+            {isComposerOpen && (
+              <motion.div
+                key="reply-composer"
+                layoutId="replyCTA"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 36 }}
+                className="rounded-2xl overflow-hidden"
+              >
+                <ReplyComposer
+                  open={true}
+                  onClose={() => setIsComposerOpen(false)}
+                  onSend={handleSendReply}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
