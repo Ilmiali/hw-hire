@@ -1,343 +1,54 @@
-import { useState } from 'react';
+import { useStore } from 'zustand';
+import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { LeftSidebar } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
-import { FormSchema, FormPage, FormSection, FormField, FieldType } from '../../types/form-builder';
-import { v4 as uuidv4 } from 'uuid';
-
-const initialForm: FormSchema = {
-    id: uuidv4(),
-    title: 'Untitled Form',
-    description: 'Add a description to your form',
-    pages: [
-        {
-            id: uuidv4(),
-            title: 'Page 1',
-            sections: [
-                {
-                    id: uuidv4(),
-                    title: 'Section 1',
-                    description: '',
-                    rows: []
-                }
-            ]
-        }
-    ]
-};
 
 const FormBuilder = () => {
-    const [form, setForm] = useState<FormSchema>(initialForm);
-    const [activePageId, setActivePageId] = useState<string>(initialForm.pages[0].id);
-    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-    const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+    // Access state
+    const form = useFormBuilderStore(state => state.form);
+    const activePageId = useFormBuilderStore(state => state.activePageId);
+    const selectedElementId = useFormBuilderStore(state => state.selectedElementId);
+    const isRightSidebarOpen = useFormBuilderStore(state => state.sidebarOpen);
+
+    // Access actions
+    const setTitle = useFormBuilderStore(state => state.setTitle);
+    const setActivePageId = useFormBuilderStore(state => state.setActivePageId);
+    const setSelectedElementId = useFormBuilderStore(state => state.setSelectedElementId);
+    const setSidebarOpen = useFormBuilderStore(state => state.setSidebarOpen);
+    
+    // Form actions
+    const addField = useFormBuilderStore(state => state.addField);
+    const updateField = useFormBuilderStore(state => state.updateField);
+    const deleteField = useFormBuilderStore(state => state.deleteField);
+    const reorderField = useFormBuilderStore(state => state.reorderField);
+    
+    const addSection = useFormBuilderStore(state => state.addSection);
+    const updateSection = useFormBuilderStore(state => state.updateSection);
+    const deleteSection = useFormBuilderStore(state => state.deleteSection);
+    const reorderSection = useFormBuilderStore(state => state.reorderSection);
+    
+    const addPage = useFormBuilderStore(state => state.addPage);
+    const updatePage = useFormBuilderStore(state => state.updatePage);
+    const deletePage = useFormBuilderStore(state => state.deletePage);
+
+    // Temporal (Undo/Redo)
+    const temporalStore = useFormBuilderStore.temporal;
+    const { undo: handleUndo, redo: handleRedo } = temporalStore.getState();
+    const pastStatesLength = useStore(temporalStore, (state) => state.pastStates.length);
+    const futureStatesLength = useStore(temporalStore, (state) => state.futureStates.length);
 
     // Helpers to find current page index
-    const activePageIndex = form.pages.findIndex(p => p.id === activePageId);
-
-    const handleAddField = (type: FieldType, targetSectionId?: string, targetRowIndex?: number, targetColumnIndex?: number) => {
-        const newField: FormField = {
-            id: uuidv4(),
-            type,
-            label: `New ${type} field`,
-            required: false,
-            placeholder: '',
-            options: ['select', 'radio', 'checkbox'].includes(type) ? 
-                [{ label: 'Option 1', value: 'option-1' }, { label: 'Option 2', value: 'option-2' }] : undefined
-        };
-
-        setForm(prev => {
-            const newForm = { ...prev };
-            const page = newForm.pages.find(p => p.id === activePageId);
-            if (!page) return prev;
-
-            let section = page.sections.find(s => s.id === targetSectionId);
-            if (!section && page.sections.length > 0) {
-                section = page.sections[0];
-            }
-
-            if (section) {
-                if (targetColumnIndex !== undefined && targetRowIndex !== undefined) {
-                    // Insert into existing row
-                    const row = section.rows[targetRowIndex];
-                    if (row && row.fields.length < 4) {
-                        row.fields.splice(targetColumnIndex, 0, newField);
-                    } else {
-                        // If column index provided but row full or missing, create new row
-                        section.rows.splice(targetRowIndex, 0, { id: uuidv4(), fields: [newField] });
-                    }
-                } else {
-                    // Insert as new row
-                    const rowIndex = targetRowIndex !== undefined ? targetRowIndex : section.rows.length;
-                    section.rows.splice(rowIndex, 0, { id: uuidv4(), fields: [newField] });
-                }
-            }
-            return newForm;
-        });
-        setSelectedElementId(newField.id);
-        setIsRightSidebarOpen(true);
-    };
-
-    const handleReorderField = (fieldId: string, targetSectionId: string, targetRowIndex: number, targetColumnIndex?: number) => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            let sourceField: FormField | null = null;
-            
-            // Remove from source and cleanup
-            newForm.pages.forEach(page => {
-                page.sections.forEach(section => {
-                    section.rows.forEach((row, rIdx) => {
-                        const idx = row.fields.findIndex(f => f.id === fieldId);
-                        if (idx !== -1) {
-                            sourceField = row.fields.splice(idx, 1)[0];
-                        }
-                    });
-                    // Cleanup empty rows
-                    section.rows = section.rows.filter(row => row.fields.length > 0);
-                });
-            });
-
-            if (!sourceField) return prev;
-
-            // Insert into target
-            newForm.pages.forEach(page => {
-                const section = page.sections.find(s => s.id === targetSectionId);
-                if (section) {
-                    if (targetColumnIndex !== undefined) {
-                        // Target existing or new row at targetRowIndex
-                        if (!section.rows[targetRowIndex]) {
-                             section.rows.splice(targetRowIndex, 0, { id: uuidv4(), fields: [sourceField!] });
-                        } else {
-                            const row = section.rows[targetRowIndex];
-                            if (row.fields.length < 4) {
-                                row.fields.splice(targetColumnIndex, 0, sourceField!);
-                            } else {
-                                // Row full, insert as new row instead
-                                section.rows.splice(targetRowIndex + 1, 0, { id: uuidv4(), fields: [sourceField!] });
-                            }
-                        }
-                    } else {
-                        // Insert as new row
-                        section.rows.splice(targetRowIndex, 0, { id: uuidv4(), fields: [sourceField!] });
-                    }
-                }
-            });
-
-            return newForm;
-        });
-    };
-
-    const handleAddSection = () => {
-        const newSection: FormSection = {
-            id: uuidv4(),
-            title: 'New Section',
-            rows: []
-        };
-        setForm(prev => {
-            const newForm = { ...prev };
-            newForm.pages[activePageIndex].sections.push(newSection);
-            return newForm;
-        });
-        setSelectedElementId(newSection.id);
-    };
-
-    const handleAddPage = () => {
-        const newPage: FormPage = {
-            id: uuidv4(),
-            title: `Page ${form.pages.length + 1}`,
-            sections: [
-                {
-                    id: uuidv4(),
-                    title: 'Section 1',
-                    rows: []
-                }
-            ]
-        };
-        setForm(prev => ({ ...prev, pages: [...prev.pages, newPage] }));
-        setActivePageId(newPage.id);
-    };
+    const activePageIndex = Math.max(0, form.pages.findIndex(p => p.id === activePageId));
 
     const handleSave = () => {
         console.log('Form Schema:', JSON.stringify(form, null, 2));
         alert('Form saved! Check console for JSON.');
     };
 
-    const updateField = (fieldId: string, updates: Partial<FormField>) => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            newForm.pages.forEach(page => {
-                page.sections.forEach(section => {
-                    section.rows.forEach(row => {
-                        const fieldIndex = row.fields.findIndex(f => f.id === fieldId);
-                        if (fieldIndex !== -1) {
-                            row.fields[fieldIndex] = { ...row.fields[fieldIndex], ...updates };
-                        }
-                    });
-                });
-            });
-            return newForm;
-        });
-    };
-
-    const updateSection = (sectionId: string, updates: Partial<FormSection>) => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            newForm.pages.forEach(page => {
-                const sectionIndex = page.sections.findIndex(s => s.id === sectionId);
-                if (sectionIndex !== -1) {
-                    page.sections[sectionIndex] = { ...page.sections[sectionIndex], ...updates };
-                }
-            });
-            return newForm;
-        });
-    };
-
-    const updatePage = (pageId: string, updates: Partial<FormPage>) => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            const pageIndex = newForm.pages.findIndex(p => p.id === pageId);
-            if (pageIndex !== -1) {
-                newForm.pages[pageIndex] = { ...newForm.pages[pageIndex], ...updates };
-            }
-            return newForm;
-        });
-    };
-    const deleteField = (fieldId: string) => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            newForm.pages.forEach(page => {
-                page.sections.forEach(section => {
-                    section.rows.forEach(row => {
-                        row.fields = row.fields.filter(f => f.id !== fieldId);
-                    });
-                    // Cleanup empty rows
-                    section.rows = section.rows.filter(row => row.fields.length > 0);
-                });
-            });
-            return newForm;
-        });
-        setSelectedElementId(null);
-    };
-
-    const deleteSection = (sectionId: string) => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            newForm.pages.forEach(page => {
-                page.sections = page.sections.filter(s => s.id !== sectionId);
-            });
-            return newForm;
-        });
-        setSelectedElementId(null);
-    };
-
-    const deletePage = (pageId: string) => {
-        if (form.pages.length <= 1) {
-            alert("Cannot delete the only page.");
-            return;
-        }
-        setForm(prev => {
-            const newForm = { ...prev };
-            const pageIndex = newForm.pages.findIndex(p => p.id === pageId);
-            const newPages = newForm.pages.filter(p => p.id !== pageId);
-            
-            // If deleting active page, switch to previous or next
-            if (pageId === activePageId) {
-                const newActiveIndex = Math.max(0, pageIndex - 1);
-                setActivePageId(newPages[newActiveIndex].id);
-            }
-            
-            return { ...prev, pages: newPages };
-        });
-        setSelectedElementId(null);
-    };
-
-    const moveField = (fieldId: string, direction: 'up' | 'down') => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            // For simplicity, moveField in a multi-column setup is complex. 
-            // We'll treat it as moving the field within its row or across rows if needed.
-            // But usually, drag and drop is preferred. Let's keep it moving between rows for now.
-            let sourceRowIdx = -1;
-            let sourceColIdx = -1;
-            let section: FormSection | null = null;
-
-            newForm.pages.forEach(page => {
-                page.sections.forEach(s => {
-                    s.rows.forEach((row, rIdx) => {
-                        const cIdx = row.fields.findIndex(f => f.id === fieldId);
-                        if (cIdx !== -1) {
-                            sourceRowIdx = rIdx;
-                            sourceColIdx = cIdx;
-                            section = s;
-                        }
-                    });
-                });
-            });
-
-            if (section) {
-                const s = section as FormSection;
-                const newRowIndex = direction === 'up' ? sourceRowIdx - 1 : sourceRowIdx + 1;
-                if (newRowIndex >= 0 && newRowIndex < s.rows.length) {
-                    const field = s.rows[sourceRowIdx].fields.splice(sourceColIdx, 1)[0];
-                    s.rows[newRowIndex].fields.push(field);
-                    // Cleanup
-                    if (s.rows[sourceRowIdx].fields.length === 0) {
-                        s.rows.splice(sourceRowIdx, 1);
-                    }
-                }
-            }
-            return newForm;
-        });
-    };
-
-    const moveSection = (sectionId: string, direction: 'up' | 'down') => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            newForm.pages.forEach(page => {
-                const sectionIndex = page.sections.findIndex(s => s.id === sectionId);
-                if (sectionIndex !== -1) {
-                    const newIndex = direction === 'up' ? sectionIndex - 1 : sectionIndex + 1;
-                    if (newIndex >= 0 && newIndex < page.sections.length) {
-                        // Swap
-                        const temp = page.sections[sectionIndex];
-                        page.sections[sectionIndex] = page.sections[newIndex];
-                        page.sections[newIndex] = temp;
-                    }
-                }
-            });
-            return newForm;
-        });
-    };
-
-    const handleReorderSection = (sectionId: string, targetIndex: number) => {
-        setForm(prev => {
-            const newForm = { ...prev };
-            let sourceSection: FormSection | null = null;
-            
-            // Find and remove from current position
-            newForm.pages.forEach(page => {
-                const idx = page.sections.findIndex(s => s.id === sectionId);
-                if (idx !== -1) {
-                    sourceSection = page.sections.splice(idx, 1)[0];
-                }
-            });
-
-            if (!sourceSection) return prev;
-
-            // Insert into target position in current active page
-            const page = newForm.pages.find(p => p.id === activePageId);
-            if (page) {
-                page.sections.splice(targetIndex, 0, sourceSection);
-            }
-
-            return newForm;
-        });
-    };
-
     // Find the selected object for the properties panel
     let selectedElement: { type: 'field' | 'section' | 'page' | 'form', data: any } | null = null;
     
-    // Check if form itself is selected (hacky way, maybe just clearing selection means form props)
-    // For now let's just check fields and sections
     if (selectedElementId) {
         form.pages.forEach(page => {
             if (page.id === selectedElementId) selectedElement = { type: 'page', data: page };
@@ -359,9 +70,27 @@ const FormBuilder = () => {
                 <div className="flex items-center gap-4">
                     <input 
                         value={form.title} 
-                        onChange={(e) => setForm(prev => ({...prev, title: e.target.value}))}
+                        onChange={(e) => setTitle(e.target.value)}
                         className="text-lg font-semibold bg-transparent border-none focus:ring-0 text-white p-0"
                     />
+                    <div className="flex items-center gap-2 border-l border-white/10 pl-4 ml-4">
+                        <button
+                            onClick={() => handleUndo()}
+                            disabled={pastStatesLength === 0}
+                            className={`p-1.5 rounded transition-colors ${pastStatesLength > 0 ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-700 cursor-not-allowed'}`}
+                            title="Undo"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                        </button>
+                        <button
+                            onClick={() => handleRedo()}
+                            disabled={futureStatesLength === 0}
+                            className={`p-1.5 rounded transition-colors ${futureStatesLength > 0 ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-700 cursor-not-allowed'}`}
+                            title="Redo"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+                        </button>
+                    </div>
                 </div>
                 
                 {form.pages.length > 1 && (
@@ -390,8 +119,8 @@ const FormBuilder = () => {
             <div className="flex flex-1 overflow-hidden">
                 <LeftSidebar 
                     form={form}
-                    onAddSection={handleAddSection} 
-                    onAddPage={handleAddPage}
+                    onAddSection={addSection} 
+                    onAddPage={addPage}
                     onSelectElement={setSelectedElementId}
                     selectedId={selectedElementId}
                 />
@@ -405,11 +134,11 @@ const FormBuilder = () => {
                         selectedId={selectedElementId}
                         onSelect={(id: string) => {
                             setSelectedElementId(id);
-                            setIsRightSidebarOpen(true);
+                            setSidebarOpen(true);
                         }}
-                        onDrop={handleAddField}
-                        onReorderField={handleReorderField}
-                        onReorderSection={handleReorderSection}
+                        onDrop={addField}
+                        onReorderField={reorderField}
+                        onReorderSection={reorderSection}
                     />
                 </div>
                 
@@ -427,7 +156,7 @@ const FormBuilder = () => {
                             if (selectedElement?.type === 'section') deleteSection(selectedElementId);
                             if (selectedElement?.type === 'page') deletePage(selectedElementId);
                         }}
-                        onClose={() => setIsRightSidebarOpen(false)}
+                        onClose={() => setSidebarOpen(false)}
                     />
                 )}
             </div>

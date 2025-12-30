@@ -4,7 +4,6 @@ import { MagnifyingGlassIcon, PlusIcon, DocumentIcon, FolderIcon, QueueListIcon 
 
 interface LeftSidebarProps {
     form: FormSchema;
-    onAddField: (type: FieldType) => void;
     onAddSection: () => void;
     onAddPage: () => void;
     onSelectElement: (id: string) => void;
@@ -22,7 +21,7 @@ const fieldTypes: { type: FieldType; label: string; icon: string }[] = [
     { type: 'date', label: 'Date Picker', icon: '📅' },
 ];
 
-export const LeftSidebar = ({ form, onAddField, onAddSection, onAddPage, onSelectElement, selectedId }: LeftSidebarProps) => {
+export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, selectedId }: LeftSidebarProps) => {
     const [activeTab, setActiveTab] = useState<'elements' | 'tree'>('elements');
     const [searchTerm, setSearchTerm] = useState('');
 
