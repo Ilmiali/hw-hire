@@ -130,7 +130,26 @@ const FormBuilder = () => {
                     form={form}
                     onAddSection={addSection} 
                     onAddPage={addPage}
-                    onSelectElement={setSelectedElementId}
+                    onSelectElement={(id) => {
+                        setSelectedElementId(id);
+                        // Find which page this element belongs to and switch if needed
+                        form.pages.forEach(page => {
+                            let found = page.id === id;
+                            if (!found) {
+                                page.sections.forEach(section => {
+                                    if (section.id === id) found = true;
+                                    section.rows.forEach(row => {
+                                        row.fields.forEach(field => {
+                                            if (field.id === id) found = true;
+                                        });
+                                    });
+                                });
+                            }
+                            if (found && activePageId !== page.id) {
+                                setActivePageId(page.id);
+                            }
+                        });
+                    }}
                     selectedId={selectedElementId}
                 />
                 

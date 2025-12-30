@@ -79,6 +79,7 @@ const FieldRenderer = ({ field, isSelected, onClick }: { field: FormField; isSel
             </div>
 
             <div 
+                id={field.id}
                 draggable
                 onDragStart={(e) => {
                     e.dataTransfer.setData('application/x-form-field-id', field.id);
@@ -297,6 +298,7 @@ const SectionRenderer = ({
             </div>
 
             <div 
+                id={section.id}
                 draggable
                 onDragStart={(e) => {
                     // Check if we are dragging a button or the section itself
@@ -410,6 +412,29 @@ const Canvas = ({
         }
         setDragOverSectionIndex(null);
     };
+
+    React.useEffect(() => {
+        if (!selectedId) return;
+        
+        // Wait a bit for the page to transition and elements to mount
+        const timeout = setTimeout(() => {
+            const element = document.getElementById(selectedId);
+            if (element) {
+                // Check if element is already in view
+                const rect = element.getBoundingClientRect();
+                const isInView = (
+                    rect.top >= 0 &&
+                    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
+                );
+
+                if (!isInView) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }, 100);
+
+        return () => clearTimeout(timeout);
+    }, [selectedId, page.id]); // Re-run if selection changes or we switch pages
 
     return (
         <div 
