@@ -8,6 +8,7 @@ import {
   ClipboardDocumentListIcon as ApplicationIcon,
   EyeIcon,
   QueueListIcon,
+  BriefcaseIcon,
 } from '@heroicons/react/16/solid';
 import Dashboard from '../screens/Dashboard';
 import Profile from '../screens/Profile';
@@ -18,6 +19,9 @@ import FormPreview from '../screens/FormBuilder/FormPreview';
 import PipelineListPage from '../screens/Pipeline/PipelineListPage';
 import PipelineEditor from '../screens/Pipeline/PipelineEditor';
 import JobPipelineBoard from '../screens/Pipeline/JobPipelineBoard';
+import JobsListPage from '../screens/Jobs/JobsListPage';
+import JobCreatePage from '../screens/Jobs/JobCreatePage';
+import JobDetailPage from '../screens/Jobs/JobDetailPage';
 import { RouteConfig, RouteGroup } from '../types/routes';
 
 // Public routes (no authentication required)
@@ -74,6 +78,23 @@ export const additionalRoutes: RouteConfig[] = [
     layout: 'authenticated',
     isAuthProtected: true,
   },
+
+  {
+    path: '/jobs/new',
+    name: 'Create Job',
+    icon: BriefcaseIcon,
+    component: JobCreatePage,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
+    path: '/jobs/:jobId',
+    name: 'Job Details',
+    icon: BriefcaseIcon,
+    component: JobDetailPage,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
 ];
 // Main navigation routes (authenticated)
 export const mainRoutes: RouteGroup[] = [
@@ -120,6 +141,15 @@ export const mainRoutes: RouteGroup[] = [
         name: 'Pipelines',
         icon: QueueListIcon,
         component: PipelineListPage,
+        layout: 'authenticated',
+        isAuthProtected: true,
+      },
+
+      {
+        path: '/jobs',
+        name: 'Jobs',
+        icon: BriefcaseIcon,
+        component: JobsListPage,
         layout: 'authenticated',
         isAuthProtected: true,
       },
