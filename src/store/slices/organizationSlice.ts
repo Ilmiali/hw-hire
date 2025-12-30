@@ -66,10 +66,6 @@ const organizationSlice = createSlice({
       .addCase(fetchUserOrganizations.fulfilled, (state, action) => {
         state.loading = false;
         state.organizations = action.payload;
-        // Set the first organization as the current one if none is selected
-        if (!state.currentOrganization && action.payload.length > 0) {
-          state.currentOrganization = action.payload[0];
-        }
       })
       .addCase(fetchUserOrganizations.rejected, (state, action) => {
         state.loading = false;

@@ -5,6 +5,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
+import { OrganizationSelectModal } from '../components/OrganizationSelectModal'
 
 // Configure NProgress
 NProgress.configure({ showSpinner: false })
@@ -43,16 +44,19 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   }, [location])
 
   return (
-    <SidebarLayout
-      collapsed={collapsed}
-      navbar={
-        <MainNavbar />
-      }
-      sidebar={({ collapsed }) => (
-        <MainSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      )}
-    >
-      {children}
-    </SidebarLayout>
+    <>
+      <SidebarLayout
+        collapsed={collapsed}
+        navbar={
+          <MainNavbar />
+        }
+        sidebar={({ collapsed }) => (
+          <MainSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+        )}
+      >
+        {children}
+      </SidebarLayout>
+      <OrganizationSelectModal />
+    </>
   );
 }
