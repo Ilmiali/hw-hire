@@ -20,6 +20,7 @@ export function MainSidebar({ collapsed, setCollapsed }: { collapsed?: boolean; 
   const dropdownConfig = getTeamDropdownConfig();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { userData } = useSelector((state: RootState) => state.auth);
+  const { currentOrganization } = useSelector((state: RootState) => state.organization);
 
   const renderDropdownMenu = () => (
     <Dropdown>
@@ -34,22 +35,41 @@ export function MainSidebar({ collapsed, setCollapsed }: { collapsed?: boolean; 
       </DropdownButton>
       <DropdownMenu className="min-w-80 lg:min-w-64" anchor="bottom start">
         {userData && (
-          <div className="px-3.5 py-3 border-b border-zinc-950/5 dark:border-white/10 mb-1 col-span-full">
-             <div className="flex items-center gap-3">
-              <Avatar 
-                initials={`${userData.firstName[0]}${userData.lastName[0]}`.toUpperCase()} 
-                className="size-9 bg-blue-500 text-white"
-              />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-zinc-950 dark:text-white truncate">
-                  {userData.firstName} {userData.lastName}
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
-                  {userData.email}
-                </p>
+          <>
+            <div className="px-3.5 py-3 border-b border-zinc-950/5 dark:border-white/10 mb-1 col-span-full">
+              <div className="flex items-center gap-3">
+                <Avatar 
+                  initials={`${userData.firstName[0]}${userData.lastName[0]}`.toUpperCase()} 
+                  className="size-9 bg-blue-500 text-white"
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-zinc-950 dark:text-white truncate">
+                    {userData.firstName} {userData.lastName}
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                    {userData.email}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+            {userData.orgMemberships && userData.orgMemberships.length > 0 && (
+              <>
+                <div className="px-3.5 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 col-span-full">
+                  Your Organizations
+                </div>
+                {userData.orgMemberships.map((membership) => (
+                  <DropdownItem key={membership.id} href={`/organizations/${membership.id}`} className="mb-1">
+                    <Avatar 
+                      initials={membership.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}
+                      className="size-6 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    />
+                    <SidebarLabel>{membership.name}</SidebarLabel>
+                  </DropdownItem>
+                ))}
+                <DropdownDivider />
+              </>
+            )}
+          </>
         )}
         {dropdownConfig.items.map((item, index) => {
           if (item.isDivider) {

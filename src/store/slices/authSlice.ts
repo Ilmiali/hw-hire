@@ -10,6 +10,7 @@ import {
 import { auth } from '../../firebase/config';
 import { User } from '../../types/user';
 import { getDatabaseService, Document } from '../../services/databaseService';
+import { fetchUserOrganizations } from './organizationSlice';
 
 interface AuthState {
   user: FirebaseUser | null;
@@ -75,6 +76,18 @@ export const fetchCurrentUser = createAsyncThunk(
         return rejectWithValue('User not found');
       }
 
+      // Fetch orgMemberships subcollection
+      const membershipsDocs = await db.getDocuments<Document>(`users/${userId}/orgMemberships`);
+      
+      const orgMemberships = membershipsDocs.map(doc => ({
+        id: doc.id,
+        name: doc.data.name as string || '',
+        role: doc.data.role as string || '',
+        joinedAt: doc.data.joinedAt instanceof Object && 'toDate' in doc.data.joinedAt 
+          ? (doc.data.joinedAt as any).toDate() 
+          : new Date(doc.data.joinedAt as string || Date.now())
+      }));
+
       // Map document data to User type
       const userData: User = {
         id: document.id,
@@ -84,7 +97,8 @@ export const fetchCurrentUser = createAsyncThunk(
         role: document.data.role as string || '',
         phoneNumber: document.data.phoneNumber as string || '',
         accountId: document.data.accountId as string || '',
-        accounts: (document.data.accounts as string[]) || []
+        accounts: (document.data.accounts as string[]) || [],
+        orgMemberships
       };
 
       return userData;
@@ -108,6 +122,8 @@ export const initializeAuth = createAsyncThunk(
         if (user) {
           // If user is logged in, fetch their data
           await dispatch(fetchCurrentUser(user.uid));
+          // Fetch their organizations and select the first one by default
+          await dispatch(fetchUserOrganizations(user.uid));
         } else {
           // Clear user data if logged out
           dispatch(setUserData(null));
