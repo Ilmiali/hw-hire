@@ -56,19 +56,145 @@ interface FormBuilderState {
 
 const initialForm: FormSchema = {
   id: uuidv4(),
-  title: 'Untitled Form',
-  description: 'Add a description to your form',
+  title: 'Job Application Form',
+  description: 'Please complete the form below. This form demonstrates the new validation system.',
   pages: [
     {
       id: uuidv4(),
-      title: 'Page 1',
+      title: 'Applicant Details',
       sections: [
         {
           id: uuidv4(),
-          title: 'Section 1',
-          description: '',
-          rows: [],
+          title: 'Personal Information',
+          description: 'Standard validation rules (Required, Email, etc.)',
+          rows: [
+            {
+              id: uuidv4(),
+              fields: [
+                {
+                  id: uuidv4(),
+                  type: 'text',
+                  label: 'Full Name',
+                  placeholder: 'John Doe',
+                  required: true,
+                  validation: {
+                    minLength: { value: 2, message: 'Name is too short' },
+                    maxLength: { value: 50 },
+                  },
+                },
+                {
+                  id: uuidv4(),
+                  type: 'email',
+                  label: 'Email Address',
+                  placeholder: 'john@company.com',
+                  required: true,
+                  validation: {
+                    pattern: {
+                      value: '^[a-zA-Z0-9._%+-]+@company\\.com$',
+                      message: 'Must be a valid @company.com email',
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              id: uuidv4(),
+              fields: [
+                 {
+                  id: uuidv4(),
+                  type: 'number',
+                  label: 'Years of Experience',
+                  placeholder: 'e.g. 5',
+                  required: true,
+                  validation: {
+                    min: { value: 0 },
+                    max: { value: 50, message: 'That seems unlikely!' },
+                  },
+                },
+                {
+                   id: uuidv4(),
+                   type: 'select',
+                   label: 'Department',
+                   required: true,
+                   options: [
+                       { label: 'Engineering', value: 'eng' },
+                       { label: 'Design', value: 'des' },
+                       { label: 'Product', value: 'prod' }
+                   ],
+                   validation: {
+                       allowedValues: { value: ['eng', 'des'], message: 'Only Engineering or Design properly accepted right now' }
+                   }
+                }
+              ]
+            }
+          ],
         },
+        {
+            id: uuidv4(),
+             title: 'Additional Details',
+             description: 'Complex validation (Textarea, Dates, Checkboxes)',
+             rows: [
+                 {
+                     id: uuidv4(),
+                     fields: [
+                         {
+                             id: uuidv4(),
+                             type: 'textarea',
+                             label: 'Cover Letter',
+                             placeholder: 'Tell us why you fit...',
+                             required: false,
+                             validation: {
+                                 minLength: { value: 50, message: 'Please write at least 50 characters' },
+                                 maxLength: { value: 500 }
+                             }
+                         }
+                     ]
+                 },
+                 {
+                     id: uuidv4(),
+                     fields: [
+                         {
+                             id: uuidv4(),
+                             type: 'date',
+                             label: 'Desired Start Date',
+                             required: true,
+                             validation: {
+                                 disallowFuture: { value: false }, // we want future usually
+                                 minDate: { value: '2024-01-01', message: 'Date cannot be before 2024' }
+                                 // To test disallowFuture, set it to true. Let's set it to FALSE for start date, but let's add Birth Date?
+                                 // Let's stick to Start Date but require it to be future? 
+                                 // My ValidationSpec has disallowFuture.
+                                 // Let's add "Date of Birth" for disallowFuture.
+                             }
+                         },
+                         {
+                             id: uuidv4(),
+                             type: 'date',
+                             label: 'Date of Birth',
+                             required: true,
+                             validation: {
+                                 disallowFuture: { value: true, message: 'You cannot be born in the future' }
+                             }
+                         }
+                     ]
+                 },
+                 {
+                     id: uuidv4(),
+                     fields: [
+                         {
+                             id: uuidv4(),
+                             type: 'checkbox',
+                             label: 'Agreements',
+                             required: true,
+                             options: [
+                                 { label: 'I agree to the Terms of Service', value: 'terms' }
+                             ],
+                             // Checkbox group validation handles min(1) via required:true
+                         }
+                     ]
+                 }
+             ]
+        }
       ],
     },
   ],

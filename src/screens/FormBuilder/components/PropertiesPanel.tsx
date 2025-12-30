@@ -1,6 +1,7 @@
 import { Input } from '../../../components/input';
 import { Switch } from '../../../components/switch';
 import { Textarea } from '../../../components/textarea';
+import { ValidationPanel } from './fields/ValidationPanel';
 
 interface PropertiesPanelProps {
     selectedElement: { type: 'field' | 'section' | 'page' | 'form', data: any } | null;
@@ -38,6 +39,8 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose, hideHea
             
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
 
+
+
             {type === 'field' && (
                 <div className="space-y-4">
                     <div>
@@ -54,6 +57,9 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose, hideHea
                          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Required</label>
                          <Switch checked={data.required} onChange={(checked) => onUpdate({ required: checked })} />
                     </div>
+
+                    {/* Validation Panel */}
+                    <ValidationPanel field={data} onUpdate={onUpdate} />
 
                     {['select', 'radio', 'checkbox'].includes(data.type) && (
                         <div>

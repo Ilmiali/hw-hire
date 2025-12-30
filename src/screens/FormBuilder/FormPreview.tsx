@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { FormField, FormPage } from '../../types/form-builder';
 import { evaluateRules } from '../../utils/evaluateRules';
+import { buildZodSchema } from '../../utils/validation';
+import { z } from 'zod';
 
 // UI Components
 import { Input } from '../../components/input';
@@ -21,6 +23,7 @@ export const FormPreview = () => {
     const form = useFormBuilderStore(state => state.form);
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [formValues, setFormValues] = useState<Record<string, any>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const currentPage = form.pages[currentPageIndex];
     const isFirstPage = currentPageIndex === 0;
@@ -45,6 +48,10 @@ export const FormPreview = () => {
     const { visibleFieldIds, requiredFieldIds } = useMemo(() => {
         return evaluateRules(form.rules || [], formValues, allFields);
     }, [form.rules, formValues, allFields]);
+
+    const schema = useMemo(() => {
+        return buildZodSchema(allFields, requiredFieldIds, visibleFieldIds);
+    }, [allFields, requiredFieldIds, visibleFieldIds]);
 
     // Effect to clear values of hidden fields
     useEffect(() => {
@@ -81,20 +88,67 @@ export const FormPreview = () => {
             ...prev,
             [fieldId]: value
         }));
+
+        // Validate on change if touched or always? 
+        // Let's validate.
+        try {
+            const fieldSchema = schema.shape[fieldId];
+            if (fieldSchema) {
+                fieldSchema.parse(value);
+                 setErrors(prev => {
+                    const next = { ...prev };
+                    delete next[fieldId];
+                    return next;
+                });
+            }
+        } catch (e) {
+                 if (e instanceof z.ZodError) {
+                     setErrors(prev => ({
+                        ...prev,
+                        [fieldId]: (e as any).issues?.[0]?.message || (e as any).errors?.[0]?.message || 'Invalid value'
+                    }));
+                 }
+        }
+    };
+
+    const validatePage = (pageIndex: number): boolean => {
+         const page = form.pages[pageIndex];
+         const pageFields = getAllFields([page]);
+         let isValid = true;
+         const newErrors: Record<string, string> = {};
+
+         pageFields.forEach(field => {
+             // Only validate if visible
+             if (!visibleFieldIds.has(field.id)) return;
+             
+             try {
+                 const fieldSchema = schema.shape[field.id];
+                 if (fieldSchema) {
+                     fieldSchema.parse(formValues[field.id]);
+                 }
+             } catch (e) {
+                 if (e instanceof z.ZodError) {
+                     newErrors[field.id] = (e as any).issues?.[0]?.message || (e as any).errors?.[0]?.message || 'Invalid value';
+                     isValid = false;
+                 }
+             }
+         });
+         
+         if (!isValid) {
+             setErrors(prev => ({ ...prev, ...newErrors }));
+             // mark all as touched so errors show?
+             // Render loop uses 'errors[field.id]' so that's enough.
+             return false;
+         }
+         return true;
     };
 
     const handleNext = () => {
         // Validate required visible fields on this page?
         // Basic check for now
-        const pageFields = getAllFields([currentPage]); // Use helper for current page
-        const missingRequired = pageFields.filter(f => 
-            visibleFieldIds.has(f.id) && 
-            requiredFieldIds.has(f.id) && 
-            !formValues[f.id]
-        );
-
-        if (missingRequired.length > 0) {
-            alert(`Please fill in required fields: ${missingRequired.map(f => f.label).join(', ')}`);
+        if (!validatePage(currentPageIndex)) {
+            // Scroll to error?
+            alert('Please fix validation errors before proceeding.');
             return;
         }
 
@@ -115,14 +169,21 @@ export const FormPreview = () => {
         e.preventDefault();
         
         // Validate all visible required fields
-        const missing = allFields.filter(f => 
-            visibleFieldIds.has(f.id) && 
-            requiredFieldIds.has(f.id) && 
-            !formValues[f.id]
-        );
-
-        if (missing.length > 0) {
-            alert(`Please fill in required fields: ${missing.map(f => f.label).join(', ')}`);
+        // Validate everything
+        const result = schema.safeParse(formValues);
+        
+        if (!result.success) {
+            const newErrors: Record<string, string> = {};
+            // Explicit cast to avoid ts issues with loaded zod version
+            const errorIssues = (result.error as any).issues || (result.error as any).errors || [];
+            errorIssues.forEach((err: any) => {
+                // path[0] should be fieldId
+                if (err.path && err.path[0]) {
+                     newErrors[err.path[0] as string] = err.message;
+                }
+            });
+            setErrors(newErrors);
+            alert('Please fix validation errors.');
             return;
         }
 
@@ -283,6 +344,9 @@ export const FormPreview = () => {
                                                                 {field.label} {isRequired && <span className="text-red-500">*</span>}
                                                             </Label>
                                                             {renderField(field)}
+                                                            {errors[field.id] && (
+                                                                <p className="text-red-500 text-xs mt-1">{errors[field.id]}</p>
+                                                            )}
                                                         </Field>
                                                     );
                                                 })}

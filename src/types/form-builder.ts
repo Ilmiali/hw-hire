@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date';
+export type FieldType = 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file' | 'multiselect';
 
 export interface FormField {
   id: string;
@@ -8,6 +8,58 @@ export interface FormField {
   required: boolean;
   options?: { label: string; value: string }[]; // For select, radio, checkbox
   value?: string | number | boolean | string[]; // Default value or binding
+  validation?: ValidationSpec;
+}
+
+export type ValidationSpec = 
+  | TextValidationSpec 
+  | NumberValidationSpec 
+  | DateValidationSpec 
+  | FileValidationSpec 
+  | CheckboxValidationSpec 
+  | SelectValidationSpec;
+
+export interface ValidationRule<T> {
+  value: T;
+  message?: string;
+}
+
+export interface TextValidationSpec {
+  minLength?: ValidationRule<number>;
+  maxLength?: ValidationRule<number>;
+  pattern?: {
+    value: string;
+    flags?: string;
+    message?: string;
+  };
+}
+
+export interface NumberValidationSpec {
+  min?: ValidationRule<number>;
+  max?: ValidationRule<number>;
+}
+
+export interface DateValidationSpec {
+  minDate?: ValidationRule<string>; // ISO string
+  maxDate?: ValidationRule<string>; // ISO string
+  disallowFuture?: ValidationRule<boolean>;
+  disallowPast?: ValidationRule<boolean>;
+}
+
+export interface FileValidationSpec {
+  maxSizeMb?: ValidationRule<number>;
+  allowedExtensions?: ValidationRule<string[]>; // e.g. ['.jpg', '.pdf']
+  allowedMimeTypes?: ValidationRule<string[]>; // e.g. ['image/jpeg']
+  maxFiles?: ValidationRule<number>;
+}
+
+export interface CheckboxValidationSpec {
+  mustBeTrue?: ValidationRule<boolean>;
+}
+
+export interface SelectValidationSpec {
+  // Usually select options limit this, but can enforce subset
+  allowedValues?: ValidationRule<string[]>; 
 }
 
 export interface FormRow {
