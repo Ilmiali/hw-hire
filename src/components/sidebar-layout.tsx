@@ -2,6 +2,7 @@
 
 import * as Headless from '@headlessui/react'
 import React, { useState } from 'react'
+import clsx from 'clsx'
 import { NavbarItem } from './navbar'
 
 function OpenMenuIcon() {
@@ -48,17 +49,24 @@ export function SidebarLayout({
   navbar,
   sidebar,
   children,
-}: React.PropsWithChildren<{ navbar: React.ReactNode; sidebar: React.ReactNode }>) {
+  collapsed = false,
+}: React.PropsWithChildren<{ 
+  navbar: React.ReactNode; 
+  sidebar: React.ReactNode | ((props: { collapsed: boolean }) => React.ReactNode); 
+  collapsed?: boolean 
+}>) {
   let [showSidebar, setShowSidebar] = useState(false)
 
   return (
     <div className="relative isolate flex min-h-svh w-full bg-white max-lg:flex-col lg:bg-zinc-100 dark:bg-zinc-900 dark:lg:bg-zinc-900">
       {/* Sidebar on desktop */}
-      <div className="fixed inset-y-0 left-0 w-64 max-lg:hidden">{sidebar}</div>
+      <div className={clsx("fixed inset-y-0 left-0 transition-all duration-300 max-lg:hidden", collapsed ? "w-[4.5rem]" : "w-64")}>
+        {typeof sidebar === 'function' ? sidebar({ collapsed }) : sidebar}
+      </div>
 
       {/* Sidebar on mobile */}
       <MobileSidebar open={showSidebar} close={() => setShowSidebar(false)}>
-        {sidebar}
+        {typeof sidebar === 'function' ? sidebar({ collapsed: false }) : sidebar}
       </MobileSidebar>
 
       {/* Navbar on mobile */}
@@ -72,7 +80,7 @@ export function SidebarLayout({
       </header>
 
       {/* Content */}
-      <main className="flex flex-1 flex-col pb-2 lg:min-w-0 lg:pt-2 lg:pr-2 lg:pl-64 overflow-y-hidden">
+      <main className={clsx("flex flex-1 flex-col pb-2 lg:min-w-0 lg:pt-2 lg:pr-2 overflow-y-hidden transition-all duration-300", collapsed ? "lg:pl-[4.5rem]" : "lg:pl-64")}>
         <div className="grow lg:rounded-lg lg:bg-white lg:ring-1 lg:shadow-xs lg:ring-zinc-950/5 dark:lg:bg-black dark:lg:ring-white/10 overflow-y-auto">
           <div className="mx-auto">{children}</div>
         </div>

@@ -8,8 +8,22 @@ import { TouchTarget } from './button'
 import { Link } from './link'
 import { ActionDropdown, ActionItem } from './action-dropdown'
 
-export function Sidebar({ className, ...props }: React.ComponentPropsWithoutRef<'nav'>) {
-  return <nav {...props} className={clsx(className, 'flex flex-col h-screen')} />
+const SidebarContext = React.createContext<{ collapsed: boolean; setCollapsed: (v: boolean) => void }>({
+  collapsed: false,
+  setCollapsed: () => {},
+})
+
+export function useSidebar() {
+  return React.useContext(SidebarContext)
+}
+
+
+export function Sidebar({ collapsed, setCollapsed, className, ...props }: { collapsed: boolean; setCollapsed: (v: boolean) => void } & React.ComponentPropsWithoutRef<'nav'>) {
+  return (
+    <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
+      <nav {...props} className={clsx(className, 'flex flex-col h-screen')} />
+    </SidebarContext.Provider>
+  )
 }
 
 export function SidebarHeader({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
@@ -67,6 +81,9 @@ export function SidebarSpacer({ className, ...props }: React.ComponentPropsWitho
 }
 
 export function SidebarHeading({ className, ...props }: React.ComponentPropsWithoutRef<'h3'>) {
+  const { collapsed } = useSidebar()
+  if (collapsed) return null
+  
   return (
     <h3 {...props} className={clsx(className, 'mb-1 px-2 text-xs/6 font-medium text-zinc-500 dark:text-zinc-400')} />
   )
@@ -116,12 +133,17 @@ export const SidebarItem = forwardRef(function SidebarItem(
     'dark:data-current:*:data-[slot=icon]:fill-white'
   )
 
+  const { collapsed } = useSidebar()
+
   return (
-    <span className={clsx(className, 'relative group')}>
+    <span className={clsx(className, 'relative group', collapsed && 'flex justify-center')}>
       {current && (
         <motion.span
           layoutId="current-indicator"
-          className="absolute inset-y-2 -left-4 w-0.5 rounded-full bg-zinc-950 dark:bg-white"
+          className={clsx(
+            "absolute inset-y-2 rounded-full bg-zinc-950 dark:bg-white",
+            collapsed ? "left-0 w-0.5" : "-left-4 w-0.5"
+          )}
         />
       )}
       {'href' in props ? (
@@ -157,5 +179,7 @@ export const SidebarItem = forwardRef(function SidebarItem(
 })
 
 export function SidebarLabel({ className, ...props }: React.ComponentPropsWithoutRef<'span'>) {
+  const { collapsed } = useSidebar()
+  if (collapsed) return null
   return <span {...props} className={clsx(className, 'truncate')} />
 }

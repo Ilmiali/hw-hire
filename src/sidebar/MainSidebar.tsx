@@ -10,7 +10,9 @@ import { useState } from 'react';
 import { Cog8ToothIcon } from '@heroicons/react/16/solid';
 import { SettingsModal } from '../screens/Settings/SettingsModal';
 
-export function MainSidebar() {
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/16/solid';
+
+export function MainSidebar({ collapsed, setCollapsed }: { collapsed?: boolean; setCollapsed?: (v: boolean) => void }) {
   const location = useLocation();
   const routesBySection = getSidebarRoutes();
   const dropdownConfig = getTeamDropdownConfig();
@@ -74,7 +76,7 @@ export function MainSidebar() {
 
   return (
     <>
-      <Sidebar>
+      <Sidebar collapsed={collapsed || false} setCollapsed={setCollapsed || (() => {})}>
         <SidebarHeader>
           {renderDropdownMenu()}
           {routesBySection.header?.length > 0 && (
@@ -94,6 +96,12 @@ export function MainSidebar() {
               <SidebarLabel>Settings</SidebarLabel>
             </SidebarItem>
           </SidebarSection>
+          <div className="mt-2 flex max-lg:hidden">
+              <SidebarItem onClick={() => setCollapsed?.(!collapsed)}>
+                  {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}  
+                  <SidebarLabel>Collapse</SidebarLabel>
+              </SidebarItem>
+          </div>
         </SidebarFooter>
       </Sidebar>
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />

@@ -16,6 +16,16 @@ interface AuthenticatedLayoutProps {
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const location = useLocation()
   const [, setIsLoading] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => location.pathname.startsWith('/form-builder'))
+
+  // Default to collapsed for Form Builder
+  useEffect(() => {
+    if (location.pathname.startsWith('/form-builder')) {
+      setCollapsed(true)
+    } else {
+      setCollapsed(false)
+    }
+  }, [location.pathname])
 
   useEffect(() => {
     setIsLoading(true)
@@ -34,12 +44,13 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
 
   return (
     <SidebarLayout
+      collapsed={collapsed}
       navbar={
         <MainNavbar />
       }
-      sidebar={
-        <MainSidebar />
-      }
+      sidebar={({ collapsed }) => (
+        <MainSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      )}
     >
       {children}
     </SidebarLayout>
