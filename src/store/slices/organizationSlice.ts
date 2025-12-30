@@ -22,20 +22,29 @@ export const fetchUserOrganizations = createAsyncThunk(
   async (userId: string, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const organizations = await db.getDocuments<DbDocument>('organizations', {
-        constraints: [{
-          field: 'members',
-          operator: 'array-contains',
-          value: userId
-        }]
-      });
-      console.log('Organizations:', organizations);
-      return organizations.map(org => ({
+      
+      // First fetch the memberships to get the IDs from the subcollection
+      const membershipsDocs = await db.getDocuments<DbDocument>(`users/${userId}/orgMemberships`);
+      const orgIds = membershipsDocs.map(doc => doc.id);
+
+      if (orgIds.length === 0) {
+        return [];
+      }
+
+      // Fetch each organization individually
+      const orgPromises = orgIds.map(id => db.getDocument<DbDocument>('orgs', id));
+      const orgDocs = await Promise.all(orgPromises);
+      
+      const filteredOrgs = orgDocs.filter((doc): doc is DbDocument => doc !== null);
+
+      console.log('Fetched Organizations:', filteredOrgs);
+
+      return filteredOrgs.map(org => ({
         createdAt: org.createdAt || new Date(),
         updatedAt: org.updatedAt || new Date(),
         id: org.id,
         name: org.data.name as string,
-        members: org.data.members as any,
+        members: [], // Members are now in a subcollection, providing empty array for now to match type
         owner: org.data.owner as string
       }));
     } catch (error) {

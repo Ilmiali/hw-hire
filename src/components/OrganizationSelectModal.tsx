@@ -5,10 +5,13 @@ import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../store'
 import { setCurrentOrganization } from '../store/slices/organizationSlice'
 import { BuildingOfficeIcon } from '@heroicons/react/24/outline'
+import { useNavigate, useLocation } from 'react-router-dom'
 import clsx from 'clsx'
 
 export function OrganizationSelectModal() {
   const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate()
+  const location = useLocation()
   const userData = useSelector((state: RootState) => state.auth.userData)
   const organizations = useSelector((state: RootState) => state.organization.organizations)
   const currentOrganization = useSelector((state: RootState) => state.organization.currentOrganization)
@@ -17,13 +20,14 @@ export function OrganizationSelectModal() {
 
   const memberships = userData?.orgMemberships || []
 
-  // Show modal only if user is logged in, has data, but no organization is selected
-  const isOpen = !!user && !!userData && !currentOrganization && !loading
+  // Show modal if user is logged in, has data, but no organization is selected OR they are on the selection page
+  const isOpen = !!user && !!userData && (!currentOrganization || location.pathname === '/orgs/') && !loading
 
   const handleSelect = (orgId: string) => {
     const org = organizations.find(o => o.id === orgId)
     if (org) {
       dispatch(setCurrentOrganization(org))
+      navigate(`/orgs/${orgId}/dashboard`)
     }
   }
 

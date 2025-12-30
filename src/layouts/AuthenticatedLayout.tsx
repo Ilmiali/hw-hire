@@ -2,7 +2,10 @@ import { SidebarLayout } from '../components/sidebar-layout'
 import { MainSidebar } from '../sidebar/MainSidebar'
 import { MainNavbar } from '../navbar/MainNavbar'
 import { ReactNode, useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import { RootState } from '../store'
+import { setCurrentOrganization } from '../store/slices/organizationSlice'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { OrganizationSelectModal } from '../components/OrganizationSelectModal'
@@ -16,12 +19,25 @@ interface AuthenticatedLayoutProps {
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const location = useLocation()
+  const { orgId } = useParams<{ orgId: string }>()
+  const dispatch = useDispatch()
+  const { currentOrganization, organizations } = useSelector((state: RootState) => state.organization)
   const [, setIsLoading] = useState(false)
-  const [collapsed, setCollapsed] = useState(() => location.pathname.startsWith('/form-builder'))
+  const [collapsed, setCollapsed] = useState(() => location.pathname.includes('/form-builder'))
+
+  // Sync current organization with URL parameter
+  useEffect(() => {
+    if (orgId && (!currentOrganization || currentOrganization.id !== orgId)) {
+      const org = organizations.find(o => o.id === orgId)
+      if (org) {
+        dispatch(setCurrentOrganization(org))
+      }
+    }
+  }, [orgId, currentOrganization, organizations, dispatch])
 
   // Default to collapsed for Form Builder
   useEffect(() => {
-    if (location.pathname.startsWith('/form-builder')) {
+    if (location.pathname.includes('/form-builder')) {
       setCollapsed(true)
     } else {
       setCollapsed(false)

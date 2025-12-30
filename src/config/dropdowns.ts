@@ -16,7 +16,7 @@ const handleLogout = () => {
 const getOrganizationDropdownItems = (organizations: Organization[], currentOrg: Organization | null) => {
   const items = organizations.map(org => ({
     label: org.name,
-    href: `/organizations/${org.id}`,
+    href: `/orgs/${org.id}/dashboard`,
     avatar: {
       initials: org.name.split(' ').map(word => word[0]).join('').toUpperCase(),
       className: "bg-blue-500 text-white",
@@ -28,7 +28,7 @@ const getOrganizationDropdownItems = (organizations: Organization[], currentOrg:
     ...items,
     {
       label: "New organization...",
-      href: "/organizations/create",
+      href: "/orgs/new",
       icon: PlusIcon,
     },
     {
@@ -36,7 +36,7 @@ const getOrganizationDropdownItems = (organizations: Organization[], currentOrg:
     },
     {
       label: "Settings",
-      href: currentOrg ? `/organizations/${currentOrg.id}/settings` : "/organizations/settings",
+      href: currentOrg ? `/orgs/${currentOrg.id}/settings` : "/orgs/settings",
       icon: Cog8ToothIcon,
     },
     {

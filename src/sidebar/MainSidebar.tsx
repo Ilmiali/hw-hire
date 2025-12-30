@@ -52,23 +52,6 @@ export function MainSidebar({ collapsed, setCollapsed }: { collapsed?: boolean; 
                 </div>
               </div>
             </div>
-            {userData.orgMemberships && userData.orgMemberships.length > 0 && (
-              <>
-                <div className="px-3.5 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 col-span-full">
-                  Your Organizations
-                </div>
-                {userData.orgMemberships.map((membership) => (
-                  <DropdownItem key={membership.id} href={`/organizations/${membership.id}`} className="mb-1">
-                    <Avatar 
-                      initials={membership.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}
-                      className="size-6 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    />
-                    <SidebarLabel>{membership.name}</SidebarLabel>
-                  </DropdownItem>
-                ))}
-                <DropdownDivider />
-              </>
-            )}
           </>
         )}
         {dropdownConfig.items.map((item, index) => {
@@ -102,16 +85,19 @@ export function MainSidebar({ collapsed, setCollapsed }: { collapsed?: boolean; 
   const renderRouteGroup = (group: typeof routesBySection.body[0]) => (
     <SidebarSection key={group.name}>
       {group.name && <SidebarHeading>{group.name}</SidebarHeading>}
-      {group.routes.map((route) => (
-        <SidebarItem
-          key={route.path}
-          href={route.path}
-          current={location.pathname === route.path}
-        >
-          <route.icon />
-          <SidebarLabel>{route.name}</SidebarLabel>
-        </SidebarItem>
-      ))}
+      {group.routes.map((route) => {
+        const resolvedPath = route.path.replace(':orgId', currentOrganization?.id || '');
+        return (
+          <SidebarItem
+            key={route.path}
+            href={resolvedPath}
+            current={location.pathname === resolvedPath}
+          >
+            <route.icon />
+            <SidebarLabel>{route.name}</SidebarLabel>
+          </SidebarItem>
+        );
+      })}
     </SidebarSection>
   );
 

@@ -39,7 +39,7 @@ export const publicRoutes: RouteConfig[] = [
 // Additional routes that shouldn't appear in the sidebar
 export const additionalRoutes: RouteConfig[] = [
   {
-    path: '/applications/:id',
+    path: '/orgs/:orgId/applications/:id',
     name: 'Application Details',
     icon: ApplicationIcon,
     component: Applications,
@@ -47,7 +47,7 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
   {
-    path: '/views/:id',
+    path: '/orgs/:orgId/views/:id',
     name: 'View Details',
     icon: ApplicationIcon,
     component: Applications,
@@ -55,7 +55,7 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
   {
-    path: '/form-builder/preview',
+    path: '/orgs/:orgId/form-builder/preview',
     name: 'Form Preview',
     icon: EyeIcon,
     component: FormPreview,
@@ -63,7 +63,7 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
   {
-    path: '/pipelines/:id',
+    path: '/orgs/:orgId/pipelines/:id',
     name: 'Edit Pipeline',
     icon: QueueListIcon,
     component: PipelineEditor,
@@ -71,7 +71,7 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
   {
-    path: '/pipelines/:id/preview',
+    path: '/orgs/:orgId/pipelines/:id/preview',
     name: 'Pipeline Preview',
     icon: EyeIcon, // Or generic icon
     component: JobPipelineBoard,
@@ -80,7 +80,7 @@ export const additionalRoutes: RouteConfig[] = [
   },
 
   {
-    path: '/jobs/new',
+    path: '/orgs/:orgId/jobs/new',
     name: 'Create Job',
     icon: BriefcaseIcon,
     component: JobCreatePage,
@@ -88,10 +88,18 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
   {
-    path: '/jobs/:jobId',
+    path: '/orgs/:orgId/jobs/:jobId',
     name: 'Job Details',
     icon: BriefcaseIcon,
     component: JobDetailPage,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
+    path: '/orgs/:orgId/dashboard',
+    name: 'Organization Dashboard',
+    icon: HomeIcon,
+    component: Dashboard,
     layout: 'authenticated',
     isAuthProtected: true,
   },
@@ -105,7 +113,7 @@ export const mainRoutes: RouteGroup[] = [
     order: 1,
     routes: [
       {
-        path: '/dashboard',
+        path: '/orgs/:orgId/dashboard',
         name: 'Dashboard',
         icon: HomeIcon,
         component: Dashboard,
@@ -113,7 +121,7 @@ export const mainRoutes: RouteGroup[] = [
         isAuthProtected: true,
       },
       {
-        path: '/form-builder',
+        path: '/orgs/:orgId/form-builder',
         name: 'Form Builder',
         icon: SparklesIcon,
         component: FormBuilder,
@@ -121,7 +129,7 @@ export const mainRoutes: RouteGroup[] = [
         isAuthProtected: true,
       },
       {
-        path: '/applications',
+        path: '/orgs/:orgId/applications',
         name: 'Applications',
         icon: ApplicationIcon,
         component: Applications,
@@ -129,7 +137,7 @@ export const mainRoutes: RouteGroup[] = [
         isAuthProtected: true,
       },
       {
-        path: '/profile',
+        path: '/orgs/:orgId/profile',
         name: 'Profile',
         icon: UserIcon,
         component: Profile,
@@ -137,7 +145,7 @@ export const mainRoutes: RouteGroup[] = [
         isAuthProtected: true,
       },
       {
-        path: '/pipelines',
+        path: '/orgs/:orgId/pipelines',
         name: 'Pipelines',
         icon: QueueListIcon,
         component: PipelineListPage,
@@ -146,7 +154,7 @@ export const mainRoutes: RouteGroup[] = [
       },
 
       {
-        path: '/jobs',
+        path: '/orgs/:orgId/jobs',
         name: 'Jobs',
         icon: BriefcaseIcon,
         component: JobsListPage,
@@ -162,7 +170,7 @@ export const mainRoutes: RouteGroup[] = [
     order: 2,
     routes: [
       {
-        path: '/privacy-policy',
+        path: '/orgs/:orgId/privacy-policy',
         name: 'Privacy Policy',
         icon: ShieldCheckIcon,
         component: Dashboard, // Replace with actual Privacy Policy component
@@ -170,7 +178,7 @@ export const mainRoutes: RouteGroup[] = [
         isAuthProtected: true,
       },
       {
-        path: '/share-feedback',
+        path: '/orgs/:orgId/share-feedback',
         name: 'Share Feedback',
         icon: LightBulbIcon,
         component: Dashboard, // Replace with actual Feedback component
@@ -186,7 +194,7 @@ export const mainRoutes: RouteGroup[] = [
     order: 1,
     routes: [
       {
-        path: '/changelog',
+        path: '/orgs/:orgId/changelog',
         name: 'Changelog',
         icon: SparklesIcon,
         component: Dashboard, // Replace with actual component
