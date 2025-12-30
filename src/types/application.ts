@@ -1,16 +1,16 @@
-export interface Ticket {
+export interface Application {
   id: string;
   subject: string;
   snippet: string;
   channel: string;
-  status: 'new' | 'open' | 'closed' | 'pending' | 'resolved' | 'archived';
+  status: 'applied' | 'screening' | 'interview' | 'offer' | 'rejected' | 'hired';
   groupId: string;
   priority: string;
   tags: string[];
   updatedAt: Date;
-  requestedAt: Date;
+  appliedAt: Date;
   assignedTo?: string | null;
-  requestedBy: {
+  candidate: {
     email: string;
     name: string;
   }

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getDatabaseService, Document } from '../../services/databaseService';
+import { getDatabaseService, Document as DbDocument } from '../../services/databaseService';
 import { Group } from '../../types/group';
 import { RootState } from '../index';
 
@@ -60,7 +60,7 @@ export const fetchGroups = createAsyncThunk(
   async ({ organizationId, userId }: { organizationId: string; userId: string }, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const groups = await db.getDocuments<Document>('groups', {
+      const groups = await db.getDocuments<DbDocument>('groups', {
         constraints: [
           {
             field: 'organizationId',
@@ -80,9 +80,9 @@ export const fetchGroups = createAsyncThunk(
         id: group.id,
         name: group.data.name as string,
         organizationId: group.data.organizationId as string,
-        totalNumTickets: group.data.totalNumTickets as number,
+        totalNumApplications: (group.data.totalNumApplications || group.data.totalNumTickets) as number,
         description: group.data.description as string,
-        members: group.data.members.filter((member: string) => member !== group.data.owner) as string[],
+        members: (group.data.members as string[]).filter((member: string) => member !== group.data.owner),
         createdAt: group.createdAt || new Date(),
         updatedAt: group.updatedAt || new Date()
       })) as Group[];
@@ -101,7 +101,7 @@ export const fetchGroupById = createAsyncThunk(
   async (groupId: string, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const document = await db.getDocument<Document>('groups', groupId);
+      const document = await db.getDocument<DbDocument>('groups', groupId);
       if (!document) {
         return rejectWithValue('Group not found');
       }
@@ -110,7 +110,7 @@ export const fetchGroupById = createAsyncThunk(
         id: document.id,
         name: document.data.name as string,
         organizationId: document.data.organizationId as string,
-        totalNumTickets: document.data.totalNumTickets as number,
+        totalNumApplications: (document.data.totalNumApplications || document.data.totalNumTickets) as number,
         members: document.data.members as string[],
         createdAt: document.createdAt || new Date(),
         updatedAt: document.updatedAt || new Date()

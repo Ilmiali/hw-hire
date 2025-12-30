@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
-import ticketsReducer from './slices/ticketsSlice';
+import applicationsReducer from './slices/applicationsSlice';
 import messagesReducer from './slices/messagesSlice';
 import organizationReducer from './slices/organizationSlice';
 import viewsReducer from './slices/viewsSlice';
@@ -9,7 +9,7 @@ import groupsReducer from './slices/groupsSlice';
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    tickets: ticketsReducer,
+    applications: applicationsReducer,
     messages: messagesReducer,
     organization: organizationReducer,
     views: viewsReducer,

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchMessagesByTicketId } from '../../store/slices/messagesSlice';
-import {listenToTicketChanges, unregisterTicketListener } from '../../store/slices/ticketsSlice';
+import { fetchMessagesByApplicationId } from '../../store/slices/messagesSlice';
+import { listenToApplicationChanges, unregisterApplicationListener } from '../../store/slices/applicationsSlice';
 import { Avatar } from '../../components/avatar';
 import { AssignSelector } from '../../database-components/assignSelector';
 import type { Message } from '../../types/message';
@@ -14,12 +14,12 @@ import { useNavigate } from 'react-router-dom';
 import ReplyComposer from '../../components/ReplyComposer';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface TicketChatProps {
-  ticketId: string;
+interface ApplicationChatProps {
+  applicationId: string;
   isExpanded: boolean;
   openTabs: { id: string; subject?: string }[];
   onExpandChange: (expanded: boolean) => void;
-  onClose: (ticketId: string) => void;
+  onClose: (applicationId: string) => void;
 }
 
 const getInitials = (name?: string, email?: string): string => {
@@ -34,31 +34,31 @@ const getInitials = (name?: string, email?: string): string => {
   return email?.slice(0, 2).toUpperCase() || '??';
 };
 
-export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onClose }: TicketChatProps) {
+export function ApplicationChat({ applicationId, isExpanded, openTabs, onExpandChange, onClose }: ApplicationChatProps) {
   
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const { messages, loading: messagesLoading, error: messagesError } = useAppSelector((state) => ({
-    messages: state.messages.messages[ticketId] || [],
+    messages: state.messages.messages[applicationId] || [],
     loading: state.messages.loading,
     error: state.messages.error
   }));
-  const { currentTicket, loading: ticketLoading, error: ticketError } = useAppSelector((state) => ({
-    currentTicket: state.tickets.currentTicket,
-    loading: state.tickets.loading,
-    error: state.tickets.error
+  const { currentApplication, loading: applicationLoading, error: applicationError } = useAppSelector((state) => ({
+    currentApplication: state.applications.currentApplication,
+    loading: state.applications.loading,
+    error: state.applications.error
   }));
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    dispatch(fetchMessagesByTicketId(ticketId));
-    dispatch(listenToTicketChanges(ticketId));
+    dispatch(fetchMessagesByApplicationId(applicationId));
+    dispatch(listenToApplicationChanges(applicationId));
 
     return () => {
-      dispatch(unregisterTicketListener(ticketId));
+      dispatch(unregisterApplicationListener(applicationId));
     };
-  }, [dispatch, ticketId]);
+  }, [dispatch, applicationId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -70,30 +70,30 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
 
   
 
-  const handleTabClick = (clickedTicketId: string) => {
-    navigate(`?ticket=${clickedTicketId}`);
+  const handleTabClick = (clickedApplicationId: string) => {
+    navigate(`?application=${clickedApplicationId}`);
   };
 
-  const handleTabClose = (e: React.MouseEvent, tabTicketId: string) => {
+  const handleTabClose = (e: React.MouseEvent, tabApplicationId: string) => {
     e.stopPropagation(); // Prevent tab click when clicking close
-    onClose(tabTicketId);
+    onClose(tabApplicationId);
   };
 
   const handleSendReply = (content: string) => {
     // TODO: integrate with actual send action when available
-    console.log('Send reply to ticket', ticketId, content);
+    console.log('Send reply to application', applicationId, content);
   };
 
-  if (messagesLoading || ticketLoading && !currentTicket) {
+  if (messagesLoading || applicationLoading && !currentApplication) {
     return <div className="flex h-full items-center justify-center">Loading...</div>;
   }
 
-  if (messagesError || ticketError) {
-    return <div className="flex h-full items-center justify-center text-red-500">Error: {messagesError || ticketError}</div>;
+  if (messagesError || applicationError) {
+    return <div className="flex h-full items-center justify-center text-red-500">Error: {messagesError || applicationError}</div>;
   }
 
-  if (!currentTicket) {
-    return <div className="flex h-full items-center justify-center text-red-500">Ticket not found</div>;
+  if (!currentApplication) {
+    return <div className="flex h-full items-center justify-center text-red-500">Application not found</div>;
   }
 
   return (
@@ -110,18 +110,18 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
                   role="tab"
                   tabIndex={0}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap group cursor-pointer ${
-                    openId === ticketId
+                    openId === applicationId
                       ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
                       : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
                   }`}
                 >
                   <span className="truncate max-w-[150px]">
-                    {openId === currentTicket.id ? currentTicket.subject : (subject || `Ticket ${openId}`)}
+                    {openId === currentApplication.id ? currentApplication.subject : (subject || `Application ${openId}`)}
                   </span>
                   <button
                     onClick={(e) => handleTabClose(e, openId)}
                     className={`p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 ${
-                      openId === ticketId
+                      openId === applicationId
                         ? 'text-blue-600 dark:text-blue-400'
                         : 'text-zinc-400 dark:text-zinc-500'
                     }`}
@@ -152,14 +152,14 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
                 </button>
                 <div>
                   <h1 className="text-lg font-semibold text-zinc-900 dark:text-white truncate text-ellipsis overflow-hidden whitespace-nowrap" style={{ maxWidth: '70%' }}>
-                    {currentTicket.subject}
+                    {currentApplication.subject}
                   </h1>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge color={getBadgeColor(currentTicket.status)} className="text-sm capitalize">
-                      {currentTicket.status}
+                    <Badge color={getBadgeColor(currentApplication.status)} className="text-sm capitalize">
+                      {currentApplication.status}
                     </Badge>
                     <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                      Created {formatTimeAgo(currentTicket.requestedAt)}
+                      Created {formatTimeAgo(currentApplication.appliedAt)}
                     </span>
                   </div>
                 </div>
@@ -169,7 +169,7 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
           <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-800">
             <div className="flex items-center gap-4">
               <AssignSelector
-                currentTicket={currentTicket}
+                currentApplication={currentApplication}
               />
               {/* Space for other actions */}
             </div>
@@ -227,24 +227,6 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
           ))}
           {/* Spacer to ensure content not hidden behind floating button */}
           <div className="h-24" />
-        {/*<form onSubmit={handleSubmit} className="sticky bottom-5 z-10">
-        <div className="relative">
-          <textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message..."
-            className="w-full min-h-[60px] pr-32 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white/85 dark:bg-zinc-900/85 px-4 py-2 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none backdrop-blur-md backdrop-filter"
-            rows={8}
-          />
-          <button
-            type="submit"
-            className="absolute right-4 bottom-4 inline-flex items-center rounded-md bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!newMessage.trim()}
-          >
-            Send
-          </button>
-        </div>
-      </form>*/}
         </div>
       </div>
       {/* Contained action area with morph */}
@@ -288,4 +270,4 @@ export function TicketChat({ ticketId, isExpanded, openTabs, onExpandChange, onC
       </div>
     </div>
   );
-} 
+}

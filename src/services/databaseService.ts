@@ -69,8 +69,8 @@ export class DatabaseService {
 
   private sortDocuments(docs: Document[], field: string, order: SortOrder): Document[] {
     return [...docs].sort((a, b) => {
-      const aValue = a[field];
-      const bValue = b[field];
+      const aValue = (a as any)[field];
+      const bValue = (b as any)[field];
       
       if (aValue === bValue) return 0;
       if (aValue === null || aValue === undefined) return 1;
@@ -82,7 +82,7 @@ export class DatabaseService {
   }
 
   public async buildQuery(collection: string, constraints?: QueryConstraint[]): Promise<unknown> {
-    return this.database.buildQuery(collection, constraints);
+    return this.database.buildQuery(collection, { constraints });
   }
 
   public async updateDocument<T>(collection: string, id: string, data: Partial<T>): Promise<T> {

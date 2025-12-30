@@ -35,9 +35,7 @@ type DataTableProps<T extends { id: string }> = {
 export function DataTable<T extends { id: string; url?: string }>({ 
   data, 
   fields,
-  rootPath,
-  selectable = false, 
-  isLink = false,
+  selectable = false,
   sticky = false,
   sortField,
   sortOrder,

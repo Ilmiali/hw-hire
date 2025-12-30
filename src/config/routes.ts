@@ -5,12 +5,12 @@ import {
   LightBulbIcon,
   ArrowRightStartOnRectangleIcon,
   SparklesIcon,
-  TicketIcon,
+  ClipboardDocumentListIcon as ApplicationIcon,
 } from '@heroicons/react/16/solid';
 import Dashboard from '../screens/Dashboard';
 import Profile from '../screens/Profile';
 import Login from '../screens/Login';
-import Tickets from '../screens/Tickets/Tickets';
+import Applications from '../screens/Applications/Applications';
 import { RouteConfig, RouteGroup } from '../types/routes';
 
 // Public routes (no authentication required)
@@ -28,18 +28,18 @@ export const publicRoutes: RouteConfig[] = [
 // Additional routes that shouldn't appear in the sidebar
 export const additionalRoutes: RouteConfig[] = [
   {
-    path: '/tickets/:id',
-    name: 'Ticket Details',
-    icon: TicketIcon,
-    component: Tickets,
+    path: '/applications/:id',
+    name: 'Application Details',
+    icon: ApplicationIcon,
+    component: Applications,
     layout: 'authenticated',
     isAuthProtected: true,
   },
   {
     path: '/views/:id',
     name: 'View Details',
-    icon: TicketIcon,
-    component: Tickets,
+    icon: ApplicationIcon,
+    component: Applications,
     layout: 'authenticated',
     isAuthProtected: true,
   },
@@ -61,10 +61,10 @@ export const mainRoutes: RouteGroup[] = [
         isAuthProtected: true,
       },
       {
-        path: '/tickets',
-        name: 'Tickets',
-        icon: TicketIcon,
-        component: Tickets,
+        path: '/applications',
+        name: 'Applications',
+        icon: ApplicationIcon,
+        component: Applications,
         layout: 'authenticated',
         isAuthProtected: true,
       },

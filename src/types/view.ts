@@ -4,7 +4,7 @@ export interface View {
   id: string;
   name: string;
   organizationId: string;
-  totalNumTickets: number;
+  totalNumApplications: number;
   members: string[];
   owner: string;
   groups: Group[];
@@ -27,7 +27,7 @@ export interface DatabaseView {
   id: string;
   name: string;
   organizationId: string;
-  totalNumTickets: number;
+  totalNumApplications: number;
   members: string[];
   owner: string;
   groups: string[];

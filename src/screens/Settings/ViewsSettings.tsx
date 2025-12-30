@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { deleteView } from '../../store/slices/viewsSlice';
+
 import { DatabaseEntitiesTable } from '../../database-components/DatabaseEntitiesTable';
 import { Field } from '../../data-components/dataTable';
 import { CreateViewDialog } from '../../database-components/createViewDialog';
-import { Entity } from '../../database-components/entitiesTable';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
+import { Entity } from '../../database-components/EntitiesTable';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+
 import { selectCurrentOrganization } from '../../store/slices/organizationSlice';
 
 interface View extends Entity {

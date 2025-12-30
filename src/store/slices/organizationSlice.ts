@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { Document, getDatabaseService } from '../../services/databaseService';
+import { Document as DbDocument, getDatabaseService } from '../../services/databaseService';
 import { Organization } from '../../types/organization';
 import { RootState } from '../index';
 
@@ -22,7 +22,7 @@ export const fetchUserOrganizations = createAsyncThunk(
   async (userId: string, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const organizations = await db.getDocuments<Document>('organizations', {
+      const organizations = await db.getDocuments<DbDocument>('organizations', {
         constraints: [{
           field: 'members',
           operator: 'array-contains',
@@ -31,12 +31,12 @@ export const fetchUserOrganizations = createAsyncThunk(
       });
       console.log('Organizations:', organizations);
       return organizations.map(org => ({
-        createdAt: org.createdAt,
-        updatedAt: org.updatedAt,
+        createdAt: org.createdAt || new Date(),
+        updatedAt: org.updatedAt || new Date(),
         id: org.id,
-        name: org.data.name,
-        members: org.data.members,
-        owner: org.data.owner
+        name: org.data.name as string,
+        members: org.data.members as any,
+        owner: org.data.owner as string
       }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch organizations';

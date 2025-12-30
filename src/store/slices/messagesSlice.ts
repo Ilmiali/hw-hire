@@ -4,7 +4,7 @@ import { getDatabaseService, Document } from '../../services/databaseService';
 import { Message } from '../../types/message';
 
 interface MessagesState {
-  messages: Record<string, Message[]>; // Keyed by ticketId
+  messages: Record<string, Message[]>; // Keyed by applicationId
   loading: boolean;
   error: string | null;
 }
@@ -15,14 +15,14 @@ const initialState: MessagesState = {
   error: null,
 };
 
-// Async thunk for fetching messages by ticket ID
-export const fetchMessagesByTicketId = createAsyncThunk(
-  'messages/fetchMessagesByTicketId',
-  async (ticketId: string, { rejectWithValue }) => {
+// Async thunk for fetching messages by application ID
+export const fetchMessagesByApplicationId = createAsyncThunk(
+  'messages/fetchMessagesByApplicationId',
+  async (applicationId: string, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
       const payload = await db.getDocuments<Document>('messages', {
-        constraints: [{ field: 'ticketId', operator: '==', value: ticketId }],
+        constraints: [{ field: 'ticketId', operator: '==', value: applicationId }],
         sortBy: { field: 'createdAt', order: 'asc' }
       });
       const messages = payload.map(item => {
@@ -37,8 +37,8 @@ export const fetchMessagesByTicketId = createAsyncThunk(
           ticketId: item.data.ticketId
         } as Message;
       });
-      console.log('Messages:', messages, ticketId);
-      return { ticketId, messages };
+      console.log('Messages:', messages, applicationId);
+      return { applicationId, messages };
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -56,28 +56,28 @@ const messagesSlice = createSlice({
       state.messages = {};
       state.error = null;
     },
-    clearMessagesForTicket: (state, action) => {
-      const ticketId = action.payload;
-      delete state.messages[ticketId];
+    clearMessagesForApplication: (state, action) => {
+      const applicationId = action.payload;
+      delete state.messages[applicationId];
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchMessagesByTicketId.pending, (state) => {
+      .addCase(fetchMessagesByApplicationId.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchMessagesByTicketId.fulfilled, (state, action) => {
+      .addCase(fetchMessagesByApplicationId.fulfilled, (state, action) => {
         state.loading = false;
-        const { ticketId, messages } = action.payload;
-        state.messages[ticketId] = messages;
+        const { applicationId, messages } = action.payload;
+        state.messages[applicationId] = messages;
       })
-      .addCase(fetchMessagesByTicketId.rejected, (state, action) => {
+      .addCase(fetchMessagesByApplicationId.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
   },
 });
 
-export const { clearMessages, clearMessagesForTicket } = messagesSlice.actions;
+export const { clearMessages, clearMessagesForApplication } = messagesSlice.actions;
 export default messagesSlice.reducer; 

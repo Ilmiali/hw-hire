@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { EntitiesTable, Entity } from './entitiesTable';
+import { EntitiesTable, Entity } from './EntitiesTable';
 import { DatabaseService, QueryOptions } from '../services/databaseService';
 import { Field } from '../data-components/dataTable';
 import CheckboxList from '../loaders/CheckboxList';
@@ -87,7 +87,7 @@ export function DatabaseEntitiesTable<T extends Entity>({
       const items = await databaseService.getDocuments<T>(collection, options);
       setEntities(items.map(item => {
         const entityData = {
-          ...item.data,
+          ...(item.data as any),
           id: item.id,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt

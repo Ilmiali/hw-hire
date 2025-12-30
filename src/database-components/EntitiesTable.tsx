@@ -1,6 +1,6 @@
 import { Button } from '../components/button';
 import { DataTable, Field } from '../data-components/dataTable';
-import { EntitiesChips } from './entitiesChips';
+import { EntitiesChips } from './EntitiesChips';
 
 export interface Entity {
   id: string;

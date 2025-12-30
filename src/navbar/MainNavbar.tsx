@@ -34,7 +34,7 @@ export const MainNavbar = memo(function MainNavbar() {
         </NavbarItem>
         <Dropdown>
           <DropdownButton as={NavbarItem}>
-            <Avatar src="/profile-photo.jpg" square />
+            <Avatar src="/profile-photo.jpg" variant="square" />
           </DropdownButton>
           <DropdownMenu className="min-w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" anchor="bottom end">
             <DropdownItem href="/my-profile" className="text-gray-700 dark:text-gray-200 hover:bg-primary-50 dark:hover:bg-primary-900/50">

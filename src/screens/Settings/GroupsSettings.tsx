@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { selectCurrentOrganization } from '../../store/slices/organizationSlice';
-import { RootState, AppDispatch } from '../../store';
+import { RootState } from '../../store';
 import { DatabaseEntitiesTable } from '../../database-components/DatabaseEntitiesTable';
 import { Field } from '../../data-components/dataTable';
 import { Group } from '../../types/group';
-import { deleteGroup } from '../../store/slices/groupsSlice';
 import { CreateGroupDialog } from '../../database-components/createGroupDialog';
 
 export function GroupsSettings() {
-  const dispatch = useDispatch<AppDispatch>();
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const currentOrganization = useSelector(selectCurrentOrganization);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -43,7 +41,7 @@ export function GroupsSettings() {
       label: 'Tickets',
       render: (group: Group) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-          {group.totalNumTickets}
+          {group.totalNumApplications}
         </span>
       )
     },

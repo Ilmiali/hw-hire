@@ -122,7 +122,7 @@ export function ViewsSidebarSection() {
           )}
           <SidebarLabel>{view.name}</SidebarLabel>
           <Badge className="ml-auto bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 opacity-100 group-hover:opacity-0 transition-opacity">
-            {view.totalNumTickets}
+            {view.totalNumApplications}
           </Badge>
         </SidebarItem>
       ))}

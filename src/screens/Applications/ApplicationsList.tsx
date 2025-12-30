@@ -2,39 +2,39 @@ import { DataTable } from '../../data-components/dataTable'
 import type { Field } from '../../data-components/dataTable'
 import { Badge } from '../../components/badge'
 
-type Ticket = {
+type Application = {
   id: string
   subject: string
-  status: 'open' | 'closed'
+  status: 'applied' | 'screening' | 'interview' | 'offer' | 'rejected' | 'hired'
   access: string
   url: string
-  requestedAt: Date
-  requestedBy: string
+  appliedAt: Date
+  candidate: string
 }
 
-const fields: Field<Ticket>[] = [
+const fields: Field<Application>[] = [
   { 
     key: 'subject', 
-    label: 'Subject',
-    render: (item: Ticket) => (
+    label: 'Role',
+    render: (item: Application) => (
       <div className="flex items-start gap-3">
-        <Badge color={item.status === 'open' ? 'lime' : 'zinc'}>
+        <Badge color={item.status === 'applied' ? 'zinc' : 'lime'}>
           {item.status}
         </Badge>
         <div className="flex flex-col">
           <span className="font-medium text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px]">{item.subject}</span>
-          <span className="text-sm text-zinc-500 dark:text-zinc-400 text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px] capitalize">{item.requestedBy}</span>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400 text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px] capitalize">{item.candidate}</span>
         </div>
       </div>
     )
   },
-  { key: 'requestedAt', label: 'Requested', type: 'date' },
+  { key: 'appliedAt', label: 'Applied', type: 'date' },
   { key: 'actions', label: '', type: 'actions' }
 ]
 
-export function TicketsList({ list }: { list: Ticket[] }) {
+export function ApplicationsList({ list }: { list: Application[] }) {
   return (
-    <DataTable<Ticket>
+    <DataTable<Application>
       data={list}
       fields={fields}
       selectable

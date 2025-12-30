@@ -40,7 +40,7 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
       setGroups(existingView.groups.map(group => ({
         id: group.id,
         name: group.name,
-        totalNumTickets: group.totalNumTickets,
+        totalNumApplications: group.totalNumApplications,
         organizationId: group.organizationId,
         members: group.members
       })));
@@ -93,7 +93,7 @@ export function CreateViewDialog({ isOpen, onClose, viewId }: CreateViewDialogPr
             groups: groups.map(group => ({
               id: group.id,
               name: group.name,
-              totalNumTickets: group.totalNumTickets,
+              totalNumApplications: group.totalNumApplications,
               organizationId: group.organizationId,
               members: group.members,
               createdAt: new Date(),

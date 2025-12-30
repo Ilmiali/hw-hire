@@ -1,10 +1,10 @@
 import { SplitTwoLayout } from '../../components/split-two-layout';
-import { TicketChat } from './TicketChat';
+import { ApplicationChat } from './ApplicationChat';
 import { DatabaseTable } from '../../database-components/databaseTable';
 import { Field } from '../../data-components/dataTable';
 import { Badge } from '../../components/badge';
 import { Avatar } from '../../components/avatar';
-import { Ticket } from '../../types/ticket';
+import { Application } from '../../types/application';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { getBadgeColor } from '../../utils/states';
@@ -13,19 +13,19 @@ import { setCurrentView } from '../../store/slices/viewsSlice';
 import { RootState } from '../../store';
 import { getDatabaseService, QueryOptions } from '../../services/databaseService';
 
-type TicketDoc = Ticket & { data: Record<string, unknown> };
-type RawTicketDoc = { subject?: string; data?: { subject?: string } } | null;
+type ApplicationDoc = Application & { data: Record<string, unknown> };
+type RawApplicationDoc = { subject?: string; data?: { subject?: string } } | null;
 
 const getBadgeText = (status: string) => {
   // Get the first letter of the status
   return status.charAt(0).toUpperCase()
 }
 
-const fields: Field<TicketDoc>[] = [
+const fields: Field<ApplicationDoc>[] = [
   { 
     key: 'subject',
-    label: 'Subject',
-    render: (item: TicketDoc) => (
+    label: 'Role',
+    render: (item: ApplicationDoc) => (
       <div className="flex items-start gap-3">
         <Badge color={getBadgeColor(item.status)}>
           {getBadgeText(item.status)}
@@ -33,17 +33,17 @@ const fields: Field<TicketDoc>[] = [
         <div className="flex flex-col">
           <span className="font-medium text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px]">{item.subject}</span>
           <span className="text-sm text-zinc-500 dark:text-zinc-400 text-ellipsis overflow-hidden whitespace-nowrap max-w-[200px] capitalize">
-            {item.requestedBy.name || item.requestedBy.email}
+            {item.candidate.name || item.candidate.email}
           </span>
         </div>
       </div>
     )
   },
-  { key: 'createdAt', label: 'Requested', type: 'date', sortable: true },
+  { key: 'appliedAt', label: 'Applied', type: 'date', sortable: true },
   { key: 'actions', label: '', type: 'actions' },
 ];
 
-export default function Tickets() {
+export default function Applications() {
   const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
@@ -51,9 +51,9 @@ export default function Tickets() {
   const pathname = location.pathname;
   const rootPath = pathname.split('/')[1];
   const currentView = useSelector((state: RootState) => state.views.currentView);
-  const currentTicket = useSelector((state: RootState) => state.tickets.currentTicket);
-  const [ticketId, setTicketId] = useState<string | null>(null);
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const currentApplication = useSelector((state: RootState) => state.applications.currentApplication);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const listScrollRef = useRef<HTMLDivElement>(null);
 
@@ -67,23 +67,23 @@ export default function Tickets() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const ticketIdFromQuery = searchParams.get('ticket');
-    if (ticketIdFromQuery) {
-      setTicketId(ticketIdFromQuery);
-      setSelectedTicketId(ticketIdFromQuery);
+    const applicationIdFromQuery = searchParams.get('application');
+    if (applicationIdFromQuery) {
+      setApplicationId(applicationIdFromQuery);
+      setSelectedApplicationId(applicationIdFromQuery);
 
       setOpenTabs(prev => {
-        if (prev.some(t => t.id === ticketIdFromQuery)) return prev;
-        return [...prev, { id: ticketIdFromQuery }];
+        if (prev.some(t => t.id === applicationIdFromQuery)) return prev;
+        return [...prev, { id: applicationIdFromQuery }];
       });
 
       // Fetch subject for the tab if not already known
       (async () => {
         try {
           const db = getDatabaseService();
-          const doc = await db.getDocument<RawTicketDoc>('tickets', ticketIdFromQuery);
+          const doc = await db.getDocument<RawApplicationDoc>('applications', applicationIdFromQuery);
           const subject: string | undefined = doc?.subject ?? doc?.data?.subject;
-          if (subject) setOpenTabs(prev => prev.map(t => t.id === ticketIdFromQuery ? { ...t, subject } : t));
+          if (subject) setOpenTabs(prev => prev.map(t => t.id === applicationIdFromQuery ? { ...t, subject } : t));
         } catch {
           // ignore
         }
@@ -95,11 +95,11 @@ export default function Tickets() {
     }
   }, [location.search, pathname, rootPath, dispatch, currentView]);
 
-  // Ensure subject is cached for the currently loaded ticket
+  // Ensure subject is cached for the currently loaded application
   useEffect(() => {
-    if (!currentTicket?.id || !currentTicket.subject) return;
-    setOpenTabs(prev => prev.map(t => t.id === currentTicket.id ? { ...t, subject: t.subject || currentTicket.subject } : t));
-  }, [currentTicket?.id, currentTicket?.subject]);
+    if (!currentApplication?.id || !currentApplication.subject) return;
+    setOpenTabs(prev => prev.map(t => t.id === currentApplication.id ? { ...t, subject: t.subject || currentApplication.subject } : t));
+  }, [currentApplication?.id, currentApplication?.subject]);
 
   
   // Ensure the left list resets to top on selection/navigation
@@ -107,21 +107,21 @@ export default function Tickets() {
     if (listScrollRef.current) {
       listScrollRef.current.scrollTop = 0;
     }
-  }, [selectedTicketId, ticketId]);
+  }, [selectedApplicationId, applicationId]);
 
-  const handleClose = (closedTicketId: string) => {
+  const handleClose = (closedApplicationId: string) => {
     setOpenTabs(prev => {
-      const remaining = prev.filter(t => t.id !== closedTicketId);
+      const remaining = prev.filter(t => t.id !== closedApplicationId);
 
       if (remaining.length > 0) {
-        const nextTicketId = remaining[0].id;
-        navigate(`?ticket=${nextTicketId}`);
+        const nextApplicationId = remaining[0].id;
+        navigate(`?application=${nextApplicationId}`);
       } else {
         navigate('.');
         setTimeout(() => {
           setIsExpanded(false);
-          setTicketId(null);
-          setSelectedTicketId(null);
+          setApplicationId(null);
+          setSelectedApplicationId(null);
         }, 100);
       }
 
@@ -129,20 +129,20 @@ export default function Tickets() {
     });
   };
 
-  const handleOpenTicket = (ticketId: string, subject?: string) => {
-    setSelectedTicketId(ticketId);
+  const handleOpenApplication = (applicationId: string, subject?: string) => {
+    setSelectedApplicationId(applicationId);
     setOpenTabs(prev => {
-      const exists = prev.some(t => t.id === ticketId);
+      const exists = prev.some(t => t.id === applicationId);
       if (!exists) {
-        return [...prev, { id: ticketId, subject }];
+        return [...prev, { id: applicationId, subject }];
       }
       // Update subject if newly provided
       if (subject) {
-        return prev.map(t => t.id === ticketId ? { ...t, subject: t.subject || subject } : t);
+        return prev.map(t => t.id === applicationId ? { ...t, subject: t.subject || subject } : t);
       }
       return prev;
     });
-    navigate(`?ticket=${ticketId}`);
+    navigate(`?application=${applicationId}`);
   };
 
   const renderGroups = () => {
@@ -206,7 +206,7 @@ export default function Tickets() {
   return (
     <SplitTwoLayout
       leftColumnWidth="450px"
-      hideColumn={!ticketId ? 'right' : isExpanded ? 'left' : 'none'}
+      hideColumn={!applicationId ? 'right' : isExpanded ? 'left' : 'none'}
       leftColumn={
         <div className="h-full flex flex-col">
           <div 
@@ -228,15 +228,15 @@ export default function Tickets() {
                   <span className="text-2xl"></span>
                 )}
                 <h2 className={`text-xl font-semibold ${!currentView?.layout?.cover ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'}`}>
-                  {currentView?.name || 'All Tickets'}
+                  {currentView?.name || 'All Applications'}
                 </h2>
               </div>
               {renderGroups()}
             </div>
           </div>
           <div ref={listScrollRef} className="flex-1 p-4 border-r border-zinc-200 dark:border-zinc-700 overflow-y-auto overflow-x-hidden" style={{ overflowAnchor: 'none' }}>
-            <DatabaseTable<TicketDoc>
-              collection="tickets"
+            <DatabaseTable<ApplicationDoc>
+              collection="applications"
               fields={fields}
               pageSize={15}
               selectable={false}
@@ -249,20 +249,20 @@ export default function Tickets() {
               onAction={(action, item) => {
                 switch (action) {
                   case 'view':
-                    handleOpenTicket(item.id, (item as TicketDoc).subject);
+                    handleOpenApplication(item.id, (item as ApplicationDoc).subject);
                     break;
                 }
               }}
-              selectedId={selectedTicketId}
+              selectedId={selectedApplicationId}
             />
           </div>
         </div>
       }
       rightColumn={
         <div className="h-full">
-          {ticketId && (
-            <TicketChat 
-              ticketId={ticketId} 
+          {applicationId && (
+            <ApplicationChat 
+              applicationId={applicationId} 
               isExpanded={isExpanded}
               openTabs={openTabs}
               onExpandChange={setIsExpanded}

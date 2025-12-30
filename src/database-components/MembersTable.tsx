@@ -2,7 +2,7 @@ import { Avatar } from '../components/avatar';
 import { Field } from '../data-components/dataTable';
 import { useState } from 'react';
 import { AddEntitiesDialog } from './AddEntitiesDialog';
-import { EntitiesTable, Entity } from './entitiesTable';
+import { EntitiesTable, Entity } from './EntitiesTable';
 
 export interface Member extends Entity {
   id: string;

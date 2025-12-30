@@ -1,10 +1,10 @@
-import { Entity } from '../database-components/entitiesTable';
+import { Entity } from '../database-components/EntitiesTable';
 
 export interface Group extends Entity {
   name: string;
   description?: string;
   organizationId: string;
-  totalNumTickets: number;
+  totalNumApplications: number;
   members: string[];
   createdAt: Date;
   updatedAt: Date;

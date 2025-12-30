@@ -7,7 +7,7 @@ import { Input } from '../components/input';
 import { Textarea } from '../components/textarea';
 import { useState, useEffect } from 'react';
 import { AppDispatch, RootState } from '../store';
-import { Group } from '../types/group';
+
 import { MembersTable, Member } from './MembersTable';
 import { fetchUsers } from '../store/slices/usersSlice';
 
@@ -68,7 +68,7 @@ export function CreateGroupDialog({ isOpen, onClose, groupId }: CreateGroupDialo
         name,
         description,
         organizationId: currentOrganization.id,
-        totalNumTickets: existingGroup?.totalNumTickets || 0,
+        totalNumApplications: existingGroup?.totalNumApplications || 0,
         members: [...members.map(m => m.id), currentUser.uid],
         createdAt: existingGroup?.createdAt || new Date(),
         updatedAt: new Date()

@@ -1,4 +1,4 @@
-import { Entity } from './entitiesTable';
+import { Entity } from './EntitiesTable';
 import { Chip } from '../components/chips';
 
 interface EntitiesChipsProps<T extends Entity> {

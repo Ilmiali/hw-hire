@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { Document, getDatabaseService } from '../../services/databaseService';
+import { Document as DbDocument, getDatabaseService } from '../../services/databaseService';
 import { View, DatabaseView } from '../../types/view';
 import { Group } from '../../types/group';
 import { RootState } from '../index';
@@ -23,7 +23,7 @@ export const fetchOrganizationViews = createAsyncThunk(
   async ({ organizationId, userId }: { organizationId: string; userId: string }, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const views = await db.getDocuments<Document>('views', {
+      const views = await db.getDocuments<DbDocument>('views', {
         constraints: [
           {
             field: 'organizationId',
@@ -41,12 +41,12 @@ export const fetchOrganizationViews = createAsyncThunk(
       const viewsWithGroups = await Promise.all(views.map(async (view) => {
         const groupIds = view.data.groups as string[];
         const groups = await Promise.all(groupIds.map(async (groupId) => {
-          const groupDoc = await db.getDocument<Document>('groups', groupId);
+          const groupDoc = await db.getDocument<DbDocument>('groups', groupId);
           if (!groupDoc) return null;
           return {
             id: groupDoc.id,
             name: groupDoc.data.name as string,
-            totalNumTickets: groupDoc.data.totalNumTickets as number,
+            totalNumApplications: (groupDoc.data.totalNumApplications || groupDoc.data.totalNumTickets) as number,
             organizationId: groupDoc.data.organizationId as string,
             members: groupDoc.data.members as string[],
             createdAt: groupDoc.createdAt || new Date(),
@@ -59,7 +59,7 @@ export const fetchOrganizationViews = createAsyncThunk(
           group !== null && group.members.includes(userId)
         );
         
-        const totalNumTickets = validGroups.reduce((sum, group) => sum + (group.totalNumTickets || 0), 0);
+        const totalNumApplications = validGroups.reduce((sum, group) => sum + (group.totalNumApplications || 0), 0);
         const {owner, members} = view.data as {owner: string, members: string[]};
         return {
           createdAt: view.createdAt || new Date(),
@@ -71,7 +71,7 @@ export const fetchOrganizationViews = createAsyncThunk(
           organizationId: view.data.organizationId as string,
           members: members.filter((member) => member !== owner),
           groups: validGroups,
-          totalNumTickets
+          totalNumApplications
         } as View;
       }));
       return viewsWithGroups;
@@ -119,7 +119,7 @@ export const createView = createAsyncThunk(
         owner,
         groups,
         layout,
-        totalNumTickets: 0,
+        totalNumApplications: 0,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -170,7 +170,7 @@ export const exitView = createAsyncThunk(
   async ({ id, userId }: { id: string; userId: string }, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const view = await db.getDocument<Document>('views', id);
+      const view = await db.getDocument<DbDocument>('views', id);
       
       if (!view) {
         throw new Error('View not found');

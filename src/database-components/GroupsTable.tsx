@@ -2,12 +2,12 @@ import { Avatar } from '../components/avatar';
 import { Field } from '../data-components/dataTable';
 import { useState } from 'react';
 import { AddEntitiesDialog } from './AddEntitiesDialog';
-import { EntitiesTable, Entity } from './entitiesTable';
+import { EntitiesTable, Entity } from './EntitiesTable';
 
 export interface Group extends Entity {
   id: string;
   name: string;
-  totalNumTickets: number;
+  totalNumApplications: number;
   members: string[];
 }
 
@@ -37,7 +37,7 @@ export function GroupsTable({ groups, onGroupsChange }: GroupsTableProps) {
         </div>
       )
     },
-    { key: 'totalNumTickets', label: 'Tickets' },
+    { key: 'totalNumApplications', label: 'Applications' },
     { key: 'actions', label: '', type: 'actions' }
   ];
 

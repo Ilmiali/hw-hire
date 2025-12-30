@@ -2,7 +2,7 @@ import { Dropdown, DropdownButton, DropdownItem, DropdownMenu, DropdownLabel } f
 import { EllipsisHorizontalIcon, PencilIcon, TrashIcon } from '@heroicons/react/16/solid'
 import React from 'react'
 
-interface ActionItem {
+export interface ActionItem {
   label: string
   icon?: React.ReactNode
   onClick: () => void

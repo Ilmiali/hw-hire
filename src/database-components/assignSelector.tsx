@@ -8,18 +8,18 @@ import { User } from '../store/slices/usersSlice';
 import { useSelector } from 'react-redux';
 import { selectCurrentOrganization } from '../store/slices/organizationSlice';
 import { RootState } from '../store';
-import { updateTicket } from '../store/slices/ticketsSlice';
+import { updateApplication } from '../store/slices/applicationsSlice';
 
 interface AssignSelectorProps {
-  currentTicket: {
+  currentApplication: {
     id: string;
     groupId?: string;
-    assignedTo?: string;
+    assignedTo?: string | null;
   };
   onAssign?: (params: { groupId: string; memberId?: string }) => void;
 }
 
-export function AssignSelector({ currentTicket, onAssign }: AssignSelectorProps) {
+export function AssignSelector({ currentApplication, onAssign }: AssignSelectorProps) {
   const [selectedGroupId, setSelectedGroupId] = useState<string>();
   const [selectedMemberId, setSelectedMemberId] = useState<string>();
   const [groupMembers, setGroupMembers] = useState<Record<string, User>>({});
@@ -44,27 +44,27 @@ export function AssignSelector({ currentTicket, onAssign }: AssignSelectorProps)
 
   // Fetch current group when ticket is loaded
   useEffect(() => {
-    if (currentTicket?.groupId) {
-      dispatch(fetchGroupById(currentTicket.groupId));
+    if (currentApplication?.groupId) {
+      dispatch(fetchGroupById(currentApplication.groupId));
     }
-  }, [dispatch, currentTicket?.groupId]);
+  }, [dispatch, currentApplication?.groupId]);
 
   // Set the selected group ID and member ID from the current ticket
   useEffect(() => {
-    if (currentTicket?.groupId) {
-      setSelectedGroupId(currentTicket.groupId);
+    if (currentApplication?.groupId) {
+      setSelectedGroupId(currentApplication.groupId);
     }
-    if (currentTicket?.assignedTo) {
-      setSelectedMemberId(currentTicket.assignedTo);
+    if (currentApplication?.assignedTo) {
+      setSelectedMemberId(currentApplication.assignedTo);
     }
-  }, [currentTicket?.groupId, currentTicket?.assignedTo]);
+  }, [currentApplication?.groupId, currentApplication?.assignedTo]);
 
   // Fetch user data for group members
   useEffect(() => {
     const fetchGroupMembers = async () => {
-      if (currentTicket?.groupId) {
+      if (currentApplication?.groupId) {
         setIsLoadingMembers(true);
-        const group = groups.find((g: Group) => g.id === currentTicket.groupId);
+        const group = groups.find((g: Group) => g.id === currentApplication.groupId);
         if (group) {
           const memberPromises = group.members.map((memberId: string) => 
             dispatch(fetchUserById(memberId)).unwrap()
@@ -87,14 +87,14 @@ export function AssignSelector({ currentTicket, onAssign }: AssignSelectorProps)
     };
 
     fetchGroupMembers();
-  }, [dispatch, currentTicket?.groupId, groups]);
+  }, [dispatch, currentApplication?.groupId, groups]);
 
   const handleAssign = async ({ groupId, memberId }: { groupId: string; memberId?: string }) => {
     setSelectedGroupId(groupId);
     setSelectedMemberId(memberId);
     // Update the ticket with new group and assignee
-    await dispatch(updateTicket({ 
-      id: currentTicket.id, 
+    await dispatch(updateApplication({ 
+      id: currentApplication.id, 
       data: { 
         groupId,
         assignedTo: memberId || null
