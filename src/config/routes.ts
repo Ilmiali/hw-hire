@@ -10,6 +10,7 @@ import {
 import Dashboard from '../screens/Dashboard';
 import Profile from '../screens/Profile';
 import Login from '../screens/Login';
+import FormBuilder from '../screens/FormBuilder/FormBuilder';
 import Applications from '../screens/Applications/Applications';
 import { RouteConfig, RouteGroup } from '../types/routes';
 
@@ -57,6 +58,14 @@ export const mainRoutes: RouteGroup[] = [
         name: 'Dashboard',
         icon: HomeIcon,
         component: Dashboard,
+        layout: 'authenticated',
+        isAuthProtected: true,
+      },
+      {
+        path: '/form-builder',
+        name: 'Form Builder',
+        icon: SparklesIcon,
+        component: FormBuilder,
         layout: 'authenticated',
         isAuthProtected: true,
       },
