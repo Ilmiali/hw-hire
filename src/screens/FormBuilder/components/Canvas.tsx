@@ -26,12 +26,12 @@ interface CanvasProps {
 const DropIndicator = ({ isVisible, text = "Drop it here" }: { isVisible: boolean; text?: string }) => {
     if (!isVisible) return null;
     return (
-        <div className="relative h-6 w-full flex items-center justify-center my-1 pointer-events-none">
+        <div className="relative h-8 w-full flex items-center justify-center my-2 pointer-events-none z-50">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <div className="w-full border-t-2 border-dashed border-blue-500/50"></div>
+                <div className="w-full border-t-2 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
             </div>
             <div className="relative flex justify-center">
-                <span className="bg-blue-600 text-white text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full shadow-lg border border-blue-400">
+                <span className="bg-blue-600 text-white text-[10px] uppercase tracking-widest font-bold px-4 py-1.5 rounded-full shadow-2xl border border-blue-400 animate-pulse">
                     {text}
                 </span>
             </div>
@@ -40,82 +40,108 @@ const DropIndicator = ({ isVisible, text = "Drop it here" }: { isVisible: boolea
 };
 
 const FieldRenderer = ({ field, isSelected, onClick, onMoveUp, onMoveDown, canMoveUp, canMoveDown }: { field: FormField; isSelected: boolean; onClick: (e: React.MouseEvent) => void; onMoveUp: () => void; onMoveDown: () => void; canMoveUp: boolean; canMoveDown: boolean }) => {
+    const [isDragging, setIsDragging] = React.useState(false);
+    const ghostRef = React.useRef<HTMLDivElement>(null);
+
     return (
-        <div 
-            draggable
-            onDragStart={(e) => {
-                e.dataTransfer.setData('application/x-form-field-id', field.id);
-                e.dataTransfer.effectAllowed = 'move';
-            }}
-            onClick={onClick}
-            className={`field-wrapper relative group p-4 rounded-lg cursor-grab active:cursor-grabbing border-2 transition-all ${isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 bg-white/5 dark:bg-zinc-800/30'}`}
-        >
-            {/* Reorder buttons */}
-            <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                    onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-                    disabled={!canMoveUp}
-                    className="p-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Move up"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                </button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-                    disabled={!canMoveDown}
-                    className="p-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Move down"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
+        <>
+            {/* Hidden ghost for drag image */}
+            <div 
+                ref={ghostRef}
+                className="fixed -left-[9999px] top-0 p-4 rounded-lg border-2 border-dashed border-blue-500 bg-zinc-900 opacity-40 w-80 pointer-events-none z-[9999]"
+            >
+                <label className="block text-sm font-medium text-white mb-2">
+                    {field.label}
+                </label>
+                <div className="h-8 w-full bg-zinc-800 rounded border border-white/5"></div>
             </div>
-            {/* Same content as before */}
-           <label className="block text-sm font-medium text-zinc-900 dark:text-white mb-2">
-                {field.label} {field.required && <span className="text-red-500">*</span>}
-            </label>
-            
-            <div className="pointer-events-none"> {/* Disable interaction in builder mode */}
-                {field.type === 'text' && <Input placeholder={field.placeholder} />}
-                {field.type === 'email' && <Input type="email" placeholder={field.placeholder} />}
-                {field.type === 'number' && <Input type="number" placeholder={field.placeholder} />}
-                {field.type === 'textarea' && <Textarea placeholder={field.placeholder} />}
-                {field.type === 'date' && <Input type="date" />}
+
+            <div 
+                draggable
+                onDragStart={(e) => {
+                    e.dataTransfer.setData('application/x-form-field-id', field.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    
+                    if (ghostRef.current) {
+                        // Position the ghost relative to the cursor
+                        e.dataTransfer.setDragImage(ghostRef.current, 40, 40);
+                    }
+                    
+                    // Use setTimeout to allow the browser to capture the ghost image before we hide the original
+                    setTimeout(() => setIsDragging(true), 0);
+                }}
+                onDragEnd={() => setIsDragging(false)}
+                onClick={onClick}
+                className={`field-wrapper relative group p-4 rounded-lg cursor-grab active:cursor-grabbing border-2 transition-all ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 bg-white/5 dark:bg-zinc-800/30'}`}
+            >
+                {!isDragging && (
+                    <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+                            disabled={!canMoveUp}
+                            className="p-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move up"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+                            disabled={!canMoveDown}
+                            className="p-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move down"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
+                {/* Same content as before */}
+               <label className={`block text-sm font-medium text-zinc-900 dark:text-white mb-2 ${isDragging ? 'opacity-0' : ''}`}>
+                    {field.label} {field.required && <span className="text-red-500">*</span>}
+                </label>
                 
-                {field.type === 'select' && (
-                    <Select>
-                        {field.options?.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </Select>
-                )}
+                <div className={`pointer-events-none ${isDragging ? 'opacity-0' : ''}`}> {/* Disable interaction in builder mode */}
+                    {field.type === 'text' && <Input placeholder={field.placeholder} />}
+                    {field.type === 'email' && <Input type="email" placeholder={field.placeholder} />}
+                    {field.type === 'number' && <Input type="number" placeholder={field.placeholder} />}
+                    {field.type === 'textarea' && <Textarea placeholder={field.placeholder} />}
+                    {field.type === 'date' && <Input type="date" />}
+                    
+                    {field.type === 'select' && (
+                        <Select>
+                            {field.options?.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </Select>
+                    )}
 
-                {field.type === 'radio' && (
-                    <RadioGroup>
-                        {field.options?.map(opt => (
-                            <RadioField key={opt.value}>
-                                <Radio value={opt.value} />
-                                <Label>{opt.label}</Label>
-                            </RadioField>
-                        ))}
-                    </RadioGroup>
-                )}
+                    {field.type === 'radio' && (
+                        <RadioGroup>
+                            {field.options?.map(opt => (
+                                <RadioField key={opt.value}>
+                                    <Radio value={opt.value} />
+                                    <Label>{opt.label}</Label>
+                                </RadioField>
+                            ))}
+                        </RadioGroup>
+                    )}
 
-                 {field.type === 'checkbox' && (
-                    <CheckboxGroup>
-                        {field.options?.map(opt => (
-                            <CheckboxField key={opt.value}>
-                                <Checkbox value={opt.value} />
-                                <Label>{opt.label}</Label>
-                            </CheckboxField>
-                        ))}
-                    </CheckboxGroup>
-                )}
+                     {field.type === 'checkbox' && (
+                        <CheckboxGroup>
+                            {field.options?.map(opt => (
+                                <CheckboxField key={opt.value}>
+                                    <Checkbox value={opt.value} />
+                                    <Label>{opt.label}</Label>
+                                </CheckboxField>
+                            ))}
+                        </CheckboxGroup>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
@@ -198,7 +224,7 @@ const SectionRenderer = ({ section, selectedId, onSelect, onDrop, onReorderField
     );
 }
 
-const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onMoveField }: CanvasProps) => {
+const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onMoveField, onMoveSection }: CanvasProps) => {
     return (
         <div className="max-w-5xl mx-auto space-y-12 pb-32">
             {/* Page Header */}
