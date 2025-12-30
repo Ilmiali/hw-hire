@@ -4,7 +4,7 @@ import { pipelineService } from '../../services/mockPipelineService';
 import { Pipeline, PipelineStage } from '../../types/pipeline';
 import { Button } from '../../components/button';
 import { Input } from '../../components/input';
-import { Field, Label } from '../../components/fieldset';
+import { Field } from '../../components/fieldset';
 import { ArrowLeftIcon, CheckIcon, EyeIcon } from '@heroicons/react/16/solid';
 import StageListEditor from './components/StageListEditor';
 import TransitionEditor from './components/TransitionEditor';
@@ -67,7 +67,7 @@ export default function PipelineEditor() {
   if (!pipeline) return null;
 
   return (
-    <div className="flex flex-col h-full bg-zinc-50 dark:bg-black">
+    <div className="flex flex-col h-full space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         <div className="flex items-center gap-4">
@@ -81,7 +81,7 @@ export default function PipelineEditor() {
                value={name} 
                onChange={(e) => setName(e.target.value)} 
                placeholder="Pipeline Name"
-               className="font-semibold text-lg border-0 focus:ring-0 px-0 shadow-none bg-transparent"
+               className="font-semibold text-lg border-0 focus:ring-0 px-0 shadow-none bg-transparent dark:text-white"
              />
           </Field>
         </div>
@@ -126,7 +126,7 @@ export default function PipelineEditor() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto p-6 w-full">
          <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 min-h-[500px]">
            {activeTab === 'stages' && (
              <StageListEditor stages={stages} onChange={setStages} />

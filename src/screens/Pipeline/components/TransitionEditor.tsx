@@ -1,5 +1,5 @@
 import { PipelineStage } from '../../../types/pipeline';
-import { Switch } from '@headlessui/react';
+import { Switch } from '../../../components/switch';
 import { Field, Label } from '../../../components/fieldset';
 
 interface Props {
@@ -47,8 +47,8 @@ export default function TransitionEditor({ stages, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium">Transition Rules</h3>
-      <p className="text-sm text-zinc-500">
+      <h3 className="text-lg font-medium text-zinc-900 dark:text-white">Transition Rules</h3>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
         Define which stages applications can move to from a given stage. 
         Terminal stages (e.g. Hired, Rejected) cannot initiate transitions.
       </p>
@@ -73,13 +73,8 @@ export default function TransitionEditor({ stages, onChange }: Props) {
                         <Switch
                           checked={allowed}
                           onChange={(checked: boolean) => handleToggleTransition(fromStage.id, toStage.id, checked)}
-                          className="group relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-zinc-200 transition-colors duration-200 ease-in-out focus:outline-none data-[checked]:bg-indigo-600 dark:bg-zinc-700"
-                        >
-                          <span
-                            aria-hidden="true"
-                            className="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out data-[checked]:translate-x-4"
-                          />
-                        </Switch>
+                          color="indigo"
+                        />
                         <Label className="text-sm cursor-pointer" onClick={() => handleToggleTransition(fromStage.id, toStage.id, !allowed)}>
                           to {toStage.name}
                         </Label>

@@ -54,7 +54,7 @@ export default function PipelineListPage() {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Pipelines</h1>
@@ -68,7 +68,7 @@ export default function PipelineListPage() {
         </Button>
       </div>
 
-      <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700 min-h-[500px]">
+      <div className="min-h-[500px]">
         <DataTable
           data={pipelines}
           fields={fields}

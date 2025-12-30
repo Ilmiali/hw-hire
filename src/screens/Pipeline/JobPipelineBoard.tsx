@@ -197,7 +197,7 @@ export default function JobPipelineBoard() {
     return fromStage.allowedTransitions.includes(toStageId);
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = (_event: DragOverEvent) => {
     // Just visual updates, handled by dnd-kit mostly
   };
 
@@ -279,7 +279,7 @@ export default function JobPipelineBoard() {
   if (!pipeline) return <div>Loading...</div>;
 
   return (
-    <div className="h-full flex flex-col bg-zinc-50 dark:bg-black">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         <Button plain onClick={() => navigate(`/pipelines/${id}`)}>
@@ -287,7 +287,7 @@ export default function JobPipelineBoard() {
           Edit Pipeline
         </Button>
         <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 mx-4" />
-        <h1 className="text-lg font-semibold">{pipeline.name} <span className="text-zinc-400 font-normal ml-2">Preview</span></h1>
+        <h1 className="text-lg font-semibold text-zinc-900 dark:text-white">{pipeline.name} <span className="text-zinc-400 dark:text-zinc-500 font-normal ml-2">Preview</span></h1>
       </div>
 
       {/* Board */}

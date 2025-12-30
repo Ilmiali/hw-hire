@@ -1,4 +1,4 @@
-import { useState } from 'react';
+// Removed unused useState import
 import {
   DndContext,
   closestCenter,
@@ -21,7 +21,7 @@ import { Button } from '../../../components/button';
 import { Input } from '../../../components/input';
 import { Text } from '../../../components/text';
 import { Bars3Icon, TrashIcon, PlusIcon } from '@heroicons/react/16/solid';
-import { Switch } from '@headlessui/react';
+import { Switch } from '../../../components/switch';
 import { Field, Label } from '../../../components/fieldset';
 
 interface Props {
@@ -82,13 +82,8 @@ function SortableItem({ id, stage, onDelete, onUpdate }: SortableItemProps) {
             <Switch
               checked={stage.type === 'terminal'}
               onChange={(checked: boolean) => onUpdate(id, { type: checked ? 'terminal' : 'normal' })}
-              className="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-zinc-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 data-[checked]:bg-indigo-600 dark:bg-zinc-700"
-            >
-              <span
-                aria-hidden="true"
-                className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out data-[checked]:translate-x-5"
-              />
-            </Switch>
+              color="indigo"
+            />
           </Field>
         </div>
 
@@ -157,7 +152,7 @@ export default function StageListEditor({ stages, onChange }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Stages</h3>
+        <h3 className="text-lg font-medium text-zinc-900 dark:text-white">Stages</h3>
         <Button onClick={handleAddStage}>
           <PlusIcon className="size-4 mr-2" />
           Add Stage
