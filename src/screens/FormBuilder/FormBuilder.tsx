@@ -131,6 +131,90 @@ const FormBuilder = () => {
             return newForm;
         });
     };
+    const deleteField = (fieldId: string) => {
+        setForm(prev => {
+            const newForm = { ...prev };
+            newForm.pages.forEach(page => {
+                page.sections.forEach(section => {
+                    section.fields = section.fields.filter(f => f.id !== fieldId);
+                });
+            });
+            return newForm;
+        });
+        setSelectedElementId(null);
+    };
+
+    const deleteSection = (sectionId: string) => {
+        setForm(prev => {
+            const newForm = { ...prev };
+            newForm.pages.forEach(page => {
+                page.sections = page.sections.filter(s => s.id !== sectionId);
+            });
+            return newForm;
+        });
+        setSelectedElementId(null);
+    };
+
+    const deletePage = (pageId: string) => {
+        if (form.pages.length <= 1) {
+            alert("Cannot delete the only page.");
+            return;
+        }
+        setForm(prev => {
+            const newForm = { ...prev };
+            const pageIndex = newForm.pages.findIndex(p => p.id === pageId);
+            const newPages = newForm.pages.filter(p => p.id !== pageId);
+            
+            // If deleting active page, switch to previous or next
+            if (pageId === activePageId) {
+                const newActiveIndex = Math.max(0, pageIndex - 1);
+                setActivePageId(newPages[newActiveIndex].id);
+            }
+            
+            return { ...prev, pages: newPages };
+        });
+        setSelectedElementId(null);
+    };
+
+    const moveField = (fieldId: string, direction: 'up' | 'down') => {
+        setForm(prev => {
+            const newForm = { ...prev };
+            newForm.pages.forEach(page => {
+                page.sections.forEach(section => {
+                    const fieldIndex = section.fields.findIndex(f => f.id === fieldId);
+                    if (fieldIndex !== -1) {
+                        const newIndex = direction === 'up' ? fieldIndex - 1 : fieldIndex + 1;
+                        if (newIndex >= 0 && newIndex < section.fields.length) {
+                            // Swap
+                            const temp = section.fields[fieldIndex];
+                            section.fields[fieldIndex] = section.fields[newIndex];
+                            section.fields[newIndex] = temp;
+                        }
+                    }
+                });
+            });
+            return newForm;
+        });
+    };
+
+    const moveSection = (sectionId: string, direction: 'up' | 'down') => {
+        setForm(prev => {
+            const newForm = { ...prev };
+            newForm.pages.forEach(page => {
+                const sectionIndex = page.sections.findIndex(s => s.id === sectionId);
+                if (sectionIndex !== -1) {
+                    const newIndex = direction === 'up' ? sectionIndex - 1 : sectionIndex + 1;
+                    if (newIndex >= 0 && newIndex < page.sections.length) {
+                        // Swap
+                        const temp = page.sections[sectionIndex];
+                        page.sections[sectionIndex] = page.sections[newIndex];
+                        page.sections[newIndex] = temp;
+                    }
+                }
+            });
+            return newForm;
+        });
+    };
 
     // Find the selected object for the properties panel
     let selectedElement: { type: 'field' | 'section' | 'page' | 'form', data: any } | null = null;
@@ -196,6 +280,8 @@ const FormBuilder = () => {
                         selectedId={selectedElementId}
                         onSelect={setSelectedElementId}
                         onDrop={(type) => handleAddField(type)}
+                        onMoveField={moveField}
+                        onMoveSection={moveSection}
                     />
                 </div>
                 <div className="w-80 border-l border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900 overflow-y-auto">
@@ -205,6 +291,12 @@ const FormBuilder = () => {
                             if (selectedElement?.type === 'field') updateField(selectedElementId!, updates);
                             if (selectedElement?.type === 'section') updateSection(selectedElementId!, updates);
                             if (selectedElement?.type === 'page') updatePage(selectedElementId!, updates);
+                        }}
+                        onDelete={() => {
+                            if (!selectedElementId) return;
+                            if (selectedElement?.type === 'field') deleteField(selectedElementId);
+                            if (selectedElement?.type === 'section') deleteSection(selectedElementId);
+                            if (selectedElement?.type === 'page') deletePage(selectedElementId);
                         }}
                     />
                 </div>
