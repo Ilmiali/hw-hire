@@ -4,19 +4,23 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  User,
+  User as FirebaseUser,
   AuthError
 } from 'firebase/auth';
 import { auth } from '../../firebase/config';
+import { User } from '../../types/user';
+import { getDatabaseService, Document } from '../../services/databaseService';
 
 interface AuthState {
-  user: User | null;
+  user: FirebaseUser | null;
+  userData: User | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: AuthState = {
   user: null,
+  userData: null,
   loading: true,
   error: null
 };
@@ -60,13 +64,55 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+export const fetchCurrentUser = createAsyncThunk(
+  'auth/fetchCurrentUser',
+  async (userId: string, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const document = await db.getDocument<Document>('users', userId);
+      
+      if (!document) {
+        return rejectWithValue('User not found');
+      }
+
+      // Map document data to User type
+      const userData: User = {
+        id: document.id,
+        firstName: document.data.firstName as string || '',
+        lastName: document.data.lastName as string || '',
+        email: document.data.email as string || '',
+        role: document.data.role as string || '',
+        phoneNumber: document.data.phoneNumber as string || '',
+        accountId: document.data.accountId as string || '',
+        accounts: (document.data.accounts as string[]) || []
+      };
+
+      return userData;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch user data');
+    }
+  }
+);
+
 // Initialize auth state listener
 export const initializeAuth = createAsyncThunk(
   'auth/initialize',
   async (_, { dispatch }) => {
     return new Promise<void>((resolve) => {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
         dispatch(setUser(user));
+        
+        if (user) {
+          // If user is logged in, fetch their data
+          await dispatch(fetchCurrentUser(user.uid));
+        } else {
+          // Clear user data if logged out
+          dispatch(setUserData(null));
+        }
+
         dispatch(setLoading(false));
         resolve();
       });
@@ -81,7 +127,13 @@ const authSlice = createSlice({
   reducers: {
     setUser: (state, action) => {
       state.user = action.payload;
+      if (!action.payload) {
+        state.userData = null;
+      }
       state.error = null;
+    },
+    setUserData: (state, action) => {
+      state.userData = action.payload;
     },
     setLoading: (state, action) => {
       state.loading = action.payload;
@@ -129,13 +181,27 @@ const authSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state) => {
         state.loading = false;
         state.user = null;
+        state.userData = null;
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Fetch Current User
+      .addCase(fetchCurrentUser.pending, (state) => {
+        // We might not want to set global loading here to avoid full page screen blocks if it's a background fetch
+        // dependent on UX requirements. For now, we'll keep it simple.
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.userData = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        state.error = action.payload as string;
+        // Don't clear user state here, just userData fetch failed
       });
   }
 });
 
-export const { setUser, setLoading, setError, clearError } = authSlice.actions;
+export const { setUser, setUserData, setLoading, setError, clearError } = authSlice.actions;
 export default authSlice.reducer; 

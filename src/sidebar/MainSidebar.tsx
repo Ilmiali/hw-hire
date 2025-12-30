@@ -11,12 +11,15 @@ import { Cog8ToothIcon } from '@heroicons/react/16/solid';
 import { SettingsModal } from '../screens/Settings/SettingsModal';
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/16/solid';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 
 export function MainSidebar({ collapsed, setCollapsed }: { collapsed?: boolean; setCollapsed?: (v: boolean) => void }) {
   const location = useLocation();
   const routesBySection = getSidebarRoutes();
   const dropdownConfig = getTeamDropdownConfig();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { userData } = useSelector((state: RootState) => state.auth);
 
   const renderDropdownMenu = () => (
     <Dropdown>
@@ -30,6 +33,24 @@ export function MainSidebar({ collapsed, setCollapsed }: { collapsed?: boolean; 
         <ChevronDownIcon />
       </DropdownButton>
       <DropdownMenu className="min-w-80 lg:min-w-64" anchor="bottom start">
+        {userData && (
+          <div className="px-3.5 py-3 border-b border-zinc-950/5 dark:border-white/10 mb-1 col-span-full">
+             <div className="flex items-center gap-3">
+              <Avatar 
+                initials={`${userData.firstName[0]}${userData.lastName[0]}`.toUpperCase()} 
+                className="size-9 bg-blue-500 text-white"
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-zinc-950 dark:text-white truncate">
+                  {userData.firstName} {userData.lastName}
+                </p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                  {userData.email}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {dropdownConfig.items.map((item, index) => {
           if (item.isDivider) {
             return <DropdownDivider key={`divider-${index}`} />;
