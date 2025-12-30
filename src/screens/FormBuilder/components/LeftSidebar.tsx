@@ -1,0 +1,169 @@
+import { useState } from 'react';
+import { FieldType, FormSchema } from '../../../types/form-builder';
+import { MagnifyingGlassIcon, PlusIcon, DocumentIcon, FolderIcon, QueueListIcon } from '@heroicons/react/20/solid';
+
+interface LeftSidebarProps {
+    form: FormSchema;
+    onAddField: (type: FieldType) => void;
+    onAddSection: () => void;
+    onAddPage: () => void;
+    onSelectElement: (id: string) => void;
+    selectedId: string | null;
+}
+
+const fieldTypes: { type: FieldType; label: string; icon: string }[] = [
+    { type: 'text', label: 'Text Input', icon: '📝' },
+    { type: 'textarea', label: 'Long Text', icon: '📄' },
+    { type: 'number', label: 'Number', icon: '🔢' },
+    { type: 'email', label: 'Email', icon: '📧' },
+    { type: 'select', label: 'Dropdown', icon: '▼' },
+    { type: 'radio', label: 'Radio Group', icon: '◉' },
+    { type: 'checkbox', label: 'Checkbox', icon: '☑️' },
+    { type: 'date', label: 'Date Picker', icon: '📅' },
+];
+
+export const LeftSidebar = ({ form, onAddField, onAddSection, onAddPage, onSelectElement, selectedId }: LeftSidebarProps) => {
+    const [activeTab, setActiveTab] = useState<'elements' | 'tree'>('elements');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    return (
+        <div className="flex flex-col h-full bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-white/10 w-80">
+            {/* Tabs */}
+            <div className="flex border-b border-zinc-200 dark:border-white/10">
+                <button
+                    onClick={() => setActiveTab('elements')}
+                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'elements'
+                            ? 'border-zinc-900 dark:border-white text-zinc-900 dark:text-white'
+                            : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                    }`}
+                >
+                    Elements
+                </button>
+                <button
+                    onClick={() => setActiveTab('tree')}
+                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'tree'
+                            ? 'border-zinc-900 dark:border-white text-zinc-900 dark:text-white'
+                            : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                    }`}
+                >
+                    Tree
+                </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                {activeTab === 'elements' && (
+                    <div className="space-y-6">
+                        <div className="relative">
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                            <input
+                                type="text"
+                                placeholder="Search elements"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-white placeholder-zinc-400"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2">
+                             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Basic Fields</h3>
+                            {fieldTypes.filter(f => f.label.toLowerCase().includes(searchTerm.toLowerCase())).map((field) => (
+                                <button
+                                    key={field.type}
+                                    draggable
+                                    onDragStart={(e) => {
+                                        e.dataTransfer.setData('application/x-form-field-type', field.type);
+                                        e.dataTransfer.effectAllowed = 'copy';
+                                    }}
+                                    onClick={() => onAddField(field.type)}
+                                    className="flex items-center gap-3 p-2 text-left rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group cursor-grab active:cursor-grabbing"
+                                >
+                                    <span className="flex items-center justify-center w-8 h-8 rounded bg-zinc-100 dark:bg-zinc-800 text-base group-hover:bg-white dark:group-hover:bg-zinc-700 transition-colors shadow-sm">
+                                        {field.icon}
+                                    </span>
+                                    <span className="text-sm text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
+                                        {field.label}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'tree' && (
+                    <div className="space-y-2">
+                         <div className="relative mb-4">
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                            <input
+                                type="text"
+                                placeholder="Search tree"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-white placeholder-zinc-400"
+                            />
+                        </div>
+                        
+                        <div className="space-y-1">
+                            {form.pages.map(page => (
+                                <div key={page.id} className="space-y-1">
+                                    <div 
+                                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === page.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
+                                        onClick={() => onSelectElement(page.id)}
+                                    >
+                                        <DocumentIcon className="w-4 h-4 text-zinc-400" />
+                                        <span className="text-sm truncate">{page.title}</span>
+                                    </div>
+                                    <div className="pl-4 space-y-1 border-l border-zinc-100 dark:border-zinc-800 ml-3">
+                                        {page.sections.map(section => (
+                                            <div key={section.id} className="space-y-1">
+                                                <div 
+                                                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === section.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
+                                                    onClick={() => onSelectElement(section.id)}
+                                                >
+                                                    <FolderIcon className="w-4 h-4 text-zinc-400" />
+                                                    <span className="text-sm truncate">{section.title}</span>
+                                                </div>
+                                                <div className="pl-4 space-y-1 border-l border-zinc-100 dark:border-zinc-800 ml-3">
+                                                    {section.fields.map(field => (
+                                                        <div 
+                                                            key={field.id}
+                                                            className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === field.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
+                                                            onClick={() => onSelectElement(field.id)}
+                                                        >
+                                                            <QueueListIcon className="w-3.5 h-3.5 text-zinc-400" />
+                                                            <span className="text-sm truncate">{field.label}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Quick Add Actions in Tree */}
+                         <div className="pt-4 mt-4 border-t border-zinc-100 dark:border-white/5 space-y-2">
+                            <button 
+                                onClick={onAddPage}
+                                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors"
+                            >
+                                <PlusIcon className="w-3.5 h-3.5" />
+                                Add Page
+                            </button>
+                             <button 
+                                onClick={onAddSection}
+                                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors"
+                            >
+                                <PlusIcon className="w-3.5 h-3.5" />
+                                Add Section
+                            </button>
+                         </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};

@@ -180,7 +180,7 @@ const SectionRenderer = ({ section, selectedId, onSelect, onDrop, onMoveField, o
 
 const Canvas = ({ page, selectedId, onSelect, onDrop, onMoveField, onMoveSection }: CanvasProps) => {
     return (
-        <div className="max-w-3xl mx-auto space-y-8 pb-20">
+        <div className="max-w-5xl mx-auto space-y-8 pb-20">
             {/* Page Header */}
             <div className="text-center mb-8">
                 <Heading level={1}>{page.title}</Heading>

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { StackedLayout } from '../../components/stacked-layout';
-import Toolbox from './components/Toolbox';
+import { useState } from 'react';
+import { LeftSidebar } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
 import { FormSchema, FormPage, FormSection, FormField, FieldType } from '../../types/form-builder';
@@ -30,6 +29,7 @@ const FormBuilder = () => {
     const [form, setForm] = useState<FormSchema>(initialForm);
     const [activePageId, setActivePageId] = useState<string>(initialForm.pages[0].id);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
 
     // Helpers to find current page index
     const activePageIndex = form.pages.findIndex(p => p.id === activePageId);
@@ -234,60 +234,73 @@ const FormBuilder = () => {
     }
 
     return (
-        <StackedLayout 
-            sidebar={null} // Sidebar is hidden in this layout usage
-            navbar={
-                <div className="flex justify-between items-center w-full px-4 py-2 border-b border-zinc-200 dark:border-white/10">
-                    <div>
-                        <input 
-                            value={form.title} 
-                            onChange={(e) => setForm(prev => ({...prev, title: e.target.value}))}
-                            className="text-lg font-semibold bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-white p-0"
-                        />
+        <div className="flex flex-col h-screen w-full bg-zinc-950">
+            {/* Header / Navbar */}
+            <header className="flex justify-between items-center w-full px-4 py-2 border-b border-white/10 shrink-0">
+                <div className="flex items-center gap-4">
+                    <input 
+                        value={form.title} 
+                        onChange={(e) => setForm(prev => ({...prev, title: e.target.value}))}
+                        className="text-lg font-semibold bg-transparent border-none focus:ring-0 text-white p-0"
+                    />
+                </div>
+                
+                {form.pages.length > 1 && (
+                    <div className="flex gap-2">
+                       {form.pages.map((page, index) => (
+                           <button 
+                               key={page.id}
+                               onClick={() => setActivePageId(page.id)}
+                               className={`px-3 py-1 rounded text-sm transition-colors ${activePageId === page.id ? 'bg-blue-600/20 text-blue-400 border border-blue-500/50' : 'text-zinc-400 hover:text-white'}`}
+                           >
+                               Page {index + 1}
+                           </button>
+                       ))}
                     </div>
-                    
-                    {/* Page Navigation if multiple pages */}
-                    {form.pages.length > 1 && (
-                        <div className="flex gap-2">
-                           {form.pages.map((page, index) => (
-                               <button 
-                                   key={page.id}
-                                   onClick={() => setActivePageId(page.id)}
-                                   className={`px-3 py-1 rounded text-sm ${activePageId === page.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-zinc-600 dark:text-zinc-400'}`}
-                               >
-                                   Page {index + 1}
-                               </button>
-                           ))}
-                        </div>
-                    )}
+                )}
 
-                    <button 
-                        onClick={handleSave}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium"
-                    >
-                        Save Form
-                    </button>
-                </div>
-            }
-        >
-            <div className="flex h-full">
-                <div className="w-64 border-r border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900 overflow-y-auto">
-                    <Toolbox onAddField={handleAddField} onAddSection={handleAddSection} onAddPage={handleAddPage} />
-                </div>
-                <div className="flex-1 bg-zinc-50 dark:bg-zinc-900/50 p-8 overflow-y-auto" onClick={() => setSelectedElementId(null)}>
+                <button 
+                    onClick={handleSave}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
+                >
+                    Save Form
+                </button>
+            </header>
+
+            {/* Main Content Area */}
+            <div className="flex flex-1 overflow-hidden">
+                <LeftSidebar 
+                    form={form}
+                    onAddField={handleAddField} 
+                    onAddSection={handleAddSection} 
+                    onAddPage={handleAddPage}
+                    onSelectElement={setSelectedElementId}
+                    selectedId={selectedElementId}
+                />
+                
+                <div 
+                    className="flex-1 bg-zinc-900/50 p-8 overflow-y-auto" 
+                    onClick={() => setSelectedElementId(null)}
+                >
                     <Canvas 
                         page={form.pages[activePageIndex]} 
                         selectedId={selectedElementId}
-                        onSelect={setSelectedElementId}
-                        onDrop={(type) => handleAddField(type)}
+                        onSelect={(id: string) => {
+                            setSelectedElementId(id);
+                            setIsRightSidebarOpen(true);
+                        }}
+                        onDrop={(type: FieldType) => handleAddField(type)}
                         onMoveField={moveField}
                         onMoveSection={moveSection}
+                        onMoveSectionUp={(id: string) => moveSection(id, 'up')}
+                        onMoveSectionDown={(id: string) => moveSection(id, 'down')}
                     />
                 </div>
-                <div className="w-80 border-l border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900 overflow-y-auto">
+                
+                {isRightSidebarOpen && (
                     <PropertiesPanel 
                         selectedElement={selectedElement} 
-                        onUpdate={(updates) => {
+                        onUpdate={(updates: any) => {
                             if (selectedElement?.type === 'field') updateField(selectedElementId!, updates);
                             if (selectedElement?.type === 'section') updateSection(selectedElementId!, updates);
                             if (selectedElement?.type === 'page') updatePage(selectedElementId!, updates);
@@ -298,10 +311,11 @@ const FormBuilder = () => {
                             if (selectedElement?.type === 'section') deleteSection(selectedElementId);
                             if (selectedElement?.type === 'page') deletePage(selectedElementId);
                         }}
+                        onClose={() => setIsRightSidebarOpen(false)}
                     />
-                </div>
+                )}
             </div>
-        </StackedLayout>
+        </div>
     );
 };
 
