@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file' | 'multiselect';
+export type FieldType = 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file' | 'multiselect' | 'paragraph' | 'divider' | 'spacer';
 
 export interface FormField {
   id: string;
@@ -9,6 +9,8 @@ export interface FormField {
   options?: { label: string; value: string }[]; // For select, radio, checkbox
   value?: string | number | boolean | string[]; // Default value or binding
   validation?: ValidationSpec;
+  multiple?: boolean; // For file inputs
+  content?: string; // For paragraph fields
 }
 
 export type ValidationSpec = 

@@ -17,6 +17,7 @@ import { Label, Field } from '../../components/fieldset';
 import { Heading } from '../../components/heading';
 import { Text } from '../../components/text';
 import { Button } from '../../components/button';
+import { XMarkIcon } from '@heroicons/react/20/solid';
 
 export const FormPreview = () => {
     const navigate = useNavigate();
@@ -109,6 +110,14 @@ export const FormPreview = () => {
                     }));
                  }
         }
+    };
+
+    const handleRemoveFile = (fieldId: string, index: number) => {
+        const currentFiles = Array.isArray(formValues[fieldId]) ? [...formValues[fieldId]] : [];
+        currentFiles.splice(index, 1);
+        const newValue = currentFiles.length > 0 ? currentFiles : undefined;
+
+        handleChange(fieldId, newValue);
     };
 
     const validatePage = (pageIndex: number): boolean => {
@@ -272,10 +281,63 @@ export const FormPreview = () => {
                                     />
                                     <Label>{opt.label}</Label>
                                 </CheckboxField>
-                            );
+                                    );
                         })}
                     </CheckboxGroup>
                 );
+            case 'file':
+                const files = Array.isArray(formValues[field.id]) ? formValues[field.id] : [];
+                return (
+                    <div className="space-y-3">
+                        <Input 
+                            type="file" 
+                            multiple={field.multiple}
+                            onChange={(e) => {
+                                const newFiles = Array.from(e.target.files || []);
+                                if (field.multiple) {
+                                    handleChange(field.id, [...files, ...newFiles]);
+                                } else {
+                                    handleChange(field.id, newFiles);
+                                }
+                                // Reset input so same files can be selected again
+                                e.target.value = '';
+                            }}
+                            required={isRequired && files.length === 0}
+                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600/10 file:text-blue-400 hover:file:bg-blue-600/20 dark:file:bg-blue-900/40 dark:file:text-blue-300 transition-colors"
+                        />
+                        {files.length > 0 && (
+                            <ul className="space-y-2">
+                                {files.map((file: File, idx: number) => (
+                                    <li key={`${file.name}-${idx}`} className="flex items-center justify-between p-2 bg-zinc-800/50 rounded-lg border border-white/5 animate-in fade-in slide-in-from-left-2 duration-200">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <span className="text-xs text-zinc-400 shrink-0">📄</span>
+                                            <span className="text-sm text-zinc-300 truncate">{file.name}</span>
+                                            <span className="text-[10px] text-zinc-500 shrink-0">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                        </div>
+                                        <button 
+                                            type="button"
+                                            onClick={() => handleRemoveFile(field.id, idx)}
+                                            className="p-1 hover:bg-white/10 rounded-md text-zinc-500 hover:text-red-400 transition-colors"
+                                            title="Remove file"
+                                        >
+                                            <XMarkIcon className="w-4 h-4" />
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                );
+            case 'paragraph':
+                return (
+                    <Text className="text-zinc-300">
+                        {field.content || field.placeholder || 'Enter your text here...'}
+                    </Text>
+                );
+            case 'divider':
+                return <hr className="my-4 border-white/10" />;
+            case 'spacer':
+                return <div className="h-8" />;
             default:
                 return null;
         }
@@ -338,6 +400,16 @@ export const FormPreview = () => {
                                                 {row.fields.map(field => {
                                                     if (!visibleFieldIds.has(field.id)) return null;
                                                     const isRequired = requiredFieldIds.has(field.id);
+                                                    const isStatic = ['paragraph', 'divider', 'spacer'].includes(field.type);
+                                                    
+                                                    if (isStatic) {
+                                                        return (
+                                                            <div key={field.id} className="flex-1 min-w-0">
+                                                                {renderField(field)}
+                                                            </div>
+                                                        );
+                                                    }
+
                                                     return (
                                                         <Field key={field.id} className="flex-1 min-w-0">
                                                             <Label className="text-zinc-300">

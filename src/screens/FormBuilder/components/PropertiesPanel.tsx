@@ -53,13 +53,36 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose, hideHea
                         <Input value={data.placeholder || ''} onChange={(e) => onUpdate({ placeholder: e.target.value })} />
                     </div>
 
-                    <div className="flex items-center justify-between">
-                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Required</label>
-                         <Switch checked={data.required} onChange={(checked) => onUpdate({ required: checked })} />
-                    </div>
+                    {!['paragraph', 'divider', 'spacer'].includes(data.type) && (
+                        <>
+                            <div className="flex items-center justify-between">
+                                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Required</label>
+                                 <Switch checked={data.required} onChange={(checked) => onUpdate({ required: checked })} />
+                            </div>
 
-                    {/* Validation Panel */}
-                    <ValidationPanel field={data} onUpdate={onUpdate} />
+                            {/* Validation Panel */}
+                            <ValidationPanel field={data} onUpdate={onUpdate} />
+                        </>
+                    )}
+
+                    {data.type === 'file' && (
+                        <div className="flex items-center justify-between">
+                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Allow Multiple Files</label>
+                             <Switch checked={data.multiple} onChange={(checked) => onUpdate({ multiple: checked })} />
+                        </div>
+                    )}
+
+                    {data.type === 'paragraph' && (
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Content</label>
+                            <Textarea 
+                                value={data.content || ''} 
+                                onChange={(e) => onUpdate({ content: e.target.value })} 
+                                placeholder="Enter paragraph text..."
+                                rows={4}
+                            />
+                        </div>
+                    )}
 
                     {['select', 'radio', 'checkbox'].includes(data.type) && (
                         <div>

@@ -92,9 +92,11 @@ const FieldRenderer = ({ field, isSelected, onClick }: { field: FormField; isSel
                 onClick={onClick}
                 className={`field-wrapper relative group p-4 rounded-lg cursor-grab active:cursor-grabbing border-2 transition-all flex-1 min-w-0 ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 bg-white/5 dark:bg-zinc-800/30'}`}
             >
-               <label className={`block text-sm font-medium text-zinc-900 dark:text-white mb-2 truncate ${isDragging ? 'opacity-0' : ''}`}>
-                    {field.label} {field.required && <span className="text-red-500">*</span>}
-                </label>
+               {!['paragraph', 'divider', 'spacer'].includes(field.type) && (
+                   <label className={`block text-sm font-medium text-zinc-900 dark:text-white mb-2 truncate ${isDragging ? 'opacity-0' : ''}`}>
+                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                    </label>
+               )}
                 
                 <div className={`pointer-events-none ${isDragging ? 'opacity-0' : ''}`}>
                     {field.type === 'text' && <Input placeholder={field.placeholder} />}
@@ -132,6 +134,18 @@ const FieldRenderer = ({ field, isSelected, onClick }: { field: FormField; isSel
                             ))}
                         </CheckboxGroup>
                     )}
+
+                    {field.type === 'file' && <Input type="file" multiple={field.multiple} />}
+                    
+                    {field.type === 'paragraph' && (
+                        <Text className="text-zinc-600 dark:text-zinc-400">
+                            {field.content || field.placeholder || 'Enter your text here...'}
+                        </Text>
+                    )}
+
+                    {field.type === 'divider' && <hr className="my-2 border-zinc-200 dark:border-zinc-700" />}
+                    
+                    {field.type === 'spacer' && <div className="h-8" />}
                 </div>
             </div>
         </>

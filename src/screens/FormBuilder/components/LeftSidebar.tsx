@@ -20,6 +20,10 @@ const fieldTypes: { type: FieldType; label: string; icon: string }[] = [
     { type: 'radio', label: 'Radio Group', icon: '◉' },
     { type: 'checkbox', label: 'Checkbox', icon: '☑️' },
     { type: 'date', label: 'Date Picker', icon: '📅' },
+    { type: 'file', label: 'File Upload', icon: '📎' },
+    { type: 'paragraph', label: 'Paragraph', icon: '¶' },
+    { type: 'divider', label: 'Divider', icon: '➖' },
+    { type: 'spacer', label: 'Spacer', icon: '↕️' },
 ];
 
 export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, selectedId }: LeftSidebarProps) => {
