@@ -116,7 +116,7 @@ const FieldRenderer = ({ field, isSelected, onClick, onDelete, onDuplicate }: { 
                        </button>
                    </div>
                )}
-               {!['paragraph', 'divider', 'spacer'].includes(field.type) && (
+               {!['paragraph', 'divider', 'spacer', 'image'].includes(field.type) && (
                    <label className={`block text-sm font-medium text-zinc-900 dark:text-white mb-2 truncate ${isDragging ? 'opacity-0' : ''}`}>
                         {field.label} {field.required && <span className="text-red-500">*</span>}
                     </label>
@@ -170,6 +170,28 @@ const FieldRenderer = ({ field, isSelected, onClick, onDelete, onDuplicate }: { 
                     {field.type === 'divider' && <hr className="my-2 border-zinc-200 dark:border-zinc-700" />}
                     
                     {field.type === 'spacer' && <div className="h-8" />}
+
+                    {field.type === 'image' && (
+                        <div className="flex justify-center">
+                            {field.imageUrl ? (
+                                <img 
+                                    src={field.imageUrl} 
+                                    alt={field.altText || ''} 
+                                    style={{ 
+                                        width: field.width || '100%', 
+                                        height: field.height || 'auto',
+                                        objectFit: field.objectFit || 'cover',
+                                        borderRadius: '8px'
+                                    }}
+                                />
+                            ) : (
+                                <div className="w-full h-40 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-200 dark:border-white/5">
+                                    <span className="text-2xl">🖼️</span>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">No Image URL provided</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </>

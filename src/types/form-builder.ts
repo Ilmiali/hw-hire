@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file' | 'multiselect' | 'paragraph' | 'divider' | 'spacer';
+export type FieldType = 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file' | 'multiselect' | 'paragraph' | 'divider' | 'spacer' | 'image';
 
 export interface ColorOption {
   id: string;
@@ -21,6 +21,11 @@ export interface FormField {
   validation?: ValidationSpec;
   multiple?: boolean; // For file inputs
   content?: string; // For paragraph fields
+  imageUrl?: string; // For image fields
+  altText?: string;
+  width?: string;
+  height?: string;
+  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
 }
 
 export type ValidationSpec = 

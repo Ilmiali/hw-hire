@@ -339,6 +339,23 @@ export const FormPreview = () => {
                 return <hr className="my-4 border-zinc-200 dark:border-white/10" />;
             case 'spacer':
                 return <div className="h-8" />;
+            case 'image':
+                return (
+                    <div className="flex justify-center">
+                        {field.imageUrl && (
+                            <img 
+                                src={field.imageUrl} 
+                                alt={field.altText || ''} 
+                                style={{ 
+                                    width: field.width || '100%', 
+                                    height: field.height || 'auto',
+                                    objectFit: field.objectFit || 'cover',
+                                    borderRadius: '8px'
+                                }}
+                            />
+                        )}
+                    </div>
+                );
             default:
                 return null;
         }
@@ -450,7 +467,7 @@ export const FormPreview = () => {
                                                     {row.fields.map(field => {
                                                         if (!visibleFieldIds.has(field.id)) return null;
                                                         const isRequired = requiredFieldIds.has(field.id);
-                                                        const isStatic = ['paragraph', 'divider', 'spacer'].includes(field.type);
+                                                        const isStatic = ['paragraph', 'divider', 'spacer', 'image'].includes(field.type);
                                                         
                                                         if (isStatic) {
                                                             return (

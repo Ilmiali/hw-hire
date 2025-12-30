@@ -26,6 +26,7 @@ const fieldTypes: { type: FieldType; label: string; icon: string }[] = [
     { type: 'paragraph', label: 'Paragraph', icon: '¶' },
     { type: 'divider', label: 'Divider', icon: '➖' },
     { type: 'spacer', label: 'Spacer', icon: '↕️' },
+    { type: 'image', label: 'Static Image', icon: '🖼️' },
 ];
 
 export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, onDeleteElement, onDuplicateElement, selectedId }: LeftSidebarProps) => {

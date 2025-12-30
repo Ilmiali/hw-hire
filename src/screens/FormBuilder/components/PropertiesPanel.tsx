@@ -53,7 +53,7 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose, hideHea
                         <Input value={data.placeholder || ''} onChange={(e) => onUpdate({ placeholder: e.target.value })} />
                     </div>
 
-                    {!['paragraph', 'divider', 'spacer'].includes(data.type) && (
+                    {!['paragraph', 'divider', 'spacer', 'image'].includes(data.type) && (
                         <>
                             <div className="flex items-center justify-between">
                                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Required</label>
@@ -81,6 +81,59 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose, hideHea
                                 placeholder="Enter paragraph text..."
                                 rows={4}
                             />
+                        </div>
+                    )}
+
+                    {data.type === 'image' && (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Image URL</label>
+                                <Input 
+                                    value={data.imageUrl || ''} 
+                                    onChange={(e) => onUpdate({ imageUrl: e.target.value })} 
+                                    placeholder="https://example.com/image.jpg"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Alt Text</label>
+                                <Input 
+                                    value={data.altText || ''} 
+                                    onChange={(e) => onUpdate({ altText: e.target.value })} 
+                                    placeholder="Description of the image"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Width</label>
+                                    <Input 
+                                        value={data.width || '100%'} 
+                                        onChange={(e) => onUpdate({ width: e.target.value })} 
+                                        placeholder="e.g. 100% or 300px"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Height</label>
+                                    <Input 
+                                        value={data.height || 'auto'} 
+                                        onChange={(e) => onUpdate({ height: e.target.value })} 
+                                        placeholder="e.g. auto or 200px"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Object Fit</label>
+                                <select 
+                                    value={data.objectFit || 'cover'} 
+                                    onChange={(e) => onUpdate({ objectFit: e.target.value as any })}
+                                    className="w-full pl-3 pr-10 py-2 text-base border-zinc-200 dark:border-white/10 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                                >
+                                    <option value="cover">Cover</option>
+                                    <option value="contain">Contain</option>
+                                    <option value="fill">Fill</option>
+                                    <option value="none">None</option>
+                                    <option value="scale-down">Scale Down</option>
+                                </select>
+                            </div>
                         </div>
                     )}
 
