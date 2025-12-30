@@ -15,6 +15,7 @@ const seedData = () => {
         employmentType: 'Full-time',
         description: 'We are looking for a React expert...',
         status: 'draft',
+        coverImage: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=2072',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     });
@@ -26,6 +27,7 @@ const seedData = () => {
         employmentType: 'Contract',
         description: 'Help us grow our brand...',
         status: 'open',
+        coverImage: 'https://images.unsplash.com/photo-1557838923-2985c318be48?auto=format&fit=crop&q=80&w=2062',
         createdAt: new Date(Date.now() - 86400000).toISOString(),
         updatedAt: new Date(Date.now() - 86400000).toISOString(),
     });

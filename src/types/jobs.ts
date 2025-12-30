@@ -8,6 +8,7 @@ export type Job = {
   employmentType: EmploymentType;
   description: string;
   status: JobStatus;
+  coverImage?: string;
   createdAt: string;
   updatedAt: string;
 };
