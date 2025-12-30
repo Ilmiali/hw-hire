@@ -11,20 +11,44 @@ import { Label } from '../../../components/fieldset'; // Assuming Label is here,
 import { Heading } from '../../../components/heading';
 import { Text } from '../../../components/text';
 
+import { FieldType } from '../../../types/form-builder';
+
 interface CanvasProps {
     page: FormPage;
     selectedId: string | null;
     onSelect: (id: string) => void;
-    onDrop: (type: any) => void;
+    onDrop: (type: FieldType, sectionId?: string, index?: number) => void;
+    onReorderField: (fieldId: string, sectionId: string, index: number) => void;
     onMoveField: (fieldId: string, direction: 'up' | 'down') => void;
     onMoveSection: (sectionId: string, direction: 'up' | 'down') => void;
 }
 
+const DropIndicator = ({ isVisible, text = "Drop it here" }: { isVisible: boolean; text?: string }) => {
+    if (!isVisible) return null;
+    return (
+        <div className="relative h-6 w-full flex items-center justify-center my-1 pointer-events-none">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t-2 border-dashed border-blue-500/50"></div>
+            </div>
+            <div className="relative flex justify-center">
+                <span className="bg-blue-600 text-white text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full shadow-lg border border-blue-400">
+                    {text}
+                </span>
+            </div>
+        </div>
+    );
+};
+
 const FieldRenderer = ({ field, isSelected, onClick, onMoveUp, onMoveDown, canMoveUp, canMoveDown }: { field: FormField; isSelected: boolean; onClick: (e: React.MouseEvent) => void; onMoveUp: () => void; onMoveDown: () => void; canMoveUp: boolean; canMoveDown: boolean }) => {
     return (
         <div 
+            draggable
+            onDragStart={(e) => {
+                e.dataTransfer.setData('application/x-form-field-id', field.id);
+                e.dataTransfer.effectAllowed = 'move';
+            }}
             onClick={onClick}
-            className={`relative group p-4 rounded-lg cursor-pointer border-2 transition-all ${isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700'}`}
+            className={`field-wrapper relative group p-4 rounded-lg cursor-grab active:cursor-grabbing border-2 transition-all ${isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 bg-white/5 dark:bg-zinc-800/30'}`}
         >
             {/* Reorder buttons */}
             <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -50,7 +74,7 @@ const FieldRenderer = ({ field, isSelected, onClick, onMoveUp, onMoveDown, canMo
                 </button>
             </div>
             {/* Same content as before */}
-           <label className="block text-sm font-medium text-zinc-900 dark:text-white mb-2 cursor-pointer">
+           <label className="block text-sm font-medium text-zinc-900 dark:text-white mb-2">
                 {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
             
@@ -95,74 +119,63 @@ const FieldRenderer = ({ field, isSelected, onClick, onMoveUp, onMoveDown, canMo
     );
 };
 
-const SectionRenderer = ({ section, selectedId, onSelect, onDrop, onMoveField, onMoveSection, onMoveSectionUp, onMoveSectionDown, canMoveSectionUp, canMoveSectionDown }: { section: FormSection; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: any) => void; onMoveField: (fieldId: string, direction: 'up' | 'down') => void; onMoveSection: (sectionId: string, direction: 'up' | 'down') => void; onMoveSectionUp: () => void; onMoveSectionDown: () => void; canMoveSectionUp: boolean; canMoveSectionDown: boolean }) => {
+const SectionRenderer = ({ section, selectedId, onSelect, onDrop, onReorderField, onMoveField }: { section: FormSection; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: FieldType, sectionId: string, index: number) => void; onReorderField: (fieldId: string, sectionId: string, index: number) => void; onMoveField: (fieldId: string, direction: 'up' | 'down') => void }) => {
     const isSelected = section.id === selectedId;
-    const [isDragOver, setIsDragOver] = React.useState(false);
+    const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-        setIsDragOver(true);
-    };
+        if (!containerRef.current) return;
 
-    const handleDragLeave = () => {
-        setIsDragOver(false);
+        const children = Array.from(containerRef.current.children).filter(child => child.classList.contains('field-wrapper'));
+        let newIndex = children.length;
+
+        for (let i = 0; i < children.length; i++) {
+            const rect = children[i].getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            if (e.clientY < midpoint) {
+                newIndex = i;
+                break;
+            }
+        }
+        setDragOverIndex(newIndex);
     };
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
-        setIsDragOver(false);
-        const type = e.dataTransfer.getData('application/x-form-field-type');
-        if (type) {
-            onDrop(type);
+        const type = e.dataTransfer.getData('application/x-form-field-type') as FieldType;
+        const fieldId = e.dataTransfer.getData('application/x-form-field-id');
+
+        if (dragOverIndex !== null) {
+            if (type) {
+                onDrop(type, section.id, dragOverIndex);
+            } else if (fieldId) {
+                onReorderField(fieldId, section.id, dragOverIndex);
+            }
         }
+        setDragOverIndex(null);
     };
 
     return (
         <div 
             onClick={(e) => { e.stopPropagation(); onSelect(section.id); }}
             onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+            onDragLeave={() => setDragOverIndex(null)}
             onDrop={handleDrop}
-            className={`relative group bg-white dark:bg-zinc-800 rounded-xl p-6 border-2 transition-all ${isSelected ? 'border-blue-500' : 'border-zinc-200 dark:border-white/10'} ${isDragOver ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+            className={`relative group bg-zinc-800/20 dark:bg-zinc-900/40 rounded-2xl p-6 border-2 transition-all ${isSelected ? 'border-blue-600/50 bg-blue-600/5' : 'border-white/5 hover:border-white/10'}`}
         >
-            {/* Section Reorder buttons */}
-            <div className="absolute top-4 right-4 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <button
-                    onClick={(e) => { e.stopPropagation(); onMoveSectionUp(); }}
-                    disabled={!canMoveSectionUp}
-                    className="p-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Move section up"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                </button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onMoveSectionDown(); }}
-                    disabled={!canMoveSectionDown}
-                    className="p-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Move section down"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-            </div>
             <div className="mb-6">
-                <Heading level={2}>{section.title}</Heading>
-                {section.description && <Text>{section.description}</Text>}
+                <Heading level={2} className="text-white">{section.title}</Heading>
+                {section.description && <Text className="text-zinc-400">{section.description}</Text>}
             </div>
 
-            <div className="space-y-4 min-h-[100px]">
-                {section.fields.length === 0 ? (
-                    <div className="text-center text-zinc-400 dark:text-zinc-600 py-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
-                        Drop fields here
-                    </div>
-                ) : (
-                    section.fields.map((field, index) => (
+            <div className="space-y-1 relative" ref={containerRef}>
+                {dragOverIndex === 0 && <DropIndicator isVisible={true} />}
+                
+                {section.fields.map((field, index) => (
+                    <React.Fragment key={field.id}>
                         <FieldRenderer 
-                            key={field.id} 
                             field={field} 
                             isSelected={field.id === selectedId}
                             onClick={(e) => { e.stopPropagation(); onSelect(field.id); }}
@@ -171,41 +184,44 @@ const SectionRenderer = ({ section, selectedId, onSelect, onDrop, onMoveField, o
                             canMoveUp={index > 0}
                             canMoveDown={index < section.fields.length - 1}
                         />
-                    ))
+                        {dragOverIndex === index + 1 && <DropIndicator isVisible={true} />}
+                    </React.Fragment>
+                ))}
+                
+                {section.fields.length === 0 && (
+                    <div className="text-center text-zinc-500 py-10 border-2 border-dashed border-white/5 rounded-xl">
+                        Drop fields here
+                    </div>
                 )}
             </div>
         </div>
     );
 }
 
-const Canvas = ({ page, selectedId, onSelect, onDrop, onMoveField, onMoveSection }: CanvasProps) => {
+const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onMoveField }: CanvasProps) => {
     return (
-        <div className="max-w-5xl mx-auto space-y-8 pb-20">
+        <div className="max-w-5xl mx-auto space-y-12 pb-32">
             {/* Page Header */}
-            <div className="text-center mb-8">
-                <Heading level={1}>{page.title}</Heading>
+            <div className="text-center mb-12">
+                <Heading level={1} className="text-white text-3xl">{page.title}</Heading>
             </div>
 
-            {page.sections.map((section, index) => (
+            {page.sections.map((section) => (
                 <SectionRenderer 
                     key={section.id} 
                     section={section} 
                     selectedId={selectedId}
                     onSelect={onSelect}
                     onDrop={onDrop}
+                    onReorderField={onReorderField}
                     onMoveField={onMoveField}
-                    onMoveSection={onMoveSection}
-                    onMoveSectionUp={() => onMoveSection(section.id, 'up')}
-                    onMoveSectionDown={() => onMoveSection(section.id, 'down')}
-                    canMoveSectionUp={index > 0}
-                    canMoveSectionDown={index < page.sections.length - 1}
                 />
             ))}
             
             {/* Empty State if no sections */}
             {page.sections.length === 0 && (
-                 <div className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-12 flex flex-col items-center justify-center text-center">
-                    <p className="text-zinc-500 dark:text-zinc-400">Add a section to start adding fields</p>
+                 <div className="border-2 border-dashed border-white/10 rounded-2xl p-20 flex flex-col items-center justify-center text-center bg-white/5">
+                    <p className="text-zinc-400">Add a section to start adding fields</p>
                 </div>
             )}
         </div>

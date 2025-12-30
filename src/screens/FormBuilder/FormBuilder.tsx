@@ -34,7 +34,7 @@ const FormBuilder = () => {
     // Helpers to find current page index
     const activePageIndex = form.pages.findIndex(p => p.id === activePageId);
 
-    const handleAddField = (type: FieldType) => {
+    const handleAddField = (type: FieldType, targetSectionId?: string, targetIndex?: number) => {
         const newField: FormField = {
             id: uuidv4(),
             type,
@@ -47,15 +47,52 @@ const FormBuilder = () => {
 
         setForm(prev => {
             const newForm = { ...prev };
-            // Add to the last section of the active page for simplicity, 
-            // or we could track "active section" too. 
-            // For now, let's just add to the first section of the active page if exists.
-            if (newForm.pages[activePageIndex].sections.length > 0) {
-                newForm.pages[activePageIndex].sections[0].fields.push(newField);
+            const page = newForm.pages.find(p => p.id === activePageId);
+            if (!page) return prev;
+
+            let section = page.sections.find(s => s.id === targetSectionId);
+            if (!section && page.sections.length > 0) {
+                section = page.sections[0];
+            }
+
+            if (section) {
+                const index = targetIndex !== undefined ? targetIndex : section.fields.length;
+                section.fields.splice(index, 0, newField);
             }
             return newForm;
         });
         setSelectedElementId(newField.id);
+        setIsRightSidebarOpen(true);
+    };
+
+    const handleReorderField = (fieldId: string, targetSectionId: string, targetIndex: number) => {
+        setForm(prev => {
+            const newForm = { ...prev };
+            let sourceField: FormField | null = null;
+            
+            // Remove from source
+            newForm.pages.forEach(page => {
+                page.sections.forEach(section => {
+                    const idx = section.fields.findIndex(f => f.id === fieldId);
+                    if (idx !== -1) {
+                        sourceField = section.fields.splice(idx, 1)[0];
+                    }
+                });
+            });
+
+            if (!sourceField) return prev;
+
+            // Insert into target
+            newForm.pages.forEach(page => {
+                const section = page.sections.find(s => s.id === targetSectionId);
+                if (section) {
+                    // Adjust index if moving within same section
+                    section.fields.splice(targetIndex, 0, sourceField!);
+                }
+            });
+
+            return newForm;
+        });
     };
 
     const handleAddSection = () => {
@@ -289,7 +326,8 @@ const FormBuilder = () => {
                             setSelectedElementId(id);
                             setIsRightSidebarOpen(true);
                         }}
-                        onDrop={(type: FieldType) => handleAddField(type)}
+                        onDrop={(type: FieldType, sectionId?: string, index?: number) => handleAddField(type, sectionId, index)}
+                        onReorderField={handleReorderField}
                         onMoveField={moveField}
                         onMoveSection={moveSection}
                         onMoveSectionUp={(id: string) => moveSection(id, 'up')}
