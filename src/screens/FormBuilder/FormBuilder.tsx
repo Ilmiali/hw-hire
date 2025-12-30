@@ -308,6 +308,31 @@ const FormBuilder = () => {
         });
     };
 
+    const handleReorderSection = (sectionId: string, targetIndex: number) => {
+        setForm(prev => {
+            const newForm = { ...prev };
+            let sourceSection: FormSection | null = null;
+            
+            // Find and remove from current position
+            newForm.pages.forEach(page => {
+                const idx = page.sections.findIndex(s => s.id === sectionId);
+                if (idx !== -1) {
+                    sourceSection = page.sections.splice(idx, 1)[0];
+                }
+            });
+
+            if (!sourceSection) return prev;
+
+            // Insert into target position in current active page
+            const page = newForm.pages.find(p => p.id === activePageId);
+            if (page) {
+                page.sections.splice(targetIndex, 0, sourceSection);
+            }
+
+            return newForm;
+        });
+    };
+
     // Find the selected object for the properties panel
     let selectedElement: { type: 'field' | 'section' | 'page' | 'form', data: any } | null = null;
     
@@ -383,8 +408,9 @@ const FormBuilder = () => {
                             setSelectedElementId(id);
                             setIsRightSidebarOpen(true);
                         }}
-                        onDrop={(type: FieldType, sectionId?: string, index?: number) => handleAddField(type, sectionId, index)}
+                        onDrop={handleAddField}
                         onReorderField={handleReorderField}
+                        onReorderSection={handleReorderSection}
                         onMoveField={moveField}
                         onMoveSection={moveSection}
                         onMoveSectionUp={(id: string) => moveSection(id, 'up')}

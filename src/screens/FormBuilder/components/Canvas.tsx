@@ -17,6 +17,7 @@ interface CanvasProps {
     onSelect: (id: string) => void;
     onDrop: (type: FieldType, sectionId?: string, rowIndex?: number, colIndex?: number) => void;
     onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void;
+    onReorderSection: (sectionId: string, targetIndex: number) => void;
     onMoveField: (fieldId: string, direction: 'up' | 'down') => void;
     onMoveSection: (sectionId: string, direction: 'up' | 'down') => void;
     onMoveSectionUp: (id: string) => void;
@@ -168,6 +169,12 @@ const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderFie
     const rowRef = React.useRef<HTMLDivElement>(null);
 
     const handleDragOver = (e: React.DragEvent) => {
+        // Only handle field drops here
+        if (!e.dataTransfer.types.includes('application/x-form-field-type') && 
+            !e.dataTransfer.types.includes('application/x-form-field-id')) {
+            return;
+        }
+
         e.preventDefault();
         e.stopPropagation();
         if (!rowRef.current) return;
@@ -229,13 +236,44 @@ const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderFie
     );
 };
 
-const SectionRenderer = ({ section, selectedId, onSelect, onDrop, onReorderField, onMoveField }: { section: FormSection; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex?: number) => void; onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void; onMoveField: (fieldId: string, direction: 'up' | 'down') => void }) => {
+const SectionRenderer = ({ 
+    section, 
+    selectedId, 
+    onSelect, 
+    onDrop, 
+    onReorderField, 
+    onMoveField,
+    onMoveSectionUp,
+    onMoveSectionDown,
+    canMoveUp,
+    canMoveDown
+}: { 
+    section: FormSection; 
+    selectedId: string | null; 
+    onSelect: (id: string) => void; 
+    onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex?: number) => void; 
+    onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void; 
+    onMoveField: (fieldId: string, direction: 'up' | 'down') => void;
+    onMoveSectionUp: () => void;
+    onMoveSectionDown: () => void;
+    canMoveUp: boolean;
+    canMoveDown: boolean;
+}) => {
     const isSelected = section.id === selectedId;
     const [dragOverRowIndex, setDragOverRowIndex] = React.useState<number | null>(null);
+    const [isDragging, setIsDragging] = React.useState(false);
     const containerRef = React.useRef<HTMLDivElement>(null);
+    const ghostRef = React.useRef<HTMLDivElement>(null);
 
     const handleDragOver = (e: React.DragEvent) => {
+        // Only handle field drops here
+        if (!e.dataTransfer.types.includes('application/x-form-field-type') && 
+            !e.dataTransfer.types.includes('application/x-form-field-id')) {
+            return;
+        }
+
         e.preventDefault();
+        e.stopPropagation();
         if (!containerRef.current) return;
 
         const children = Array.from(containerRef.current.children).filter(child => child.classList.contains('row-wrapper'));
@@ -253,9 +291,13 @@ const SectionRenderer = ({ section, selectedId, onSelect, onDrop, onReorderField
     };
 
     const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
         const type = e.dataTransfer.getData('application/x-form-field-type') as FieldType;
         const fieldId = e.dataTransfer.getData('application/x-form-field-id');
+
+        if (!type && !fieldId) return;
+
+        e.preventDefault();
+        e.stopPropagation();
 
         if (dragOverRowIndex !== null) {
             if (type) {
@@ -268,64 +310,178 @@ const SectionRenderer = ({ section, selectedId, onSelect, onDrop, onReorderField
     };
 
     return (
-        <div 
-            onClick={(e) => { e.stopPropagation(); onSelect(section.id); }}
-            onDragOver={handleDragOver}
-            onDragLeave={() => setDragOverRowIndex(null)}
-            onDrop={handleDrop}
-            className={`relative group bg-zinc-800/20 dark:bg-zinc-900/40 rounded-2xl p-6 border-2 transition-all ${isSelected ? 'border-blue-600/50 bg-blue-600/5' : 'border-white/5 hover:border-white/10'}`}
-        >
-            <div className="mb-6">
-                <Heading level={2} className="text-white text-xl">{section.title}</Heading>
-                {section.description && <Text className="text-zinc-400">{section.description}</Text>}
+        <>
+            {/* Section Ghost */}
+            <div 
+                ref={ghostRef}
+                className="fixed -left-[9999px] top-0 p-6 rounded-2xl border-2 border-dashed border-blue-500 bg-zinc-900 opacity-40 w-[600px] pointer-events-none z-[9999]"
+            >
+                <Heading level={2} className="text-white text-xl mb-2">{section.title}</Heading>
+                <div className="h-20 w-full bg-zinc-800 rounded-xl border border-white/5"></div>
             </div>
 
-            <div className="space-y-4 relative" ref={containerRef}>
-                {dragOverRowIndex === 0 && <DropIndicator isVisible={true} text="New Row" />}
-                
-                {section.rows.map((row, rowIndex) => (
-                    <div key={row.id} className="row-wrapper relative">
-                        <RowRenderer 
-                            row={row} 
-                            rowIndex={rowIndex}
-                            selectedId={selectedId}
-                            onSelect={onSelect}
-                            onDrop={onDrop}
-                            onReorderField={onReorderField}
-                            sectionId={section.id}
-                            onMoveField={onMoveField}
-                        />
-                        {dragOverRowIndex === rowIndex + 1 && <DropIndicator isVisible={true} text="New Row" />}
-                    </div>
-                ))}
-                
-                {section.rows.length === 0 && !dragOverRowIndex !== null && (
-                    <div className="text-center text-zinc-500 py-10 border-2 border-dashed border-white/5 rounded-xl">
-                        Drop fields here
+            <div 
+                draggable
+                onDragStart={(e) => {
+                    // Check if we are dragging a button or the section itself
+                    const target = e.target as HTMLElement;
+                    const isActionButton = target.closest('button');
+                    const isField = target.closest('.field-wrapper');
+
+                    if (isActionButton || isField) {
+                        e.stopPropagation();
+                        // If it's a field, we want the field's own draggable to handle it.
+                        // We shouldn't preventDefault here if it's a field, 
+                        // as the field component needs to start its own drag.
+                        // But we must stop propagation so the section doesn't take over.
+                        if (isActionButton) e.preventDefault();
+                        return;
+                    }
+
+                    e.dataTransfer.setData('application/x-form-section-id', section.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    
+                    if (ghostRef.current) {
+                        e.dataTransfer.setDragImage(ghostRef.current, 100, 40);
+                    }
+                    
+                    setTimeout(() => setIsDragging(true), 0);
+                }}
+                onDragEnd={() => setIsDragging(false)}
+                onClick={(e) => { e.stopPropagation(); onSelect(section.id); }}
+                onDragOver={handleDragOver}
+                onDragLeave={() => setDragOverRowIndex(null)}
+                onDrop={handleDrop}
+                className={`section-wrapper relative group bg-zinc-800/20 dark:bg-zinc-900/40 rounded-2xl p-6 border-2 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-600/50 bg-blue-600/5' : 'border-white/5 hover:border-white/10'}`}
+            >
+                {!isDragging && (
+                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onMoveSectionUp(); }}
+                            disabled={!canMoveUp}
+                            className="p-1.5 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move section up"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onMoveSectionDown(); }}
+                            disabled={!canMoveDown}
+                            className="p-1.5 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move section down"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
                     </div>
                 )}
+
+                <div className={`mb-6 ${isDragging ? 'opacity-0' : ''}`}>
+                    <Heading level={2} className="text-white text-xl">{section.title}</Heading>
+                    {section.description && <Text className="text-zinc-400">{section.description}</Text>}
+                </div>
+
+                <div className={`space-y-4 relative ${isDragging ? 'opacity-0' : ''}`} ref={containerRef}>
+                    {dragOverRowIndex === 0 && <DropIndicator isVisible={true} text="New Row" />}
+                    
+                    {section.rows.map((row, rowIndex) => (
+                        <div key={row.id} className="row-wrapper relative">
+                            <RowRenderer 
+                                row={row} 
+                                rowIndex={rowIndex}
+                                selectedId={selectedId}
+                                onSelect={onSelect}
+                                onDrop={onDrop}
+                                onReorderField={onReorderField}
+                                sectionId={section.id}
+                                onMoveField={onMoveField}
+                            />
+                            {dragOverRowIndex === rowIndex + 1 && <DropIndicator isVisible={true} text="New Row" />}
+                        </div>
+                    ))}
+                    
+                    {section.rows.length === 0 && dragOverRowIndex === null && !isDragging && (
+                        <div className="text-center text-zinc-500 py-10 border-2 border-dashed border-white/5 rounded-xl">
+                            Drop fields here
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 
-const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onMoveField, onMoveSection, onMoveSectionUp, onMoveSectionDown }: CanvasProps) => {
+const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onReorderSection, onMoveField, onMoveSectionUp, onMoveSectionDown }: CanvasProps) => {
+    const [dragOverSectionIndex, setDragOverSectionIndex] = React.useState<number | null>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    const handleDragOver = (e: React.DragEvent) => {
+        // Only handle section reordering here
+        if (!e.dataTransfer.types.includes('application/x-form-section-id')) {
+            return;
+        }
+
+        e.preventDefault();
+        if (!containerRef.current) return;
+
+        const children = Array.from(containerRef.current.children).filter(child => child.classList.contains('section-wrapper'));
+        let newIndex = children.length;
+
+        for (let i = 0; i < children.length; i++) {
+            const rect = children[i].getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            if (e.clientY < midpoint) {
+                newIndex = i;
+                break;
+            }
+        }
+        setDragOverSectionIndex(newIndex);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        const sectionId = e.dataTransfer.getData('application/x-form-section-id');
+        if (!sectionId) return;
+
+        e.preventDefault();
+        if (dragOverSectionIndex !== null) {
+            onReorderSection(sectionId, dragOverSectionIndex);
+        }
+        setDragOverSectionIndex(null);
+    };
+
     return (
-        <div className="max-w-5xl mx-auto space-y-12 pb-32">
+        <div 
+            className="max-w-5xl mx-auto space-y-12 pb-32"
+            onDragOver={handleDragOver}
+            onDragLeave={() => setDragOverSectionIndex(null)}
+            onDrop={handleDrop}
+            ref={containerRef}
+        >
             <div className="text-center mb-12">
                 <Heading level={1} className="text-white text-3xl">{page.title}</Heading>
             </div>
 
-            {page.sections.map((section) => (
-                <SectionRenderer 
-                    key={section.id} 
-                    section={section} 
-                    selectedId={selectedId}
-                    onSelect={onSelect}
-                    onDrop={onDrop}
-                    onReorderField={onReorderField}
-                    onMoveField={onMoveField}
-                />
+            {dragOverSectionIndex === 0 && <DropIndicator isVisible={true} text="Move Section Here" />}
+
+            {page.sections.map((section, index) => (
+                <React.Fragment key={section.id}>
+                    <SectionRenderer 
+                        section={section} 
+                        selectedId={selectedId}
+                        onSelect={onSelect}
+                        onDrop={onDrop}
+                        onReorderField={onReorderField}
+                        onMoveField={onMoveField}
+                        onMoveSectionUp={() => onMoveSectionUp(section.id)}
+                        onMoveSectionDown={() => onMoveSectionDown(section.id)}
+                        canMoveUp={index > 0}
+                        canMoveDown={index < page.sections.length - 1}
+                    />
+                    {dragOverSectionIndex === index + 1 && <DropIndicator isVisible={true} text="Move Section Here" />}
+                </React.Fragment>
             ))}
             
             {page.sections.length === 0 && (
