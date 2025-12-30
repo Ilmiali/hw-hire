@@ -1,5 +1,15 @@
 export type FieldType = 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file' | 'multiselect' | 'paragraph' | 'divider' | 'spacer';
 
+export interface ColorOption {
+  id: string;
+  type: 'solid' | 'gradient';
+  value: string;
+}
+
+export interface FormLayout {
+  cover?: ColorOption;
+}
+
 export interface FormField {
   id: string;
   type: FieldType;
@@ -79,6 +89,8 @@ export interface FormSection {
 export interface FormPage {
   id: string;
   title: string;
+  description?: string;
+  cover?: ColorOption;
   sections: FormSection[];
 }
 
@@ -88,6 +100,7 @@ export interface FormSchema {
   description?: string;
   pages: FormPage[];
   rules: Rule[];
+  layout?: FormLayout;
 }
 
 export type RuleOperator = 'eq' | 'neq' | 'contains' | 'in' | 'isEmpty' | 'isNotEmpty' | 'gt' | 'gte' | 'lt' | 'lte';

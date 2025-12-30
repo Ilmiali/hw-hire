@@ -15,6 +15,7 @@ const FormBuilder = () => {
 
     // Access actions
     const setTitle = useFormBuilderStore(state => state.setTitle);
+
     const setActivePageId = useFormBuilderStore(state => state.setActivePageId);
     const setSelectedElementId = useFormBuilderStore(state => state.setSelectedElementId);
     const setSidebarOpen = useFormBuilderStore(state => state.setSidebarOpen);
@@ -139,7 +140,9 @@ const FormBuilder = () => {
                 >
                     <Canvas 
                         page={form.pages[activePageIndex]} 
+
                         selectedId={selectedElementId}
+                        onUpdatePage={(updates: any) => updatePage(activePageId, updates)}
                         onSelect={(id: string) => {
                             setSelectedElementId(id);
                             setSidebarOpen(true);

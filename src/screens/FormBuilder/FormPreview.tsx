@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { FormField, FormPage } from '../../types/form-builder';
+import { PageHeader } from './components/PageHeader';
 import { evaluateRules } from '../../utils/evaluateRules';
 import { buildZodSchema } from '../../utils/validation';
 import { z } from 'zod';
@@ -372,85 +373,135 @@ export const FormPreview = () => {
             </div>
 
             <div className="flex-1 flex justify-center p-8 overflow-y-auto">
-                <div className="w-full max-w-2xl bg-zinc-900 rounded-xl border border-white/5 shadow-2xl p-8 md:p-12 mb-20 h-fit">
+                <div className="w-full max-w-2xl bg-zinc-900 rounded-xl border border-white/5 shadow-2xl overflow-hidden mb-20 h-fit flex flex-col">
                     
-                    {/* Form Header */}
-                    <div className="mb-8 text-center">
-                        <Heading level={1} className="text-3xl text-white mb-2">{form.title}</Heading>
-                        {form.description && <Text className="text-zinc-400">{form.description}</Text>}
-                    </div>
+                    <PageHeader 
+                        title={currentPage.title}
+                        description={currentPage.description}
+                        cover={currentPage.cover}
+                        readOnly={true}
+                    />
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Page Content */}
-                        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                             <div className="mb-6 border-b border-white/5 pb-4">
-                                <Heading level={2} className="text-xl text-white">{currentPage.title}</Heading>
-                            </div>
-
-                            {currentPage.sections.map(section => (
-                                <div key={section.id} className="space-y-6">
-                                    <div className="mb-4">
-                                        <Heading level={3} className="text-lg text-white mb-1">{section.title}</Heading>
-                                        {section.description && <Text className="text-sm text-zinc-500">{section.description}</Text>}
-                                    </div>
-                                    
-                                    <div className="space-y-4">
-                                        {section.rows.map(row => (
-                                            <div key={row.id} className="flex flex-col md:flex-row gap-4">
-                                                {row.fields.map(field => {
-                                                    if (!visibleFieldIds.has(field.id)) return null;
-                                                    const isRequired = requiredFieldIds.has(field.id);
-                                                    const isStatic = ['paragraph', 'divider', 'spacer'].includes(field.type);
-                                                    
-                                                    if (isStatic) {
-                                                        return (
-                                                            <div key={field.id} className="flex-1 min-w-0">
-                                                                {renderField(field)}
-                                                            </div>
-                                                        );
-                                                    }
-
-                                                    return (
-                                                        <Field key={field.id} className="flex-1 min-w-0">
-                                                            <Label className="text-zinc-300">
-                                                                {field.label} {isRequired && <span className="text-red-500">*</span>}
-                                                            </Label>
-                                                            {renderField(field)}
-                                                            {errors[field.id] && (
-                                                                <p className="text-red-500 text-xs mt-1">{errors[field.id]}</p>
-                                                            )}
-                                                        </Field>
-                                                    );
-                                                })}
+                    <div className="p-8 md:p-12">
+                        {form.pages.length > 1 && (
+                            <div className="mb-14 relative px-2">
+                                {/* Background Line */}
+                                <div className="absolute top-[11px] left-2 right-2 h-[2px] bg-zinc-800 rounded-full" />
+                                
+                                {/* Progress Line */}
+                                <div 
+                                    className="absolute top-[11px] left-0 h-[2px] bg-blue-500 transition-all duration-700 ease-in-out rounded-full shadow-[0_0_10px_rgba(59,130,246,0.4)]" 
+                                    style={{ width: `${(currentPageIndex / (form.pages.length - 1)) * 100}%` }}
+                                />
+                                
+                                {/* Milestones */}
+                                <div className="relative flex justify-between">
+                                    {form.pages.map((page, index) => {
+                                        const isActive = index === currentPageIndex;
+                                        const isCompleted = index < currentPageIndex;
+                                        
+                                        return (
+                                            <div key={page.id} className="flex flex-col items-center">
+                                                {/* Dot */}
+                                                <div 
+                                                    className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all duration-500 z-10 ${
+                                                        isActive 
+                                                            ? 'bg-zinc-950 border-blue-500 scale-110 shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                                                            : isCompleted
+                                                            ? 'bg-blue-500 border-blue-500'
+                                                            : 'bg-zinc-950 border-zinc-800'
+                                                    }`}
+                                                >
+                                                    {isCompleted ? (
+                                                        <svg className="w-3.5 h-3.5 text-white animate-in zoom-in duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    ) : (
+                                                        <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive ? 'bg-blue-400' : 'bg-zinc-800'}`} />
+                                                    )}
+                                                </div>
+                                                
+                                                {/* Label */}
+                                                <div className="absolute top-8 flex flex-col items-center">
+                                                    <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-500 whitespace-nowrap ${isActive ? 'text-blue-400' : 'text-zinc-600'}`}>
+                                                        {page.title}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        );
+                                    })}
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        )}
 
-                        {/* Navigation / Submit */}
-                        <div className="flex justify-between pt-8 border-t border-white/5 mt-8">
-                            <div>
-                                {!isFirstPage && (
-                                    <Button type="button" onClick={handlePrev} plain>
-                                        &larr; Previous Step
-                                    </Button>
-                                )}
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            {/* Page Content */}
+                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                {currentPage.sections.map(section => (
+                                    <div key={section.id} className="space-y-6">
+                                        <div className="mb-4">
+                                            <Heading level={3} className="text-lg text-white mb-1">{section.title}</Heading>
+                                            {section.description && <Text className="text-sm text-zinc-500">{section.description}</Text>}
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            {section.rows.map(row => (
+                                                <div key={row.id} className="flex flex-col md:flex-row gap-4">
+                                                    {row.fields.map(field => {
+                                                        if (!visibleFieldIds.has(field.id)) return null;
+                                                        const isRequired = requiredFieldIds.has(field.id);
+                                                        const isStatic = ['paragraph', 'divider', 'spacer'].includes(field.type);
+                                                        
+                                                        if (isStatic) {
+                                                            return (
+                                                                <div key={field.id} className="flex-1 min-w-0">
+                                                                    {renderField(field)}
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <Field key={field.id} className="flex-1 min-w-0">
+                                                                <Label className="text-zinc-300">
+                                                                    {field.label} {isRequired && <span className="text-red-500">*</span>}
+                                                                </Label>
+                                                                {renderField(field)}
+                                                                {errors[field.id] && (
+                                                                    <p className="text-red-500 text-xs mt-1">{errors[field.id]}</p>
+                                                                )}
+                                                            </Field>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <div>
-                                {isLastPage ? (
-                                    <Button type="submit" color="blue">
-                                        Submit Form
-                                    </Button>
-                                ) : (
-                                    <Button type="button" onClick={handleNext} color="blue">
-                                        Next Step &rarr;
-                                    </Button>
-                                )}
+
+                            {/* Navigation / Submit */}
+                            <div className="flex justify-between pt-8 border-t border-white/5 mt-8">
+                                <div>
+                                    {!isFirstPage && (
+                                        <Button type="button" onClick={handlePrev} plain>
+                                            &larr; Previous Step
+                                        </Button>
+                                    )}
+                                </div>
+                                <div>
+                                    {isLastPage ? (
+                                        <Button type="submit" color="blue">
+                                            Submit Form
+                                        </Button>
+                                    ) : (
+                                        <Button type="button" onClick={handleNext} color="blue">
+                                            Next Step &rarr;
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

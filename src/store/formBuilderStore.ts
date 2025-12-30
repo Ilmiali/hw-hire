@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { temporal } from 'zundo';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
-import { FormSchema, FormPage, FormSection, FormField, FieldType, Rule } from '../types/form-builder';
+import { FormSchema, FormPage, FormSection, FormField, FieldType, Rule, ColorOption } from '../types/form-builder';
 
 // Define the state interface
 interface FormBuilderState {
@@ -13,7 +13,10 @@ interface FormBuilderState {
 
   // Global Actions
   setForm: (form: FormSchema) => void;
+
   setTitle: (title: string) => void;
+  setDescription: (description: string) => void;
+  setCover: (cover: ColorOption) => void;
   setActivePageId: (id: string) => void;
   setSelectedElementId: (id: string | null) => void;
   toggleSidebar: () => void;
@@ -62,6 +65,8 @@ const initialForm: FormSchema = {
     {
       id: uuidv4(),
       title: 'Applicant Details',
+      description: 'Please provide your personal details.',
+      cover: { id: 'blue', type: 'solid', value: '#64B5F6' },
       sections: [
         {
           id: uuidv4(),
@@ -198,7 +203,11 @@ const initialForm: FormSchema = {
       ],
     },
   ],
+
   rules: [],
+  layout: {
+    cover: { id: 'blue', type: 'solid', value: '#64B5F6' }
+  }
 };
 
 export const useFormBuilderStore = create<FormBuilderState>()(
@@ -221,6 +230,17 @@ export const useFormBuilderStore = create<FormBuilderState>()(
       setTitle: (title) =>
         set((state) => {
           state.form.title = title;
+        }),
+
+      setDescription: (description) =>
+        set((state) => {
+          state.form.description = description;
+        }),
+
+      setCover: (cover) =>
+        set((state) => {
+          if (!state.form.layout) state.form.layout = {};
+          state.form.layout.cover = cover;
         }),
 
       setActivePageId: (id) =>
@@ -521,6 +541,8 @@ export const useFormBuilderStore = create<FormBuilderState>()(
           const newPage: FormPage = {
             id: uuidv4(),
             title: `Page ${state.form.pages.length + 1}`,
+            description: '',
+            cover: { id: 'blue', type: 'solid', value: '#64B5F6' },
             sections: [
               {
                 id: uuidv4(),

@@ -1,5 +1,6 @@
 import React from 'react';
 import { FormPage, FormSection, FormField, FieldType, FormRow } from '../../../types/form-builder';
+import { PageHeader } from './PageHeader';
 
 // Import basic UI components - adjust paths as needed based on file system
 import { Input } from '../../../components/input';
@@ -14,6 +15,7 @@ import { Text } from '../../../components/text';
 interface CanvasProps {
     page: FormPage;
     selectedId: string | null;
+    onUpdatePage: (updates: Partial<FormPage>) => void;
     onSelect: (id: string) => void;
     onDrop: (type: FieldType, sectionId?: string, rowIndex?: number, colIndex?: number) => void;
     onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void;
@@ -363,7 +365,15 @@ const SectionRenderer = ({
     );
 }
 
-const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onReorderSection }: CanvasProps) => {
+const Canvas = ({ 
+    page, 
+    selectedId, 
+    onUpdatePage,
+    onSelect, 
+    onDrop, 
+    onReorderField, 
+    onReorderSection 
+}: CanvasProps) => {
     const [dragOverSectionIndex, setDragOverSectionIndex] = React.useState<number | null>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -409,9 +419,14 @@ const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onReorderS
             onDrop={handleDrop}
             ref={containerRef}
         >
-            <div className="text-center mb-12">
-                <Heading level={1} className="text-white text-3xl">{page.title}</Heading>
-            </div>
+            <PageHeader 
+                title={page.title}
+                description={page.description || ''}
+                cover={page.cover}
+                setTitle={(title) => onUpdatePage({ title })}
+                setDescription={(description) => onUpdatePage({ description })}
+                setCover={(cover) => onUpdatePage({ cover } as any)}
+            />
 
             {dragOverSectionIndex === 0 && <DropIndicator isVisible={true} text="Move Section Here" />}
 
