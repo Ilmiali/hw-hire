@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FieldType, FormSchema } from '../../../types/form-builder';
+import { FormSchema, FieldType, FormField, FormRow } from '../../../types/form-builder';
 import { MagnifyingGlassIcon, PlusIcon, DocumentIcon, FolderIcon, QueueListIcon } from '@heroicons/react/20/solid';
 
 interface LeftSidebarProps {
@@ -126,12 +126,12 @@ export const LeftSidebar = ({ form, onAddField, onAddSection, onAddPage, onSelec
                                                     <span className="text-sm truncate">{section.title}</span>
                                                 </div>
                                                 <div className="pl-4 space-y-1 border-l border-zinc-100 dark:border-zinc-800 ml-3">
-                                                    {section.fields.map(field => (
-                                                        <div 
-                                                            key={field.id}
-                                                            className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === field.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
-                                                            onClick={() => onSelectElement(field.id)}
-                                                        >
+                                                    {section.rows.flatMap(r => r.fields).map((field) => (
+                                        <div 
+                                            key={field.id}
+                                            onClick={(e) => { e.stopPropagation(); onSelectElement(field.id); }}
+                                            className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${selectedId === field.id ? 'bg-blue-600/20 text-blue-400' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                        >
                                                             <QueueListIcon className="w-3.5 h-3.5 text-zinc-400" />
                                                             <span className="text-sm truncate">{field.label}</span>
                                                         </div>

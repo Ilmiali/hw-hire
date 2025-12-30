@@ -18,7 +18,7 @@ const initialForm: FormSchema = {
                     id: uuidv4(),
                     title: 'Section 1',
                     description: '',
-                    fields: []
+                    rows: []
                 }
             ]
         }
@@ -34,7 +34,7 @@ const FormBuilder = () => {
     // Helpers to find current page index
     const activePageIndex = form.pages.findIndex(p => p.id === activePageId);
 
-    const handleAddField = (type: FieldType, targetSectionId?: string, targetIndex?: number) => {
+    const handleAddField = (type: FieldType, targetSectionId?: string, targetRowIndex?: number, targetColumnIndex?: number) => {
         const newField: FormField = {
             id: uuidv4(),
             type,
@@ -56,8 +56,20 @@ const FormBuilder = () => {
             }
 
             if (section) {
-                const index = targetIndex !== undefined ? targetIndex : section.fields.length;
-                section.fields.splice(index, 0, newField);
+                if (targetColumnIndex !== undefined && targetRowIndex !== undefined) {
+                    // Insert into existing row
+                    const row = section.rows[targetRowIndex];
+                    if (row && row.fields.length < 4) {
+                        row.fields.splice(targetColumnIndex, 0, newField);
+                    } else {
+                        // If column index provided but row full or missing, create new row
+                        section.rows.splice(targetRowIndex, 0, { id: uuidv4(), fields: [newField] });
+                    }
+                } else {
+                    // Insert as new row
+                    const rowIndex = targetRowIndex !== undefined ? targetRowIndex : section.rows.length;
+                    section.rows.splice(rowIndex, 0, { id: uuidv4(), fields: [newField] });
+                }
             }
             return newForm;
         });
@@ -65,18 +77,22 @@ const FormBuilder = () => {
         setIsRightSidebarOpen(true);
     };
 
-    const handleReorderField = (fieldId: string, targetSectionId: string, targetIndex: number) => {
+    const handleReorderField = (fieldId: string, targetSectionId: string, targetRowIndex: number, targetColumnIndex?: number) => {
         setForm(prev => {
             const newForm = { ...prev };
             let sourceField: FormField | null = null;
             
-            // Remove from source
+            // Remove from source and cleanup
             newForm.pages.forEach(page => {
                 page.sections.forEach(section => {
-                    const idx = section.fields.findIndex(f => f.id === fieldId);
-                    if (idx !== -1) {
-                        sourceField = section.fields.splice(idx, 1)[0];
-                    }
+                    section.rows.forEach((row, rIdx) => {
+                        const idx = row.fields.findIndex(f => f.id === fieldId);
+                        if (idx !== -1) {
+                            sourceField = row.fields.splice(idx, 1)[0];
+                        }
+                    });
+                    // Cleanup empty rows
+                    section.rows = section.rows.filter(row => row.fields.length > 0);
                 });
             });
 
@@ -86,8 +102,23 @@ const FormBuilder = () => {
             newForm.pages.forEach(page => {
                 const section = page.sections.find(s => s.id === targetSectionId);
                 if (section) {
-                    // Adjust index if moving within same section
-                    section.fields.splice(targetIndex, 0, sourceField!);
+                    if (targetColumnIndex !== undefined) {
+                        // Target existing or new row at targetRowIndex
+                        if (!section.rows[targetRowIndex]) {
+                             section.rows.splice(targetRowIndex, 0, { id: uuidv4(), fields: [sourceField!] });
+                        } else {
+                            const row = section.rows[targetRowIndex];
+                            if (row.fields.length < 4) {
+                                row.fields.splice(targetColumnIndex, 0, sourceField!);
+                            } else {
+                                // Row full, insert as new row instead
+                                section.rows.splice(targetRowIndex + 1, 0, { id: uuidv4(), fields: [sourceField!] });
+                            }
+                        }
+                    } else {
+                        // Insert as new row
+                        section.rows.splice(targetRowIndex, 0, { id: uuidv4(), fields: [sourceField!] });
+                    }
                 }
             });
 
@@ -99,7 +130,7 @@ const FormBuilder = () => {
         const newSection: FormSection = {
             id: uuidv4(),
             title: 'New Section',
-            fields: []
+            rows: []
         };
         setForm(prev => {
             const newForm = { ...prev };
@@ -117,7 +148,7 @@ const FormBuilder = () => {
                 {
                     id: uuidv4(),
                     title: 'Section 1',
-                    fields: []
+                    rows: []
                 }
             ]
         };
@@ -135,10 +166,12 @@ const FormBuilder = () => {
             const newForm = { ...prev };
             newForm.pages.forEach(page => {
                 page.sections.forEach(section => {
-                    const fieldIndex = section.fields.findIndex(f => f.id === fieldId);
-                    if (fieldIndex !== -1) {
-                        section.fields[fieldIndex] = { ...section.fields[fieldIndex], ...updates };
-                    }
+                    section.rows.forEach(row => {
+                        const fieldIndex = row.fields.findIndex(f => f.id === fieldId);
+                        if (fieldIndex !== -1) {
+                            row.fields[fieldIndex] = { ...row.fields[fieldIndex], ...updates };
+                        }
+                    });
                 });
             });
             return newForm;
@@ -173,7 +206,11 @@ const FormBuilder = () => {
             const newForm = { ...prev };
             newForm.pages.forEach(page => {
                 page.sections.forEach(section => {
-                    section.fields = section.fields.filter(f => f.id !== fieldId);
+                    section.rows.forEach(row => {
+                        row.fields = row.fields.filter(f => f.id !== fieldId);
+                    });
+                    // Cleanup empty rows
+                    section.rows = section.rows.filter(row => row.fields.length > 0);
                 });
             });
             return newForm;
@@ -216,20 +253,38 @@ const FormBuilder = () => {
     const moveField = (fieldId: string, direction: 'up' | 'down') => {
         setForm(prev => {
             const newForm = { ...prev };
+            // For simplicity, moveField in a multi-column setup is complex. 
+            // We'll treat it as moving the field within its row or across rows if needed.
+            // But usually, drag and drop is preferred. Let's keep it moving between rows for now.
+            let sourceRowIdx = -1;
+            let sourceColIdx = -1;
+            let section: FormSection | null = null;
+
             newForm.pages.forEach(page => {
-                page.sections.forEach(section => {
-                    const fieldIndex = section.fields.findIndex(f => f.id === fieldId);
-                    if (fieldIndex !== -1) {
-                        const newIndex = direction === 'up' ? fieldIndex - 1 : fieldIndex + 1;
-                        if (newIndex >= 0 && newIndex < section.fields.length) {
-                            // Swap
-                            const temp = section.fields[fieldIndex];
-                            section.fields[fieldIndex] = section.fields[newIndex];
-                            section.fields[newIndex] = temp;
+                page.sections.forEach(s => {
+                    s.rows.forEach((row, rIdx) => {
+                        const cIdx = row.fields.findIndex(f => f.id === fieldId);
+                        if (cIdx !== -1) {
+                            sourceRowIdx = rIdx;
+                            sourceColIdx = cIdx;
+                            section = s;
                         }
-                    }
+                    });
                 });
             });
+
+            if (section) {
+                const s = section as FormSection;
+                const newRowIndex = direction === 'up' ? sourceRowIdx - 1 : sourceRowIdx + 1;
+                if (newRowIndex >= 0 && newRowIndex < s.rows.length) {
+                    const field = s.rows[sourceRowIdx].fields.splice(sourceColIdx, 1)[0];
+                    s.rows[newRowIndex].fields.push(field);
+                    // Cleanup
+                    if (s.rows[sourceRowIdx].fields.length === 0) {
+                        s.rows.splice(sourceRowIdx, 1);
+                    }
+                }
+            }
             return newForm;
         });
     };
@@ -263,8 +318,10 @@ const FormBuilder = () => {
             if (page.id === selectedElementId) selectedElement = { type: 'page', data: page };
             page.sections.forEach(section => {
                 if (section.id === selectedElementId) selectedElement = { type: 'section', data: section };
-                section.fields.forEach(field => {
-                    if (field.id === selectedElementId) selectedElement = { type: 'field', data: field };
+                section.rows.forEach(row => {
+                    row.fields.forEach(field => {
+                        if (field.id === selectedElementId) selectedElement = { type: 'field', data: field };
+                    });
                 });
             });
         });

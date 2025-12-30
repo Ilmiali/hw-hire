@@ -10,11 +10,16 @@ export interface FormField {
   value?: string | number | boolean | string[]; // Default value or binding
 }
 
+export interface FormRow {
+  id: string;
+  fields: FormField[];
+}
+
 export interface FormSection {
   id: string;
   title: string;
   description?: string;
-  fields: FormField[];
+  rows: FormRow[];
 }
 
 export interface FormPage {
