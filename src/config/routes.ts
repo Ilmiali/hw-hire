@@ -7,6 +7,7 @@ import {
   SparklesIcon,
   ClipboardDocumentListIcon as ApplicationIcon,
   EyeIcon,
+  QueueListIcon,
 } from '@heroicons/react/16/solid';
 import Dashboard from '../screens/Dashboard';
 import Profile from '../screens/Profile';
@@ -14,6 +15,9 @@ import Login from '../screens/Login';
 import FormBuilder from '../screens/FormBuilder/FormBuilder';
 import Applications from '../screens/Applications/Applications';
 import FormPreview from '../screens/FormBuilder/FormPreview';
+import PipelineListPage from '../screens/Pipeline/PipelineListPage';
+import PipelineEditor from '../screens/Pipeline/PipelineEditor';
+import JobPipelineBoard from '../screens/Pipeline/JobPipelineBoard';
 import { RouteConfig, RouteGroup } from '../types/routes';
 
 // Public routes (no authentication required)
@@ -51,6 +55,22 @@ export const additionalRoutes: RouteConfig[] = [
     name: 'Form Preview',
     icon: EyeIcon,
     component: FormPreview,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
+    path: '/pipelines/:id',
+    name: 'Edit Pipeline',
+    icon: QueueListIcon,
+    component: PipelineEditor,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
+    path: '/pipelines/:id/preview',
+    name: 'Pipeline Preview',
+    icon: EyeIcon, // Or generic icon
+    component: JobPipelineBoard,
     layout: 'authenticated',
     isAuthProtected: true,
   },
@@ -92,6 +112,14 @@ export const mainRoutes: RouteGroup[] = [
         name: 'Profile',
         icon: UserIcon,
         component: Profile,
+        layout: 'authenticated',
+        isAuthProtected: true,
+      },
+      {
+        path: '/pipelines',
+        name: 'Pipelines',
+        icon: QueueListIcon,
+        component: PipelineListPage,
         layout: 'authenticated',
         isAuthProtected: true,
       },
