@@ -390,7 +390,6 @@ const FormBuilder = () => {
             <div className="flex flex-1 overflow-hidden">
                 <LeftSidebar 
                     form={form}
-                    onAddField={handleAddField} 
                     onAddSection={handleAddSection} 
                     onAddPage={handleAddPage}
                     onSelectElement={setSelectedElementId}
@@ -411,10 +410,6 @@ const FormBuilder = () => {
                         onDrop={handleAddField}
                         onReorderField={handleReorderField}
                         onReorderSection={handleReorderSection}
-                        onMoveField={moveField}
-                        onMoveSection={moveSection}
-                        onMoveSectionUp={(id: string) => moveSection(id, 'up')}
-                        onMoveSectionDown={(id: string) => moveSection(id, 'down')}
                     />
                 </div>
                 

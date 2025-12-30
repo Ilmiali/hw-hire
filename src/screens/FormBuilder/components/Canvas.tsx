@@ -18,10 +18,6 @@ interface CanvasProps {
     onDrop: (type: FieldType, sectionId?: string, rowIndex?: number, colIndex?: number) => void;
     onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void;
     onReorderSection: (sectionId: string, targetIndex: number) => void;
-    onMoveField: (fieldId: string, direction: 'up' | 'down') => void;
-    onMoveSection: (sectionId: string, direction: 'up' | 'down') => void;
-    onMoveSectionUp: (id: string) => void;
-    onMoveSectionDown: (id: string) => void;
 }
 
 const DropIndicator = ({ isVisible, orientation = 'vertical', text }: { isVisible: boolean; orientation?: 'horizontal' | 'vertical'; text?: string }) => {
@@ -63,7 +59,7 @@ const DropIndicator = ({ isVisible, orientation = 'vertical', text }: { isVisibl
     );
 };
 
-const FieldRenderer = ({ field, isSelected, onClick, onMoveUp, onMoveDown, canMoveUp, canMoveDown }: { field: FormField; isSelected: boolean; onClick: (e: React.MouseEvent) => void; onMoveUp: () => void; onMoveDown: () => void; canMoveUp: boolean; canMoveDown: boolean }) => {
+const FieldRenderer = ({ field, isSelected, onClick }: { field: FormField; isSelected: boolean; onClick: (e: React.MouseEvent) => void }) => {
     const [isDragging, setIsDragging] = React.useState(false);
     const ghostRef = React.useRef<HTMLDivElement>(null);
 
@@ -96,28 +92,6 @@ const FieldRenderer = ({ field, isSelected, onClick, onMoveUp, onMoveDown, canMo
                 onClick={onClick}
                 className={`field-wrapper relative group p-4 rounded-lg cursor-grab active:cursor-grabbing border-2 transition-all flex-1 min-w-0 ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 bg-white/5 dark:bg-zinc-800/30'}`}
             >
-                {!isDragging && (
-                    <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-                            disabled={!canMoveUp}
-                            className="p-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-                            disabled={!canMoveDown}
-                            className="p-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                    </div>
-                )}
                <label className={`block text-sm font-medium text-zinc-900 dark:text-white mb-2 truncate ${isDragging ? 'opacity-0' : ''}`}>
                     {field.label} {field.required && <span className="text-red-500">*</span>}
                 </label>
@@ -164,7 +138,7 @@ const FieldRenderer = ({ field, isSelected, onClick, onMoveUp, onMoveDown, canMo
     );
 };
 
-const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderField, sectionId, onMoveField }: { row: FormRow; rowIndex: number; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex: number) => void; onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex: number) => void; sectionId: string; onMoveField: (id: string, direction: 'up' | 'down') => void }) => {
+const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderField, sectionId }: { row: FormRow; rowIndex: number; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex: number) => void; onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex: number) => void; sectionId: string }) => {
     const [dragOverColIndex, setDragOverColIndex] = React.useState<number | null>(null);
     const rowRef = React.useRef<HTMLDivElement>(null);
 
@@ -224,10 +198,6 @@ const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderFie
                         field={field} 
                         isSelected={field.id === selectedId}
                         onClick={(e) => { e.stopPropagation(); onSelect(field.id); }}
-                        onMoveUp={() => onMoveField(field.id, 'up')}
-                        onMoveDown={() => onMoveField(field.id, 'down')}
-                        canMoveUp={true} // Can always try to move up/down between rows
-                        canMoveDown={true}
                     />
                 </React.Fragment>
             ))}
@@ -241,23 +211,13 @@ const SectionRenderer = ({
     selectedId, 
     onSelect, 
     onDrop, 
-    onReorderField, 
-    onMoveField,
-    onMoveSectionUp,
-    onMoveSectionDown,
-    canMoveUp,
-    canMoveDown
+    onReorderField
 }: { 
     section: FormSection; 
     selectedId: string | null; 
     onSelect: (id: string) => void; 
     onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex?: number) => void; 
     onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void; 
-    onMoveField: (fieldId: string, direction: 'up' | 'down') => void;
-    onMoveSectionUp: () => void;
-    onMoveSectionDown: () => void;
-    canMoveUp: boolean;
-    canMoveDown: boolean;
 }) => {
     const isSelected = section.id === selectedId;
     const [dragOverRowIndex, setDragOverRowIndex] = React.useState<number | null>(null);
@@ -354,30 +314,6 @@ const SectionRenderer = ({
                 onDrop={handleDrop}
                 className={`section-wrapper relative group bg-zinc-800/20 dark:bg-zinc-900/40 rounded-2xl p-6 border-2 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-600/50 bg-blue-600/5' : 'border-white/5 hover:border-white/10'}`}
             >
-                {!isDragging && (
-                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onMoveSectionUp(); }}
-                            disabled={!canMoveUp}
-                            className="p-1.5 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move section up"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onMoveSectionDown(); }}
-                            disabled={!canMoveDown}
-                            className="p-1.5 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move section down"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                    </div>
-                )}
 
                 <div className={`mb-6 ${isDragging ? 'opacity-0' : ''}`}>
                     <Heading level={2} className="text-white text-xl">{section.title}</Heading>
@@ -397,7 +333,6 @@ const SectionRenderer = ({
                                 onDrop={onDrop}
                                 onReorderField={onReorderField}
                                 sectionId={section.id}
-                                onMoveField={onMoveField}
                             />
                             {dragOverRowIndex === rowIndex + 1 && <DropIndicator isVisible={true} text="New Row" />}
                         </div>
@@ -414,7 +349,7 @@ const SectionRenderer = ({
     );
 }
 
-const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onReorderSection, onMoveField, onMoveSectionUp, onMoveSectionDown }: CanvasProps) => {
+const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onReorderSection }: CanvasProps) => {
     const [dragOverSectionIndex, setDragOverSectionIndex] = React.useState<number | null>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -474,11 +409,6 @@ const Canvas = ({ page, selectedId, onSelect, onDrop, onReorderField, onReorderS
                         onSelect={onSelect}
                         onDrop={onDrop}
                         onReorderField={onReorderField}
-                        onMoveField={onMoveField}
-                        onMoveSectionUp={() => onMoveSectionUp(section.id)}
-                        onMoveSectionDown={() => onMoveSectionDown(section.id)}
-                        canMoveUp={index > 0}
-                        canMoveDown={index < page.sections.length - 1}
                     />
                     {dragOverSectionIndex === index + 1 && <DropIndicator isVisible={true} text="Move Section Here" />}
                 </React.Fragment>

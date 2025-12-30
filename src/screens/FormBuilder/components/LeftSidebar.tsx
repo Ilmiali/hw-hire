@@ -77,8 +77,8 @@ export const LeftSidebar = ({ form, onAddField, onAddSection, onAddPage, onSelec
                                         e.dataTransfer.setData('application/x-form-field-type', field.type);
                                         e.dataTransfer.effectAllowed = 'copy';
                                     }}
-                                    onClick={() => onAddField(field.type)}
                                     className="flex items-center gap-3 p-2 text-left rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group cursor-grab active:cursor-grabbing"
+                                    title="Drag to add to canvas"
                                 >
                                     <span className="flex items-center justify-center w-8 h-8 rounded bg-zinc-100 dark:bg-zinc-800 text-base group-hover:bg-white dark:group-hover:bg-zinc-700 transition-colors shadow-sm">
                                         {field.icon}
