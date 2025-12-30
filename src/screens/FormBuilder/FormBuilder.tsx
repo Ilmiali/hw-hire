@@ -4,8 +4,6 @@ import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { LeftSidebar } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
-import { RulesPanel } from './components/rules/RulesPanel';
-import { useState } from 'react';
 
 const FormBuilder = () => {
     // Access state
@@ -14,7 +12,6 @@ const FormBuilder = () => {
     const activePageId = useFormBuilderStore(state => state.activePageId);
     const selectedElementId = useFormBuilderStore(state => state.selectedElementId);
     const isRightSidebarOpen = useFormBuilderStore(state => state.sidebarOpen);
-    const [isRulesPanelOpen, setRulesPanelOpen] = useState(false);
 
     // Access actions
     const setTitle = useFormBuilderStore(state => state.setTitle);
@@ -26,17 +23,20 @@ const FormBuilder = () => {
     const addField = useFormBuilderStore(state => state.addField);
     const updateField = useFormBuilderStore(state => state.updateField);
     const deleteField = useFormBuilderStore(state => state.deleteField);
-    const reorderField = useFormBuilderStore(state => state.reorderField);
-    
-    const addSection = useFormBuilderStore(state => state.addSection);
     const updateSection = useFormBuilderStore(state => state.updateSection);
     const deleteSection = useFormBuilderStore(state => state.deleteSection);
-    const reorderSection = useFormBuilderStore(state => state.reorderSection);
-    
-    const addPage = useFormBuilderStore(state => state.addPage);
     const updatePage = useFormBuilderStore(state => state.updatePage);
     const deletePage = useFormBuilderStore(state => state.deletePage);
 
+    const handleSave = () => {
+        console.log('Form Schema:', JSON.stringify(form, null, 2));
+        alert('Form saved! Check console for JSON.');
+    };
+    const reorderField = useFormBuilderStore(state => state.reorderField);
+    const reorderSection = useFormBuilderStore(state => state.reorderSection);
+    const addSection = useFormBuilderStore(state => state.addSection);
+    const addPage = useFormBuilderStore(state => state.addPage);
+    
     // Temporal (Undo/Redo)
     const temporalStore = useFormBuilderStore.temporal;
     const { undo: handleUndo, redo: handleRedo } = temporalStore.getState();
@@ -45,11 +45,6 @@ const FormBuilder = () => {
 
     // Helpers to find current page index
     const activePageIndex = Math.max(0, form.pages.findIndex(p => p.id === activePageId));
-
-    const handleSave = () => {
-        console.log('Form Schema:', JSON.stringify(form, null, 2));
-        alert('Form saved! Check console for JSON.');
-    };
 
     // Find the selected object for the properties panel
     let selectedElement: { type: 'field' | 'section' | 'page' | 'form', data: any } | null = null;
@@ -114,12 +109,6 @@ const FormBuilder = () => {
                 
                 <div className="flex gap-2">
                     <button 
-                         onClick={() => setRulesPanelOpen(true)}
-                         className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10"
-                    >
-                        Rules ({form.rules?.length || 0})
-                    </button>
-                    <button 
                         onClick={() => navigate('/form-builder/preview')}
                         className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10"
                     >
@@ -162,28 +151,25 @@ const FormBuilder = () => {
                 </div>
                 
                 {isRightSidebarOpen && (
-                    <PropertiesPanel 
-                        selectedElement={selectedElement} 
-                        onUpdate={(updates: any) => {
-                            if (selectedElement?.type === 'field') updateField(selectedElementId!, updates);
-                            if (selectedElement?.type === 'section') updateSection(selectedElementId!, updates);
-                            if (selectedElement?.type === 'page') updatePage(selectedElementId!, updates);
-                        }}
-                        onDelete={() => {
-                            if (!selectedElementId) return;
-                            if (selectedElement?.type === 'field') deleteField(selectedElementId);
-                            if (selectedElement?.type === 'section') deleteSection(selectedElementId);
-                            if (selectedElement?.type === 'page') deletePage(selectedElementId);
-                        }}
-                        onClose={() => setSidebarOpen(false)}
-                    />
+                    <div className="w-80 shrink-0 border-l border-white/10">
+                        <PropertiesPanel 
+                            selectedElement={selectedElement} 
+                            onUpdate={(updates: any) => {
+                                if (selectedElement?.type === 'field') updateField(selectedElementId!, updates);
+                                if (selectedElement?.type === 'section') updateSection(selectedElementId!, updates);
+                                if (selectedElement?.type === 'page') updatePage(selectedElementId!, updates);
+                            }}
+                            onDelete={() => {
+                                if (!selectedElementId) return;
+                                if (selectedElement?.type === 'field') deleteField(selectedElementId);
+                                if (selectedElement?.type === 'section') deleteSection(selectedElementId);
+                                if (selectedElement?.type === 'page') deletePage(selectedElementId);
+                            }}
+                            onClose={() => setSidebarOpen(false)}
+                        />
+                    </div>
                 )}
             </div>
-
-            <RulesPanel 
-                isOpen={isRulesPanelOpen} 
-                onClose={() => setRulesPanelOpen(false)} 
-            />
         </div>
     );
 };

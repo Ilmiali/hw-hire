@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FormSchema, FieldType, FormField, FormRow } from '../../../types/form-builder';
 import { MagnifyingGlassIcon, PlusIcon, DocumentIcon, FolderIcon, QueueListIcon } from '@heroicons/react/20/solid';
+import { RulesSidebar } from './rules/RulesSidebar';
 
 interface LeftSidebarProps {
     form: FormSchema;
@@ -22,7 +23,7 @@ const fieldTypes: { type: FieldType; label: string; icon: string }[] = [
 ];
 
 export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, selectedId }: LeftSidebarProps) => {
-    const [activeTab, setActiveTab] = useState<'elements' | 'tree'>('elements');
+    const [activeTab, setActiveTab] = useState<'elements' | 'tree' | 'rules'>('elements');
     const [searchTerm, setSearchTerm] = useState('');
 
     return (
@@ -48,6 +49,16 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, se
                     }`}
                 >
                     Tree
+                </button>
+                <button
+                    onClick={() => setActiveTab('rules')}
+                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'rules'
+                            ? 'border-zinc-900 dark:border-white text-zinc-900 dark:text-white'
+                            : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                    }`}
+                >
+                    Rules
                 </button>
             </div>
 
@@ -161,6 +172,10 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, se
                             </button>
                          </div>
                     </div>
+                )}
+
+                {activeTab === 'rules' && (
+                     <RulesSidebar />
                 )}
             </div>
         </div>

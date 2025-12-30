@@ -7,9 +7,10 @@ interface PropertiesPanelProps {
     onUpdate: (updates: any) => void;
     onDelete?: () => void;
     onClose: () => void;
+    hideHeader?: boolean;
 }
 
-const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose }: PropertiesPanelProps) => {
+const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose, hideHeader = false }: PropertiesPanelProps) => {
     if (!selectedElement) {
         return (
             <div className="p-4 text-center text-zinc-500 dark:text-zinc-400 mt-20">
@@ -21,17 +22,19 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose }: Prope
     const { type, data } = selectedElement;
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-white/10 w-80">
-             <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-white/10">
-                <h2 className="text-sm font-semibold capitalize text-zinc-900 dark:text-white">
-                    {type} Properties
-                </h2>
-                <button onClick={onClose} className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+        <div className="flex flex-col h-full bg-white dark:bg-zinc-900 w-full">
+             {!hideHeader && (
+                 <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-white/10">
+                    <h2 className="text-sm font-semibold capitalize text-zinc-900 dark:text-white">
+                        {type} Properties
+                    </h2>
+                    <button onClick={onClose} className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+             )}
             
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
 
