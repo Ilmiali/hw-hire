@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useStore } from 'zustand';
 import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { LeftSidebar } from './components/LeftSidebar';
@@ -6,6 +7,7 @@ import PropertiesPanel from './components/PropertiesPanel';
 
 const FormBuilder = () => {
     // Access state
+    const navigate = useNavigate();
     const form = useFormBuilderStore(state => state.form);
     const activePageId = useFormBuilderStore(state => state.activePageId);
     const selectedElementId = useFormBuilderStore(state => state.selectedElementId);
@@ -106,13 +108,21 @@ const FormBuilder = () => {
                        ))}
                     </div>
                 )}
-
-                <button 
-                    onClick={handleSave}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
-                >
-                    Save Form
-                </button>
+                
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => navigate('/form-builder/preview')}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10"
+                    >
+                        Preview
+                    </button>
+                    <button 
+                        onClick={handleSave}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
+                    >
+                        Save Form
+                    </button>
+                </div>
             </header>
 
             {/* Main Content Area */}

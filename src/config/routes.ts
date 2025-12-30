@@ -6,12 +6,14 @@ import {
   ArrowRightStartOnRectangleIcon,
   SparklesIcon,
   ClipboardDocumentListIcon as ApplicationIcon,
+  EyeIcon,
 } from '@heroicons/react/16/solid';
 import Dashboard from '../screens/Dashboard';
 import Profile from '../screens/Profile';
 import Login from '../screens/Login';
 import FormBuilder from '../screens/FormBuilder/FormBuilder';
 import Applications from '../screens/Applications/Applications';
+import FormPreview from '../screens/FormBuilder/FormPreview';
 import { RouteConfig, RouteGroup } from '../types/routes';
 
 // Public routes (no authentication required)
@@ -41,6 +43,14 @@ export const additionalRoutes: RouteConfig[] = [
     name: 'View Details',
     icon: ApplicationIcon,
     component: Applications,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
+    path: '/form-builder/preview',
+    name: 'Form Preview',
+    icon: EyeIcon,
+    component: FormPreview,
     layout: 'authenticated',
     isAuthProtected: true,
   },
