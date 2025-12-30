@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormBuilderStore } from '../../store/formBuilderStore';
-import { FormField } from '../../types/form-builder';
+import { FormField, FormPage } from '../../types/form-builder';
+import { evaluateRules } from '../../utils/evaluateRules';
 
 // UI Components
 import { Input } from '../../components/input';
@@ -25,6 +26,55 @@ export const FormPreview = () => {
     const isFirstPage = currentPageIndex === 0;
     const isLastPage = currentPageIndex === form.pages.length - 1;
 
+    // Helper to flatten fields for evaluation
+    const allFields = useMemo(() => {
+        const fields: FormField[] = [];
+        form.pages.forEach(page => {
+            page.sections.forEach(section => {
+                section.rows.forEach(row => {
+                    row.fields.forEach(field => {
+                        fields.push(field);
+                    });
+                });
+            });
+        });
+        return fields;
+    }, [form]);
+
+    // Evaluate rules
+    const { visibleFieldIds, requiredFieldIds } = useMemo(() => {
+        return evaluateRules(form.rules || [], formValues, allFields);
+    }, [form.rules, formValues, allFields]);
+
+    // Effect to clear values of hidden fields
+    useEffect(() => {
+        setFormValues(prev => {
+            const next = { ...prev };
+            let hasChanges = false;
+            
+            // Find fields that have a value but are not visible
+            allFields.forEach(field => {
+                if (!visibleFieldIds.has(field.id) && next[field.id] !== undefined && next[field.id] !== '') {
+                    // Only clear if it has a value (to avoid infinite loops with empty checks if any)
+                    // But standard logic: if hidden, value should be cleared.
+                    // However, we must be careful. If evaluating rules depends on this value, clearing it might change visibility?
+                    // "When a field becomes hidden, clear its value"
+                    // If A controls B. A=True -> Show B.
+                    // If A=False -> Hide B. Clear B.
+                    // B's value usually doesn't affect A (unless circular dependency).
+                    // If B controls C, and B is hidden (and cleared), then C might change visibility.
+                    // This effect handles one pass. React will re-render and re-evaluate if needed.
+                    
+                    delete next[field.id];
+                    hasChanges = true;
+                }
+            });
+
+            return hasChanges ? next : prev;
+        });
+    }, [visibleFieldIds, allFields]);
+
+
     // Helper to handle input changes
     const handleChange = (fieldId: string, value: any) => {
         setFormValues(prev => ({
@@ -34,6 +84,20 @@ export const FormPreview = () => {
     };
 
     const handleNext = () => {
+        // Validate required visible fields on this page?
+        // Basic check for now
+        const pageFields = getAllFields([currentPage]); // Use helper for current page
+        const missingRequired = pageFields.filter(f => 
+            visibleFieldIds.has(f.id) && 
+            requiredFieldIds.has(f.id) && 
+            !formValues[f.id]
+        );
+
+        if (missingRequired.length > 0) {
+            alert(`Please fill in required fields: ${missingRequired.map(f => f.label).join(', ')}`);
+            return;
+        }
+
         if (!isLastPage) {
             setCurrentPageIndex(prev => prev + 1);
             window.scrollTo(0, 0);
@@ -49,13 +113,30 @@ export const FormPreview = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Validate all visible required fields
+        const missing = allFields.filter(f => 
+            visibleFieldIds.has(f.id) && 
+            requiredFieldIds.has(f.id) && 
+            !formValues[f.id]
+        );
+
+        if (missing.length > 0) {
+            alert(`Please fill in required fields: ${missing.map(f => f.label).join(', ')}`);
+            return;
+        }
+
         console.log('Form Submission:', formValues);
         alert('Form submitted! value logged to console.');
     };
 
     // Helper to render field based on type
     const renderField = (field: FormField) => {
+        // Skip if hidden
+        if (!visibleFieldIds.has(field.id)) return null;
+
         const value = formValues[field.id] || '';
+        const isRequired = requiredFieldIds.has(field.id);
 
         switch (field.type) {
             case 'text':
@@ -68,7 +149,7 @@ export const FormPreview = () => {
                         placeholder={field.placeholder}
                         value={value}
                         onChange={(e) => handleChange(field.id, e.target.value)}
-                        required={field.required}
+                        required={isRequired}
                     />
                 );
             case 'textarea':
@@ -77,7 +158,7 @@ export const FormPreview = () => {
                         placeholder={field.placeholder}
                         value={value}
                         onChange={(e) => handleChange(field.id, e.target.value)}
-                        required={field.required}
+                        required={isRequired}
                     />
                 );
             case 'select':
@@ -85,7 +166,7 @@ export const FormPreview = () => {
                     <Select 
                         value={value} 
                         onChange={(e) => handleChange(field.id, e.target.value)}
-                        required={field.required}
+                        required={isRequired}
                     >
                         <option value="" disabled>Select an option</option>
                         {field.options?.map(opt => (
@@ -108,11 +189,6 @@ export const FormPreview = () => {
                     </RadioGroup>
                 );
             case 'checkbox':
-                // Checkbox can be single (boolean) or multiple (array) if we had a CheckboxGroup with multiple values.
-                // Based on Canvas.tsx, it renders a CheckboxGroup around CheckboxFields.
-                // Assuming standard checkbox group behavior here or multiple checkboxes.
-                // For simplicity, treating "checkbox" type as "Multi-select checkbox group" or "Single Checkbox"? 
-                // The Type definition says 'checkbox', and Canvas renders CheckboxGroup.
                 return (
                     <CheckboxGroup>
                         {field.options?.map(opt => {
@@ -142,6 +218,21 @@ export const FormPreview = () => {
             default:
                 return null;
         }
+    };
+
+    // Helper just for current page validation
+    const getAllFields = (pages: FormPage[]): FormField[] => {
+        const fields: FormField[] = [];
+        pages.forEach(page => {
+            page.sections.forEach(section => {
+                section.rows.forEach(row => {
+                    row.fields.forEach(field => {
+                        fields.push(field);
+                    });
+                });
+            });
+        });
+        return fields;
     };
 
     return (
@@ -183,14 +274,18 @@ export const FormPreview = () => {
                                     <div className="space-y-4">
                                         {section.rows.map(row => (
                                             <div key={row.id} className="flex flex-col md:flex-row gap-4">
-                                                {row.fields.map(field => (
-                                                    <Field key={field.id} className="flex-1 min-w-0">
-                                                        <Label className="text-zinc-300">
-                                                            {field.label} {field.required && <span className="text-red-500">*</span>}
-                                                        </Label>
-                                                        {renderField(field)}
-                                                    </Field>
-                                                ))}
+                                                {row.fields.map(field => {
+                                                    if (!visibleFieldIds.has(field.id)) return null;
+                                                    const isRequired = requiredFieldIds.has(field.id);
+                                                    return (
+                                                        <Field key={field.id} className="flex-1 min-w-0">
+                                                            <Label className="text-zinc-300">
+                                                                {field.label} {isRequired && <span className="text-red-500">*</span>}
+                                                            </Label>
+                                                            {renderField(field)}
+                                                        </Field>
+                                                    );
+                                                })}
                                             </div>
                                         ))}
                                     </div>

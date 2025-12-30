@@ -4,6 +4,8 @@ import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { LeftSidebar } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
+import { RulesPanel } from './components/rules/RulesPanel';
+import { useState } from 'react';
 
 const FormBuilder = () => {
     // Access state
@@ -12,6 +14,7 @@ const FormBuilder = () => {
     const activePageId = useFormBuilderStore(state => state.activePageId);
     const selectedElementId = useFormBuilderStore(state => state.selectedElementId);
     const isRightSidebarOpen = useFormBuilderStore(state => state.sidebarOpen);
+    const [isRulesPanelOpen, setRulesPanelOpen] = useState(false);
 
     // Access actions
     const setTitle = useFormBuilderStore(state => state.setTitle);
@@ -111,6 +114,12 @@ const FormBuilder = () => {
                 
                 <div className="flex gap-2">
                     <button 
+                         onClick={() => setRulesPanelOpen(true)}
+                         className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10"
+                    >
+                        Rules ({form.rules?.length || 0})
+                    </button>
+                    <button 
                         onClick={() => navigate('/form-builder/preview')}
                         className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10"
                     >
@@ -170,6 +179,11 @@ const FormBuilder = () => {
                     />
                 )}
             </div>
+
+            <RulesPanel 
+                isOpen={isRulesPanelOpen} 
+                onClose={() => setRulesPanelOpen(false)} 
+            />
         </div>
     );
 };

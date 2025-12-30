@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { temporal } from 'zundo';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
-import { FormSchema, FormPage, FormSection, FormField, FieldType } from '../types/form-builder';
+import { FormSchema, FormPage, FormSection, FormField, FieldType, Rule } from '../types/form-builder';
 
 // Define the state interface
 interface FormBuilderState {
@@ -47,6 +47,11 @@ interface FormBuilderState {
   addPage: () => void;
   updatePage: (pageId: string, updates: Partial<FormPage>) => void;
   deletePage: (pageId: string) => void;
+
+  // Rule Actions
+  addRule: (rule: Rule) => void;
+  updateRule: (ruleId: string, updates: Partial<Rule>) => void;
+  deleteRule: (ruleId: string) => void;
 }
 
 const initialForm: FormSchema = {
@@ -67,6 +72,7 @@ const initialForm: FormSchema = {
       ],
     },
   ],
+  rules: [],
 };
 
 export const useFormBuilderStore = create<FormBuilderState>()(
@@ -425,6 +431,27 @@ export const useFormBuilderStore = create<FormBuilderState>()(
           if (state.selectedElementId === pageId) {
             state.selectedElementId = null;
           }
+        }),
+
+      // --- Rule Actions ---
+      addRule: (rule) =>
+        set((state) => {
+           state.form.rules = state.form.rules || [];
+           state.form.rules.push(rule);
+        }),
+
+      updateRule: (ruleId, updates) =>
+        set((state) => {
+           state.form.rules = state.form.rules || [];
+           const index = state.form.rules.findIndex(r => r.id === ruleId);
+           if (index !== -1) {
+               Object.assign(state.form.rules[index], updates);
+           }
+        }),
+
+      deleteRule: (ruleId) =>
+        set((state) => {
+           state.form.rules = (state.form.rules || []).filter(r => r.id !== ruleId);
         }),
     })),
     {
