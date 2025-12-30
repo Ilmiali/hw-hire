@@ -114,7 +114,7 @@ export const ConditionRow: React.FC<ConditionRowProps> = ({ condition, fields, o
     };
 
     return (
-        <div className="flex flex-wrap gap-2 items-center bg-white/5 p-2 rounded-md">
+        <div className="flex flex-wrap gap-2 items-center bg-zinc-100/50 dark:bg-white/5 p-2 rounded-md border border-zinc-200 dark:border-white/5">
             <div className="w-1/3 min-w-[150px]">
                 <Select
                     value={condition.fieldId}

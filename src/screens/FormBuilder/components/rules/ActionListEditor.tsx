@@ -42,8 +42,8 @@ export const ActionListEditor: React.FC<ActionListEditorProps> = ({ actions, fie
     return (
         <div className="space-y-2">
             {actions.map((action, index) => (
-                <div key={action.id} className="flex gap-2 items-center bg-white/5 p-2 rounded-md">
-                    <span className="text-zinc-400 text-sm font-medium w-12">THEN</span>
+                <div key={action.id} className="flex gap-2 items-center bg-zinc-100/50 dark:bg-white/5 p-2 rounded-md border border-zinc-200 dark:border-white/5">
+                    <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium w-12">THEN</span>
                     
                     <div className="w-[120px]">
                         <Select
@@ -74,7 +74,7 @@ export const ActionListEditor: React.FC<ActionListEditorProps> = ({ actions, fie
                 </div>
             ))}
             
-            <Button outline onClick={addAction} className="w-full text-zinc-400 border-dashed border-zinc-700 hover:border-zinc-500 hover:text-zinc-200">
+            <Button outline onClick={addAction} className="w-full text-zinc-500 dark:text-zinc-400 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200">
                 + Add Action
             </Button>
         </div>

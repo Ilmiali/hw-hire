@@ -16,16 +16,18 @@ function App() {
   // Dark mode
   useEffect(() => {
     // Add listener to update styles
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => onSelectMode(e.matches ? 'dark' : 'light'));
+    const modeListener = (e: MediaQueryListEvent) => onSelectMode(e.matches ? 'dark' : 'light');
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    mediaQuery.addEventListener('change', modeListener);
   
     // Setup dark/light mode for the first time
-    onSelectMode(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    onSelectMode(mediaQuery.matches ? 'dark' : 'light');
   
     // Remove listener
     return () => {
-      window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', () => {
-      });
-    }
+      mediaQuery.removeEventListener('change', modeListener);
+    };
   }, []);
   useEffect(() => {
     dispatch(initializeAuth());
@@ -40,7 +42,13 @@ function App() {
   // Get the current theme from the document
   const onSelectMode = (mode: 'dark' | 'light') => {
     setIsDarkMode(mode === 'dark');
-    document.documentElement.classList.add(mode);
+    if (mode === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    }
   };
 
   return (

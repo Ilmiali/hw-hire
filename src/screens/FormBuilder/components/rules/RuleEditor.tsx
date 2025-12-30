@@ -15,9 +15,9 @@ interface RuleEditorProps {
 export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, fields, onChange }) => {
     
     return (
-        <div className="space-y-6 bg-zinc-900 p-6 rounded-lg border border-white/5">
+        <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-white/5">
             <div className="space-y-2">
-                <Heading level={3} className="text-white">Rule Name</Heading>
+                <Heading level={3} className="text-zinc-900 dark:text-white">Rule Name</Heading>
                 <Input
                     value={rule.title || ''}
                     onChange={(e) => onChange({ ...rule, title: e.target.value })}
@@ -26,8 +26,8 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, fields, onChange }
             </div>
 
             <div className="space-y-2">
-                <Heading level={4} className="text-zinc-400 text-sm uppercase tracking-wider font-semibold">When</Heading>
-                <div className="bg-black/20 p-4 rounded-md border border-white/5">
+                <Heading level={4} className="text-zinc-500 dark:text-zinc-400 text-sm uppercase tracking-wider font-semibold">When</Heading>
+                <div className="bg-zinc-50 dark:bg-black/20 p-4 rounded-md border border-zinc-200 dark:border-white/5">
                     <ConditionGroupEditor
                         group={rule.conditions}
                         fields={fields}
@@ -38,8 +38,8 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, fields, onChange }
             </div>
 
             <div className="space-y-2">
-                <Heading level={4} className="text-zinc-400 text-sm uppercase tracking-wider font-semibold">Then</Heading>
-                <div className="bg-black/20 p-4 rounded-md border border-white/5">
+                <Heading level={4} className="text-zinc-500 dark:text-zinc-400 text-sm uppercase tracking-wider font-semibold">Then</Heading>
+                <div className="bg-zinc-50 dark:bg-black/20 p-4 rounded-md border border-zinc-200 dark:border-white/5">
                     <ActionListEditor
                         actions={rule.actions}
                         fields={fields}

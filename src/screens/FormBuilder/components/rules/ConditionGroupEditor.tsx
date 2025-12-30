@@ -60,14 +60,14 @@ export const ConditionGroupEditor: React.FC<ConditionGroupEditorProps> = ({
     };
 
     return (
-        <div className={`space-y-3 ${!isRoot ? 'border-l-2 border-zinc-700 pl-4 ml-1 my-2' : ''}`}>
+        <div className={`space-y-3 ${!isRoot ? 'border-l-2 border-zinc-200 dark:border-zinc-700 pl-4 ml-1 my-2' : ''}`}>
             {/* Group Header */}
             <div className="flex items-center gap-2">
                 <div className="w-[80px]">
                     <Select
                         value={group.combinator}
                         onChange={(e) => onChange({ ...group, combinator: e.target.value as 'and' | 'or' })}
-                        className={group.combinator === 'and' ? 'bg-blue-900/20 text-blue-300' : 'bg-orange-900/20 text-orange-300'}
+                        className={group.combinator === 'and' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-300'}
                     >
                         <option value="and">AND</option>
                         <option value="or">OR</option>

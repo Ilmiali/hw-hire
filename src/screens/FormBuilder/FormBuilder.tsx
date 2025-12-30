@@ -68,20 +68,20 @@ const FormBuilder = () => {
     }
 
     return (
-        <div className="flex flex-col h-screen w-full bg-zinc-950">
+        <div className="flex flex-col h-screen w-full bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
             {/* Header / Navbar */}
-            <header className="flex justify-between items-center w-full px-4 py-2 border-b border-white/10 shrink-0">
+            <header className="flex justify-between items-center w-full px-4 py-2 border-b border-zinc-200 dark:border-white/10 shrink-0">
                 <div className="flex items-center gap-4">
                     <input 
                         value={form.title} 
                         onChange={(e) => setTitle(e.target.value)}
-                        className="text-lg font-semibold bg-transparent border-none focus:ring-0 text-white p-0"
+                        className="text-lg font-semibold bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-white p-0"
                     />
-                    <div className="flex items-center gap-2 border-l border-white/10 pl-4 ml-4">
+                    <div className="flex items-center gap-2 border-l border-zinc-200 dark:border-white/10 pl-4 ml-4">
                         <button
                             onClick={() => handleUndo()}
                             disabled={pastStatesLength === 0}
-                            className={`p-1.5 rounded transition-colors ${pastStatesLength > 0 ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-700 cursor-not-allowed'}`}
+                            className={`p-1.5 rounded transition-colors ${pastStatesLength > 0 ? 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10' : 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed'}`}
                             title="Undo"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
@@ -89,7 +89,7 @@ const FormBuilder = () => {
                         <button
                             onClick={() => handleRedo()}
                             disabled={futureStatesLength === 0}
-                            className={`p-1.5 rounded transition-colors ${futureStatesLength > 0 ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-700 cursor-not-allowed'}`}
+                            className={`p-1.5 rounded transition-colors ${futureStatesLength > 0 ? 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10' : 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed'}`}
                             title="Redo"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
@@ -103,7 +103,7 @@ const FormBuilder = () => {
                            <button 
                                key={page.id}
                                onClick={() => setActivePageId(page.id)}
-                               className={`px-3 py-1 rounded text-sm transition-colors ${activePageId === page.id ? 'bg-blue-600/20 text-blue-400 border border-blue-500/50' : 'text-zinc-400 hover:text-white'}`}
+                               className={`px-3 py-1 rounded text-sm transition-colors ${activePageId === page.id ? 'bg-blue-600/10 text-blue-600 border border-blue-500/50 dark:bg-blue-600/20 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'}`}
                            >
                                Page {index + 1}
                            </button>
@@ -114,7 +114,7 @@ const FormBuilder = () => {
                 <div className="flex gap-2">
                     <button 
                         onClick={() => navigate('/form-builder/preview')}
-                        className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10"
+                        className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-zinc-200 dark:border-white/10"
                     >
                         Preview
                     </button>
@@ -167,7 +167,7 @@ const FormBuilder = () => {
                 />
                 
                 <div 
-                    className="flex-1 bg-zinc-900/50 p-8 overflow-y-auto" 
+                    className="flex-1 bg-zinc-50 dark:bg-zinc-900/50 p-8 overflow-y-auto" 
                     onClick={() => setSelectedElementId(null)}
                 >
                     <Canvas 
@@ -194,7 +194,7 @@ const FormBuilder = () => {
                 </div>
                 
                 {isRightSidebarOpen && (
-                    <div className="w-80 shrink-0 border-l border-white/10">
+                    <div className="w-80 shrink-0 border-l border-zinc-200 dark:border-white/10">
                         <PropertiesPanel 
                             selectedElement={selectedElement} 
                             onUpdate={(updates: any) => {

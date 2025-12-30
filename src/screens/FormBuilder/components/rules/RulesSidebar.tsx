@@ -64,7 +64,7 @@ export const RulesSidebar = () => {
                     ) : (
                         <div className="space-y-1">
                             {rules.map(rule => (
-                                <div key={rule.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group">
+                                <div key={rule.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors group">
                                     <div className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onClick={() => setEditingRuleId(rule.id)}>
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                                         <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate font-medium group-hover:text-zinc-900 dark:group-hover:text-white">
@@ -96,7 +96,7 @@ export const RulesSidebar = () => {
                         </div>
                     )}
                 </div>
-                 <div className="p-4 border-t border-white/10">
+                 <div className="p-4 border-t border-zinc-200 dark:border-white/10">
                     <Button color="blue" onClick={handleCreateRule} className="w-full">
                         + Add New Rule
                     </Button>

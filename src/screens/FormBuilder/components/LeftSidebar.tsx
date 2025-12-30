@@ -184,7 +184,7 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, on
                                                         <div 
                                                             key={field.id}
                                                             onClick={(e) => { e.stopPropagation(); onSelectElement(field.id); }}
-                                                            className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${selectedId === field.id ? 'bg-blue-600/20 text-blue-400 font-medium' : 'text-zinc-500 dark:text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                                            className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${selectedId === field.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'}`}
                                                         >
                                                             <div className="flex items-center gap-2 truncate">
                                                                 <QueueListIcon className="w-3.5 h-3.5 text-zinc-500/50" />

@@ -73,12 +73,12 @@ const FieldRenderer = ({ field, isSelected, onClick, onDelete, onDuplicate }: { 
             {/* Hidden ghost for drag image */}
             <div 
                 ref={ghostRef}
-                className="fixed -left-[9999px] top-0 p-4 rounded-lg border-2 border-dashed border-blue-500 bg-zinc-900 opacity-40 w-80 pointer-events-none z-[9999]"
+                className="fixed -left-[9999px] top-0 p-4 rounded-lg border-2 border-dashed border-blue-500 bg-white dark:bg-zinc-900 opacity-40 w-80 pointer-events-none z-[9999]"
             >
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-sm font-medium text-zinc-900 dark:text-white mb-2">
                     {field.label}
                 </label>
-                <div className="h-8 w-full bg-zinc-800 rounded border border-white/5"></div>
+                <div className="h-8 w-full bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-white/5"></div>
             </div>
 
             <div 
@@ -96,10 +96,10 @@ const FieldRenderer = ({ field, isSelected, onClick, onDelete, onDuplicate }: { 
                 }}
                 onDragEnd={() => setIsDragging(false)}
                 onClick={onClick}
-                className={`field-wrapper relative group p-4 rounded-lg cursor-grab active:cursor-grabbing border-2 transition-all flex-1 min-w-0 ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 bg-white/5 dark:bg-zinc-800/30'}`}
+                className={`field-wrapper relative group p-4 rounded-lg cursor-grab active:cursor-grabbing border-2 transition-all flex-1 min-w-0 ${isDragging ? 'opacity-10 border-dashed border-zinc-300 dark:border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 bg-white dark:bg-zinc-800/30 shadow-sm dark:shadow-none'}`}
             >
                {isSelected && (
-                   <div className="absolute top-2 right-2 z-10 flex items-center bg-white/10 dark:bg-zinc-900/50 backdrop-blur-sm rounded-md border border-white/10 p-0.5">
+                   <div className="absolute top-2 right-2 z-10 flex items-center bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm rounded-md border border-zinc-200 dark:border-white/10 p-0.5 shadow-sm">
                        <button 
                            onClick={onDuplicate}
                            className="p-1 text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10 rounded transition-all"
@@ -318,10 +318,10 @@ const SectionRenderer = ({
             {/* Section Ghost */}
             <div 
                 ref={ghostRef}
-                className="fixed -left-[9999px] top-0 p-6 rounded-2xl border-2 border-dashed border-blue-500 bg-zinc-900 opacity-40 w-[600px] pointer-events-none z-[9999]"
+                className="fixed -left-[9999px] top-0 p-6 rounded-2xl border-2 border-dashed border-blue-500 bg-white dark:bg-zinc-900 opacity-40 w-[600px] pointer-events-none z-[9999]"
             >
-                <Heading level={2} className="text-white text-xl mb-2">{section.title}</Heading>
-                <div className="h-20 w-full bg-zinc-800 rounded-xl border border-white/5"></div>
+                <Heading level={2} className="text-zinc-900 dark:text-white text-xl mb-2">{section.title}</Heading>
+                <div className="h-20 w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-white/5"></div>
             </div>
 
             <div 
@@ -357,10 +357,10 @@ const SectionRenderer = ({
                 onDragOver={handleDragOver}
                 onDragLeave={() => setDragOverRowIndex(null)}
                 onDrop={handleDrop}
-                className={`section-wrapper relative group bg-zinc-800/20 dark:bg-zinc-900/40 rounded-2xl p-6 border-2 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-600/50 bg-blue-600/5' : 'border-white/5 hover:border-white/10'}`}
+                className={`section-wrapper relative group bg-zinc-50 dark:bg-zinc-900/40 rounded-2xl p-6 border-2 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-10 border-dashed border-zinc-300 dark:border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-600/50 bg-blue-600/5 shadow-md dark:shadow-none' : 'border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/10 shadow-sm dark:shadow-none'}`}
             >
                 {isSelected && (
-                    <div className="absolute top-4 right-4 z-10 flex items-center bg-white/10 dark:bg-zinc-900/80 backdrop-blur-md rounded-lg border border-white/10 p-1 gap-0.5">
+                    <div className="absolute top-4 right-4 z-10 flex items-center bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-lg border border-zinc-200 dark:border-white/10 p-1 gap-0.5 shadow-sm">
                         <button 
                             onClick={(e) => { e.stopPropagation(); onDuplicate(section.id, 'section'); }}
                             className="p-1.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-all"
@@ -379,8 +379,8 @@ const SectionRenderer = ({
                 )}
 
                 <div className={`mb-6 ${isDragging ? 'opacity-0' : ''}`}>
-                    <Heading level={2} className="text-white text-xl">{section.title}</Heading>
-                    {section.description && <Text className="text-zinc-400">{section.description}</Text>}
+                    <Heading level={2} className="text-zinc-900 dark:text-white text-xl">{section.title}</Heading>
+                    {section.description && <Text className="text-zinc-500 dark:text-zinc-400">{section.description}</Text>}
                 </div>
 
                 <div className={`space-y-4 relative ${isDragging ? 'opacity-0' : ''}`} ref={containerRef}>
@@ -404,7 +404,7 @@ const SectionRenderer = ({
                     ))}
                     
                     {section.rows.length === 0 && dragOverRowIndex === null && !isDragging && (
-                        <div className="text-center text-zinc-500 py-10 border-2 border-dashed border-white/5 rounded-xl">
+                        <div className="text-center text-zinc-400 dark:text-zinc-500 py-10 border-2 border-dashed border-zinc-200 dark:border-white/5 rounded-xl bg-white/50 dark:bg-transparent">
                             Drop fields here
                         </div>
                     )}
@@ -520,8 +520,8 @@ const Canvas = ({
             ))}
             
             {page.sections.length === 0 && (
-                 <div className="border-2 border-dashed border-white/10 rounded-2xl p-20 flex flex-col items-center justify-center text-center bg-white/5">
-                    <p className="text-zinc-400">Add a section to start adding fields</p>
+                 <div className="border-2 border-dashed border-zinc-200 dark:border-white/10 rounded-2xl p-20 flex flex-col items-center justify-center text-center bg-zinc-50/50 dark:bg-white/5">
+                    <p className="text-zinc-500 dark:text-zinc-400">Add a section to start adding fields</p>
                 </div>
             )}
         </div>

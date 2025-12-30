@@ -331,12 +331,12 @@ export const FormPreview = () => {
                 );
             case 'paragraph':
                 return (
-                    <Text className="text-zinc-300">
+                    <Text className="text-zinc-600 dark:text-zinc-300">
                         {field.content || field.placeholder || 'Enter your text here...'}
                     </Text>
                 );
             case 'divider':
-                return <hr className="my-4 border-white/10" />;
+                return <hr className="my-4 border-zinc-200 dark:border-white/10" />;
             case 'spacer':
                 return <div className="h-8" />;
             default:
@@ -360,12 +360,12 @@ export const FormPreview = () => {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-950 flex flex-col">
+        <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col">
             {/* Preview Banner */}
-            <div className="bg-blue-600/10 border-b border-blue-500/20 px-6 py-3 flex justify-between items-center sticky top-0 z-50 backdrop-blur-md">
-                <div className="flex items-center gap-2 text-blue-400">
-                    <span className="bg-blue-500/20 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border border-blue-500/30">Preview Mode</span>
-                    <Text className="text-sm text-blue-200">This is how your form will look to users.</Text>
+            <div className="bg-blue-50 dark:bg-blue-600/10 border-b border-blue-200 dark:border-blue-500/20 px-6 py-3 flex justify-between items-center sticky top-0 z-50 backdrop-blur-md">
+                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                    <span className="bg-blue-100 dark:bg-blue-500/20 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border border-blue-200 dark:border-blue-500/30">Preview Mode</span>
+                    <Text className="text-sm text-blue-700 dark:text-blue-200">This is how your form will look to users.</Text>
                 </div>
                 <Button onClick={() => navigate('/form-builder')} outline>
                     Back to Editor
@@ -373,7 +373,7 @@ export const FormPreview = () => {
             </div>
 
             <div className="flex-1 flex justify-center p-8 overflow-y-auto">
-                <div className="w-full max-w-2xl bg-zinc-900 rounded-xl border border-white/5 shadow-2xl overflow-hidden mb-20 h-fit flex flex-col">
+                <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-white/5 shadow-2xl overflow-hidden mb-20 h-fit flex flex-col">
                     
                     <PageHeader 
                         title={currentPage.title}
@@ -386,7 +386,7 @@ export const FormPreview = () => {
                         {form.pages.length > 1 && (
                             <div className="mb-14 relative px-2">
                                 {/* Background Line */}
-                                <div className="absolute top-[11px] left-2 right-2 h-[2px] bg-zinc-800 rounded-full" />
+                                <div className="absolute top-[11px] left-2 right-2 h-[2px] bg-zinc-200 dark:bg-zinc-800 rounded-full" />
                                 
                                 {/* Progress Line */}
                                 <div 
@@ -406,10 +406,10 @@ export const FormPreview = () => {
                                                 <div 
                                                     className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all duration-500 z-10 ${
                                                         isActive 
-                                                            ? 'bg-zinc-950 border-blue-500 scale-110 shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                                                            ? 'bg-white dark:bg-zinc-950 border-blue-500 scale-110 shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
                                                             : isCompleted
                                                             ? 'bg-blue-500 border-blue-500'
-                                                            : 'bg-zinc-950 border-zinc-800'
+                                                            : 'bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800'
                                                     }`}
                                                 >
                                                     {isCompleted ? (
@@ -417,13 +417,13 @@ export const FormPreview = () => {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                                         </svg>
                                                     ) : (
-                                                        <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive ? 'bg-blue-400' : 'bg-zinc-800'}`} />
+                                                        <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive ? 'bg-blue-400' : 'bg-zinc-100 dark:bg-zinc-800'}`} />
                                                     )}
                                                 </div>
                                                 
                                                 {/* Label */}
                                                 <div className="absolute top-8 flex flex-col items-center">
-                                                    <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-500 whitespace-nowrap ${isActive ? 'text-blue-400' : 'text-zinc-600'}`}>
+                                                    <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-500 whitespace-nowrap ${isActive ? 'text-blue-500' : 'text-zinc-400 dark:text-zinc-600'}`}>
                                                         {page.title}
                                                     </span>
                                                 </div>
@@ -440,8 +440,8 @@ export const FormPreview = () => {
                                 {currentPage.sections.map(section => (
                                     <div key={section.id} className="space-y-6">
                                         <div className="mb-4">
-                                            <Heading level={3} className="text-lg text-white mb-1">{section.title}</Heading>
-                                            {section.description && <Text className="text-sm text-zinc-500">{section.description}</Text>}
+                                            <Heading level={3} className="text-lg text-zinc-900 dark:text-white mb-1">{section.title}</Heading>
+                                            {section.description && <Text className="text-sm text-zinc-500 dark:text-zinc-400">{section.description}</Text>}
                                         </div>
                                         
                                         <div className="space-y-4">
@@ -462,7 +462,7 @@ export const FormPreview = () => {
 
                                                         return (
                                                             <Field key={field.id} className="flex-1 min-w-0">
-                                                                <Label className="text-zinc-300">
+                                                                <Label className="text-zinc-700 dark:text-zinc-300">
                                                                     {field.label} {isRequired && <span className="text-red-500">*</span>}
                                                                 </Label>
                                                                 {renderField(field)}
@@ -480,7 +480,7 @@ export const FormPreview = () => {
                             </div>
 
                             {/* Navigation / Submit */}
-                            <div className="flex justify-between pt-8 border-t border-white/5 mt-8">
+                            <div className="flex justify-between pt-8 border-t border-zinc-100 dark:border-white/5 mt-8">
                                 <div>
                                     {!isFirstPage && (
                                         <Button type="button" onClick={handlePrev} plain>

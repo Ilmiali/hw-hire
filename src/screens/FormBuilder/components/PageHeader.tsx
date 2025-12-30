@@ -70,7 +70,7 @@ export const PageHeader = ({
                 >
                     <button
                         onClick={() => setIsColorPickerOpen(true)}
-                        className={`px-3 py-1.5 bg-white/5 hover:bg-white/10 text-zinc-400 text-xs font-medium rounded-md border border-white/5 transition-all ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                        className={`px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-white/5 dark:hover:bg-white/10 dark:text-zinc-400 text-xs font-medium rounded-md border border-zinc-200 dark:border-white/5 transition-all ${isHovered ? 'opacity-100' : 'opacity-0'}`}
                     >
                         Add Cover
                     </button>
@@ -81,24 +81,24 @@ export const PageHeader = ({
             <div className={`px-10 relative z-10 space-y-2 ${cover ? '-mt-10' : 'mt-4'}`}>
                <div className="space-y-1">
                    {readOnly ? (
-                       <h1 className="text-5xl font-extrabold text-white p-0 drop-shadow-md">{title}</h1>
+                       <h1 className="text-5xl font-extrabold text-zinc-900 dark:text-white p-0 drop-shadow-sm dark:drop-shadow-md">{title}</h1>
                    ) : (
                        <input
                             value={title}
                             onChange={(e) => setTitle?.(e.target.value)}
                             placeholder="Page Title"
-                            className="w-full bg-transparent border-none text-5xl font-extrabold text-white placeholder-zinc-500 focus:ring-0 p-0 drop-shadow-md"
+                            className="w-full bg-transparent border-none text-5xl font-extrabold text-zinc-900 dark:text-white placeholder-zinc-300 dark:placeholder-zinc-500 focus:ring-0 p-0 drop-shadow-sm dark:drop-shadow-md"
                        />
                    )}
                    {readOnly ? (
-                       description && <p className="text-zinc-400 text-lg whitespace-pre-wrap">{description}</p>
+                       description && <p className="text-zinc-600 dark:text-zinc-400 text-lg whitespace-pre-wrap">{description}</p>
                    ) : (
                        <textarea 
                             value={description || ''}
                             onChange={(e) => setDescription?.(e.target.value)}
                             placeholder="Add a description..."
                             rows={1}
-                            className="w-full bg-transparent border-none text-zinc-400 placeholder-zinc-600 focus:ring-0 p-0 resize-none text-lg overflow-hidden"
+                            className="w-full bg-transparent border-none text-zinc-600 dark:text-zinc-400 placeholder-zinc-300 dark:placeholder-zinc-600 focus:ring-0 p-0 resize-none text-lg overflow-hidden"
                             onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
                                 target.style.height = 'auto';
