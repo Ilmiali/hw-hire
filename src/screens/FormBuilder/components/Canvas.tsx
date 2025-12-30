@@ -11,6 +11,7 @@ import { Checkbox, CheckboxField, CheckboxGroup } from '../../../components/chec
 import { Label } from '../../../components/fieldset'; // Assuming Label is here, will verify in next step
 import { Heading } from '../../../components/heading';
 import { Text } from '../../../components/text';
+import { TrashIcon, Square2StackIcon } from '@heroicons/react/20/solid';
 
 interface CanvasProps {
     page: FormPage;
@@ -20,6 +21,8 @@ interface CanvasProps {
     onDrop: (type: FieldType, sectionId?: string, rowIndex?: number, colIndex?: number) => void;
     onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void;
     onReorderSection: (sectionId: string, targetIndex: number) => void;
+    onDelete: (id: string, type: 'field' | 'section') => void;
+    onDuplicate: (id: string, type: 'field' | 'section') => void;
 }
 
 const DropIndicator = ({ isVisible, orientation = 'vertical', text }: { isVisible: boolean; orientation?: 'horizontal' | 'vertical'; text?: string }) => {
@@ -61,7 +64,7 @@ const DropIndicator = ({ isVisible, orientation = 'vertical', text }: { isVisibl
     );
 };
 
-const FieldRenderer = ({ field, isSelected, onClick }: { field: FormField; isSelected: boolean; onClick: (e: React.MouseEvent) => void }) => {
+const FieldRenderer = ({ field, isSelected, onClick, onDelete, onDuplicate }: { field: FormField; isSelected: boolean; onClick: (e: React.MouseEvent) => void; onDelete: (e: React.MouseEvent) => void; onDuplicate: (e: React.MouseEvent) => void }) => {
     const [isDragging, setIsDragging] = React.useState(false);
     const ghostRef = React.useRef<HTMLDivElement>(null);
 
@@ -95,6 +98,24 @@ const FieldRenderer = ({ field, isSelected, onClick }: { field: FormField; isSel
                 onClick={onClick}
                 className={`field-wrapper relative group p-4 rounded-lg cursor-grab active:cursor-grabbing border-2 transition-all flex-1 min-w-0 ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 bg-white/5 dark:bg-zinc-800/30'}`}
             >
+               {isSelected && (
+                   <div className="absolute top-2 right-2 z-10 flex items-center bg-white/10 dark:bg-zinc-900/50 backdrop-blur-sm rounded-md border border-white/10 p-0.5">
+                       <button 
+                           onClick={onDuplicate}
+                           className="p-1 text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10 rounded transition-all"
+                           title="Duplicate Field"
+                       >
+                            <Square2StackIcon className="w-3.5 h-3.5" />
+                       </button>
+                       <button 
+                           onClick={onDelete}
+                           className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                           title="Delete Field"
+                       >
+                           <TrashIcon className="w-3.5 h-3.5" />
+                       </button>
+                   </div>
+               )}
                {!['paragraph', 'divider', 'spacer'].includes(field.type) && (
                    <label className={`block text-sm font-medium text-zinc-900 dark:text-white mb-2 truncate ${isDragging ? 'opacity-0' : ''}`}>
                         {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -155,7 +176,7 @@ const FieldRenderer = ({ field, isSelected, onClick }: { field: FormField; isSel
     );
 };
 
-const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderField, sectionId }: { row: FormRow; rowIndex: number; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex: number) => void; onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex: number) => void; sectionId: string }) => {
+const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderField, onDelete, onDuplicate, sectionId }: { row: FormRow; rowIndex: number; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex: number) => void; onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex: number) => void; onDelete: (id: string, type: 'field' | 'section') => void; onDuplicate: (id: string, type: 'field' | 'section') => void; sectionId: string }) => {
     const [dragOverColIndex, setDragOverColIndex] = React.useState<number | null>(null);
     const rowRef = React.useRef<HTMLDivElement>(null);
 
@@ -215,6 +236,8 @@ const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderFie
                         field={field} 
                         isSelected={field.id === selectedId}
                         onClick={(e) => { e.stopPropagation(); onSelect(field.id); }}
+                        onDelete={(e) => { e.stopPropagation(); onDelete(field.id, 'field'); }}
+                        onDuplicate={(e) => { e.stopPropagation(); onDuplicate(field.id, 'field'); }}
                     />
                 </React.Fragment>
             ))}
@@ -228,13 +251,17 @@ const SectionRenderer = ({
     selectedId, 
     onSelect, 
     onDrop, 
-    onReorderField
+    onReorderField,
+    onDelete,
+    onDuplicate
 }: { 
     section: FormSection; 
     selectedId: string | null; 
     onSelect: (id: string) => void; 
     onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex?: number) => void; 
     onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void; 
+    onDelete: (id: string, type: 'field' | 'section') => void;
+    onDuplicate: (id: string, type: 'field' | 'section') => void;
 }) => {
     const isSelected = section.id === selectedId;
     const [dragOverRowIndex, setDragOverRowIndex] = React.useState<number | null>(null);
@@ -332,6 +359,24 @@ const SectionRenderer = ({
                 onDrop={handleDrop}
                 className={`section-wrapper relative group bg-zinc-800/20 dark:bg-zinc-900/40 rounded-2xl p-6 border-2 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-10 border-dashed border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-600/50 bg-blue-600/5' : 'border-white/5 hover:border-white/10'}`}
             >
+                {isSelected && (
+                    <div className="absolute top-4 right-4 z-10 flex items-center bg-white/10 dark:bg-zinc-900/80 backdrop-blur-md rounded-lg border border-white/10 p-1 gap-0.5">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onDuplicate(section.id, 'section'); }}
+                            className="p-1.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-all"
+                            title="Duplicate Section"
+                        >
+                            <Square2StackIcon className="w-4 h-4" />
+                        </button>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onDelete(section.id, 'section'); }}
+                            className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-all"
+                            title="Delete Section"
+                        >
+                            <TrashIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
 
                 <div className={`mb-6 ${isDragging ? 'opacity-0' : ''}`}>
                     <Heading level={2} className="text-white text-xl">{section.title}</Heading>
@@ -350,6 +395,8 @@ const SectionRenderer = ({
                                 onSelect={onSelect}
                                 onDrop={onDrop}
                                 onReorderField={onReorderField}
+                                onDelete={onDelete}
+                                onDuplicate={onDuplicate}
                                 sectionId={section.id}
                             />
                             {dragOverRowIndex === rowIndex + 1 && <DropIndicator isVisible={true} text="New Row" />}
@@ -374,7 +421,9 @@ const Canvas = ({
     onSelect, 
     onDrop, 
     onReorderField, 
-    onReorderSection 
+    onReorderSection,
+    onDelete,
+    onDuplicate 
 }: CanvasProps) => {
     const [dragOverSectionIndex, setDragOverSectionIndex] = React.useState<number | null>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
@@ -463,6 +512,8 @@ const Canvas = ({
                         onSelect={onSelect}
                         onDrop={onDrop}
                         onReorderField={onReorderField}
+                        onDelete={onDelete}
+                        onDuplicate={onDuplicate}
                     />
                     {dragOverSectionIndex === index + 1 && <DropIndicator isVisible={true} text="Move Section Here" />}
                 </React.Fragment>

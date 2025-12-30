@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FormSchema, FieldType, FormField, FormRow } from '../../../types/form-builder';
-import { MagnifyingGlassIcon, PlusIcon, DocumentIcon, FolderIcon, QueueListIcon } from '@heroicons/react/20/solid';
+import { MagnifyingGlassIcon, PlusIcon, DocumentIcon, FolderIcon, QueueListIcon, TrashIcon, Square2StackIcon } from '@heroicons/react/20/solid';
 import { RulesSidebar } from './rules/RulesSidebar';
 
 interface LeftSidebarProps {
@@ -8,6 +8,8 @@ interface LeftSidebarProps {
     onAddSection: () => void;
     onAddPage: () => void;
     onSelectElement: (id: string) => void;
+    onDeleteElement: (id: string, type: 'field' | 'section' | 'page') => void;
+    onDuplicateElement: (id: string, type: 'field' | 'section' | 'page') => void;
     selectedId: string | null;
 }
 
@@ -26,7 +28,7 @@ const fieldTypes: { type: FieldType; label: string; icon: string }[] = [
     { type: 'spacer', label: 'Spacer', icon: '↕️' },
 ];
 
-export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, selectedId }: LeftSidebarProps) => {
+export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, onDeleteElement, onDuplicateElement, selectedId }: LeftSidebarProps) => {
     const [activeTab, setActiveTab] = useState<'elements' | 'tree' | 'rules'>('elements');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -123,31 +125,87 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, se
                             {form.pages.map(page => (
                                 <div key={page.id} className="space-y-1">
                                     <div 
-                                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === page.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
+                                        className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === page.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
                                         onClick={() => onSelectElement(page.id)}
                                     >
-                                        <DocumentIcon className="w-4 h-4 text-zinc-400" />
-                                        <span className="text-sm truncate">{page.title}</span>
+                                        <div className="flex items-center gap-2 truncate">
+                                            <DocumentIcon className="w-4 h-4 text-zinc-400" />
+                                            <span className="text-sm truncate">{page.title}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); onDuplicateElement(page.id, 'page'); }}
+                                                className="opacity-0 group-hover/treeitem:opacity-100 p-1 hover:bg-blue-500/10 hover:text-blue-500 rounded transition-all"
+                                                title="Duplicate Page"
+                                            >
+                                                <Square2StackIcon className="w-3.5 h-3.5" />
+                                            </button>
+                                            {form.pages.length > 1 && (
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); onDeleteElement(page.id, 'page'); }}
+                                                    className="opacity-0 group-hover/treeitem:opacity-100 p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-all"
+                                                    title="Delete Page"
+                                                >
+                                                    <TrashIcon className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="pl-4 space-y-1 border-l border-zinc-100 dark:border-zinc-800 ml-3">
                                         {page.sections.map(section => (
                                             <div key={section.id} className="space-y-1">
                                                 <div 
-                                                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === section.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
+                                                    className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === section.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
                                                     onClick={() => onSelectElement(section.id)}
                                                 >
-                                                    <FolderIcon className="w-4 h-4 text-zinc-400" />
-                                                    <span className="text-sm truncate">{section.title}</span>
+                                                    <div className="flex items-center gap-2 truncate">
+                                                        <FolderIcon className="w-4 h-4 text-zinc-400" />
+                                                        <span className="text-sm truncate">{section.title}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); onDuplicateElement(section.id, 'section'); }}
+                                                            className="opacity-0 group-hover/treeitem:opacity-100 p-1 hover:bg-blue-500/10 hover:text-blue-500 rounded transition-all"
+                                                            title="Duplicate Section"
+                                                        >
+                                                            <Square2StackIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); onDeleteElement(section.id, 'section'); }}
+                                                            className="opacity-0 group-hover/treeitem:opacity-100 p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-all"
+                                                            title="Delete Section"
+                                                        >
+                                                            <TrashIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="pl-4 space-y-1 border-l border-zinc-100 dark:border-zinc-800 ml-3">
                                                     {section.rows.flatMap(r => r.fields).map((field) => (
-                                        <div 
-                                            key={field.id}
-                                            onClick={(e) => { e.stopPropagation(); onSelectElement(field.id); }}
-                                            className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${selectedId === field.id ? 'bg-blue-600/20 text-blue-400' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
-                                        >
-                                                            <QueueListIcon className="w-3.5 h-3.5 text-zinc-400" />
-                                                            <span className="text-sm truncate">{field.label}</span>
+                                                        <div 
+                                                            key={field.id}
+                                                            onClick={(e) => { e.stopPropagation(); onSelectElement(field.id); }}
+                                                            className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${selectedId === field.id ? 'bg-blue-600/20 text-blue-400 font-medium' : 'text-zinc-500 dark:text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                                        >
+                                                            <div className="flex items-center gap-2 truncate">
+                                                                <QueueListIcon className="w-3.5 h-3.5 text-zinc-500/50" />
+                                                                <span className="text-sm truncate">{field.label}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); onDuplicateElement(field.id, 'field'); }}
+                                                                    className="opacity-0 group-hover/treeitem:opacity-100 p-1 hover:bg-blue-500/10 hover:text-blue-500 rounded transition-all"
+                                                                    title="Duplicate Field"
+                                                                >
+                                                                    <Square2StackIcon className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); onDeleteElement(field.id, 'field'); }}
+                                                                    className="opacity-0 group-hover/treeitem:opacity-100 p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-all"
+                                                                    title="Delete Field"
+                                                                >
+                                                                    <TrashIcon className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>

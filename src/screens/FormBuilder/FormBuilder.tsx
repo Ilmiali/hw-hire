@@ -24,10 +24,13 @@ const FormBuilder = () => {
     const addField = useFormBuilderStore(state => state.addField);
     const updateField = useFormBuilderStore(state => state.updateField);
     const deleteField = useFormBuilderStore(state => state.deleteField);
+    const duplicateField = useFormBuilderStore(state => state.duplicateField);
     const updateSection = useFormBuilderStore(state => state.updateSection);
     const deleteSection = useFormBuilderStore(state => state.deleteSection);
+    const duplicateSection = useFormBuilderStore(state => state.duplicateSection);
     const updatePage = useFormBuilderStore(state => state.updatePage);
     const deletePage = useFormBuilderStore(state => state.deletePage);
+    const duplicatePage = useFormBuilderStore(state => state.duplicatePage);
 
     const handleSave = () => {
         console.log('Form Schema:', JSON.stringify(form, null, 2));
@@ -150,6 +153,16 @@ const FormBuilder = () => {
                             }
                         });
                     }}
+                    onDeleteElement={(id, type) => {
+                        if (type === 'field') deleteField(id);
+                        if (type === 'section') deleteSection(id);
+                        if (type === 'page') deletePage(id);
+                    }}
+                    onDuplicateElement={(id, type) => {
+                        if (type === 'field') duplicateField(id);
+                        if (type === 'section') duplicateSection(id);
+                        if (type === 'page') duplicatePage(id);
+                    }}
                     selectedId={selectedElementId}
                 />
                 
@@ -169,6 +182,14 @@ const FormBuilder = () => {
                         onDrop={addField}
                         onReorderField={reorderField}
                         onReorderSection={reorderSection}
+                        onDelete={(id: string, type: 'field' | 'section') => {
+                            if (type === 'field') deleteField(id);
+                            if (type === 'section') deleteSection(id);
+                        }}
+                        onDuplicate={(id: string, type: 'field' | 'section') => {
+                            if (type === 'field') duplicateField(id);
+                            if (type === 'section') duplicateSection(id);
+                        }}
                     />
                 </div>
                 

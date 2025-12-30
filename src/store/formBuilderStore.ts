@@ -38,6 +38,7 @@ interface FormBuilderState {
     targetRowIndex: number,
     targetColumnIndex?: number
   ) => void;
+  duplicateField: (fieldId: string) => void;
 
   // Section Actions
   addSection: () => void;
@@ -45,11 +46,13 @@ interface FormBuilderState {
   deleteSection: (sectionId: string) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
   reorderSection: (sectionId: string, targetIndex: number) => void;
+  duplicateSection: (sectionId: string) => void;
 
   // Page Actions
   addPage: () => void;
   updatePage: (pageId: string, updates: Partial<FormPage>) => void;
   deletePage: (pageId: string) => void;
+  duplicatePage: (pageId: string) => void;
 
   // Rule Actions
   addRule: (rule: Rule) => void;
@@ -459,6 +462,37 @@ export const useFormBuilderStore = create<FormBuilderState>()(
           });
         }),
 
+      duplicateField: (fieldId) =>
+        set((state) => {
+          let found = false;
+          state.form.pages.forEach((page) => {
+            page.sections.forEach((section) => {
+              section.rows.forEach((row, rowIndex) => {
+                const fieldIndex = row.fields.findIndex((f) => f.id === fieldId);
+                if (fieldIndex !== -1 && !found) {
+                  const original = row.fields[fieldIndex];
+                  const clone: FormField = {
+                    ...original,
+                    id: uuidv4(),
+                    label: `${original.label} (Copy)`,
+                  };
+
+                  if (row.fields.length < 4) {
+                    row.fields.splice(fieldIndex + 1, 0, clone);
+                  } else {
+                    section.rows.splice(rowIndex + 1, 0, {
+                      id: uuidv4(),
+                      fields: [clone],
+                    });
+                  }
+                  state.selectedElementId = clone.id;
+                  found = true;
+                }
+              });
+            });
+          });
+        }),
+
       // --- Section Actions ---
 
       addSection: () =>
@@ -534,6 +568,32 @@ export const useFormBuilderStore = create<FormBuilderState>()(
           }
         }),
 
+      duplicateSection: (sectionId) =>
+        set((state) => {
+          let found = false;
+          state.form.pages.forEach((page) => {
+            const sectionIndex = page.sections.findIndex((s) => s.id === sectionId);
+            if (sectionIndex !== -1 && !found) {
+              const original = page.sections[sectionIndex];
+              const clone: FormSection = {
+                ...original,
+                id: uuidv4(),
+                title: `${original.title} (Copy)`,
+                rows: original.rows.map((row) => ({
+                  id: uuidv4(),
+                  fields: row.fields.map((field) => ({
+                    ...field,
+                    id: uuidv4(),
+                  })),
+                })),
+              };
+              page.sections.splice(sectionIndex + 1, 0, clone);
+              state.selectedElementId = clone.id;
+              found = true;
+            }
+          });
+        }),
+
       // --- Page Actions ---
 
       addPage: () =>
@@ -578,6 +638,34 @@ export const useFormBuilderStore = create<FormBuilderState>()(
           }
           if (state.selectedElementId === pageId) {
             state.selectedElementId = null;
+          }
+        }),
+
+      duplicatePage: (pageId) =>
+        set((state) => {
+          const index = state.form.pages.findIndex(p => p.id === pageId);
+          if (index !== -1) {
+            const original = state.form.pages[index];
+            const clone: FormPage = {
+              ...original,
+              id: uuidv4(),
+              title: `${original.title} (Copy)`,
+              sections: original.sections.map(section => ({
+                ...section,
+                id: uuidv4(),
+                rows: section.rows.map(row => ({
+                  ...row,
+                  id: uuidv4(),
+                  fields: row.fields.map(field => ({
+                    ...field,
+                    id: uuidv4()
+                  }))
+                }))
+              }))
+            };
+            state.form.pages.splice(index + 1, 0, clone);
+            state.activePageId = clone.id;
+            state.selectedElementId = clone.id;
           }
         }),
 
