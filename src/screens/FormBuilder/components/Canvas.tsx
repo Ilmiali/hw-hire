@@ -23,6 +23,7 @@ interface CanvasProps {
     onReorderSection: (sectionId: string, targetIndex: number) => void;
     onDelete: (id: string, type: 'field' | 'section') => void;
     onDuplicate: (id: string, type: 'field' | 'section') => void;
+    onDropToField: (parentId: string, type: FieldType, index?: number) => void;
 }
 
 const DropIndicator = ({ isVisible, orientation = 'vertical', text }: { isVisible: boolean; orientation?: 'horizontal' | 'vertical'; text?: string }) => {
@@ -64,9 +65,44 @@ const DropIndicator = ({ isVisible, orientation = 'vertical', text }: { isVisibl
     );
 };
 
-const FieldRenderer = ({ field, isSelected, onClick, onDelete, onDuplicate }: { field: FormField; isSelected: boolean; onClick: (e: React.MouseEvent) => void; onDelete: (e: React.MouseEvent) => void; onDuplicate: (e: React.MouseEvent) => void }) => {
+const FieldRenderer = ({ 
+    field, 
+    isSelected, 
+    selectedId,
+    onClick, 
+    onDelete, 
+    onDuplicate,
+    onDropToField 
+}: { 
+    field: FormField; 
+    isSelected: boolean; 
+    selectedId: string | null;
+    onClick: (e: React.MouseEvent) => void; 
+    onDelete: (e: React.MouseEvent) => void; 
+    onDuplicate: (e: React.MouseEvent) => void;
+    onDropToField: (parentId: string, type: FieldType, index?: number) => void;
+}) => {
     const [isDragging, setIsDragging] = React.useState(false);
+    const [isDragOver, setIsDragOver] = React.useState(false);
     const ghostRef = React.useRef<HTMLDivElement>(null);
+
+    const handleDragOver = (e: React.DragEvent) => {
+        if (!e.dataTransfer.types.includes('application/x-form-field-type')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(true);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+         if (!e.dataTransfer.types.includes('application/x-form-field-type')) return;
+         const type = e.dataTransfer.getData('application/x-form-field-type') as FieldType;
+         if (type) {
+             e.preventDefault();
+             e.stopPropagation();
+             onDropToField(field.id, type);
+             setIsDragOver(false);
+         }
+    };
 
     return (
         <>
@@ -192,13 +228,48 @@ const FieldRenderer = ({ field, isSelected, onClick, onDelete, onDuplicate }: { 
                             )}
                         </div>
                     )}
+
+                    {field.type === 'repeat' && (
+                        <div 
+                            className={`min-h-[100px] p-4 rounded-lg border-2 border-dashed transition-colors flex flex-col gap-2 pointer-events-auto ${isDragOver ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/50'}`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={() => setIsDragOver(false)}
+                            onDrop={handleDrop}
+                        >
+                             <div className="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <span className="text-lg">🔁</span> 
+                                Repeatable Fields Container
+                             </div>
+                             
+                             {field.fields && field.fields.length > 0 ? (
+                                <div className="flex flex-col gap-2">
+                                    {field.fields.map((child: FormField) => (
+                                        <FieldRenderer
+                                            key={child.id}
+                                            field={child}
+                                            isSelected={child.id === selectedId}
+                                            selectedId={selectedId}
+                                            onClick={onClick}
+                                            onDelete={onDelete}
+                                            onDuplicate={onDuplicate}
+                                            onDropToField={onDropToField}
+                                        />
+                                    ))}
+                                </div>
+                             ) : (
+                                <div className="flex-1 flex items-center justify-center text-zinc-400 text-sm italic">
+                                    Drop fields here to repeat
+                                </div>
+                             )}
+                        </div>
+                    )}
                 </div>
             </div>
         </>
     );
 };
 
-const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderField, onDelete, onDuplicate, sectionId }: { row: FormRow; rowIndex: number; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex: number) => void; onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex: number) => void; onDelete: (id: string, type: 'field' | 'section') => void; onDuplicate: (id: string, type: 'field' | 'section') => void; sectionId: string }) => {
+const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderField, onDelete, onDuplicate, onDropToField, sectionId }: { row: FormRow; rowIndex: number; selectedId: string | null; onSelect: (id: string) => void; onDrop: (type: FieldType, sectionId: string, rowIndex: number, colIndex: number) => void; onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex: number) => void; onDelete: (id: string, type: 'field' | 'section') => void; onDuplicate: (id: string, type: 'field' | 'section') => void; onDropToField: (parentId: string, type: FieldType, index?: number) => void; sectionId: string }) => {
     const [dragOverColIndex, setDragOverColIndex] = React.useState<number | null>(null);
     const rowRef = React.useRef<HTMLDivElement>(null);
 
@@ -257,9 +328,11 @@ const RowRenderer = ({ row, rowIndex, selectedId, onSelect, onDrop, onReorderFie
                     <FieldRenderer 
                         field={field} 
                         isSelected={field.id === selectedId}
+                        selectedId={selectedId}
                         onClick={(e) => { e.stopPropagation(); onSelect(field.id); }}
                         onDelete={(e) => { e.stopPropagation(); onDelete(field.id, 'field'); }}
                         onDuplicate={(e) => { e.stopPropagation(); onDuplicate(field.id, 'field'); }}
+                        onDropToField={onDropToField}
                     />
                 </React.Fragment>
             ))}
@@ -275,7 +348,8 @@ const SectionRenderer = ({
     onDrop, 
     onReorderField,
     onDelete,
-    onDuplicate
+    onDuplicate,
+    onDropToField
 }: { 
     section: FormSection; 
     selectedId: string | null; 
@@ -284,6 +358,7 @@ const SectionRenderer = ({
     onReorderField: (fieldId: string, sectionId: string, rowIndex: number, colIndex?: number) => void; 
     onDelete: (id: string, type: 'field' | 'section') => void;
     onDuplicate: (id: string, type: 'field' | 'section') => void;
+    onDropToField: (parentId: string, type: FieldType, index?: number) => void;
 }) => {
     const isSelected = section.id === selectedId;
     const [dragOverRowIndex, setDragOverRowIndex] = React.useState<number | null>(null);
@@ -419,6 +494,7 @@ const SectionRenderer = ({
                                 onReorderField={onReorderField}
                                 onDelete={onDelete}
                                 onDuplicate={onDuplicate}
+                                onDropToField={onDropToField}
                                 sectionId={section.id}
                             />
                             {dragOverRowIndex === rowIndex + 1 && <DropIndicator isVisible={true} text="New Row" />}
@@ -443,9 +519,10 @@ const Canvas = ({
     onSelect, 
     onDrop, 
     onReorderField, 
-    onReorderSection,
     onDelete,
-    onDuplicate 
+    onReorderSection,
+    onDuplicate,
+    onDropToField
 }: CanvasProps) => {
     const [dragOverSectionIndex, setDragOverSectionIndex] = React.useState<number | null>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
@@ -536,6 +613,7 @@ const Canvas = ({
                         onReorderField={onReorderField}
                         onDelete={onDelete}
                         onDuplicate={onDuplicate}
+                        onDropToField={onDropToField}
                     />
                     {dragOverSectionIndex === index + 1 && <DropIndicator isVisible={true} text="Move Section Here" />}
                 </React.Fragment>

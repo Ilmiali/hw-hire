@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useStore } from 'zustand';
 import { useFormBuilderStore } from '../../store/formBuilderStore';
+import { FormField } from '../../types/form-builder';
 import { LeftSidebar } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
@@ -53,15 +54,25 @@ const FormBuilder = () => {
     // Find the selected object for the properties panel
     let selectedElement: { type: 'field' | 'section' | 'page' | 'form', data: any } | null = null;
     
+    const findFieldRecursive = (fields: FormField[]): FormField | null => {
+        for (const field of fields) {
+            if (field.id === selectedElementId) return field;
+            if (field.fields) {
+                const found = findFieldRecursive(field.fields);
+                if (found) return found;
+            }
+        }
+        return null;
+    };
+
     if (selectedElementId) {
         form.pages.forEach(page => {
             if (page.id === selectedElementId) selectedElement = { type: 'page', data: page };
             page.sections.forEach(section => {
                 if (section.id === selectedElementId) selectedElement = { type: 'section', data: section };
                 section.rows.forEach(row => {
-                    row.fields.forEach(field => {
-                        if (field.id === selectedElementId) selectedElement = { type: 'field', data: field };
-                    });
+                    const foundField = findFieldRecursive(row.fields);
+                    if (foundField) selectedElement = { type: 'field', data: foundField };
                 });
             });
         });
@@ -136,15 +147,22 @@ const FormBuilder = () => {
                     onSelectElement={(id) => {
                         setSelectedElementId(id);
                         // Find which page this element belongs to and switch if needed
+                        // Find which page this element belongs to and switch if needed
+                        const findInFields = (fields: FormField[]): boolean => {
+                            for (const field of fields) {
+                                if (field.id === id) return true;
+                                if (field.fields && findInFields(field.fields)) return true;
+                            }
+                            return false;
+                        };
+
                         form.pages.forEach(page => {
                             let found = page.id === id;
                             if (!found) {
                                 page.sections.forEach(section => {
                                     if (section.id === id) found = true;
                                     section.rows.forEach(row => {
-                                        row.fields.forEach(field => {
-                                            if (field.id === id) found = true;
-                                        });
+                                        if (findInFields(row.fields)) found = true;
                                     });
                                 });
                             }
@@ -180,6 +198,7 @@ const FormBuilder = () => {
                             setSidebarOpen(true);
                         }}
                         onDrop={addField}
+                        onDropToField={useFormBuilderStore(state => state.addFieldToRepeat)}
                         onReorderField={reorderField}
                         onReorderSection={reorderSection}
                         onDelete={(id: string, type: 'field' | 'section') => {

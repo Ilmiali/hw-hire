@@ -217,6 +217,24 @@ export const fieldToZod = (field: FormField, isRequired: boolean): z.ZodTypeAny 
              }
              break;
 
+        case 'repeat':
+             const rowShape: Record<string, z.ZodTypeAny> = {};
+             field.fields?.forEach(child => {
+                 // Recursively generate schema for children
+                 // Note: We currently use static 'required' property for children 
+                 // as complex evaluateRules context is not yet passed down for nested repeats
+                 rowShape[child.id] = fieldToZod(child, child.required);
+             });
+
+             schema = z.array(z.object(rowShape));
+             
+             if (isRequired) {
+                 schema = (schema as z.ZodArray<any>).min(1, { message: 'At least one item is required' });
+             } else {
+                 schema = (schema as z.ZodArray<any>).optional();
+             }
+             break;
+
         case 'file':
              schema = z.array(z.any());
              if (isRequired) {

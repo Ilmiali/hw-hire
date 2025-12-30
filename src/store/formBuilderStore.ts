@@ -58,6 +58,9 @@ interface FormBuilderState {
   addRule: (rule: Rule) => void;
   updateRule: (ruleId: string, updates: Partial<Rule>) => void;
   deleteRule: (ruleId: string) => void;
+
+  // Repeat Field Actions
+  addFieldToRepeat: (parentId: string, type: FieldType, index?: number) => void;
 }
 
 const initialForm: FormSchema = {
@@ -323,18 +326,22 @@ export const useFormBuilderStore = create<FormBuilderState>()(
 
       updateField: (fieldId, updates) =>
         set((state) => {
+          const updateInFields = (fields: FormField[]) => {
+              const idx = fields.findIndex((f) => f.id === fieldId);
+              if (idx !== -1) {
+                  fields[idx] = { ...fields[idx], ...updates };
+                  return true;
+              }
+              for (const field of fields) {
+                  if (field.fields && updateInFields(field.fields)) return true;
+              }
+              return false;
+          };
+
           state.form.pages.forEach((page) => {
             page.sections.forEach((section) => {
               section.rows.forEach((row) => {
-                const fieldIndex = row.fields.findIndex(
-                  (f) => f.id === fieldId
-                );
-                if (fieldIndex !== -1) {
-                  row.fields[fieldIndex] = {
-                    ...row.fields[fieldIndex],
-                    ...updates,
-                  };
-                }
+                updateInFields(row.fields);
               });
             });
           });
@@ -342,10 +349,26 @@ export const useFormBuilderStore = create<FormBuilderState>()(
 
       deleteField: (fieldId) =>
         set((state) => {
+          const deleteInFields = (fields: FormField[]) => {
+              const idx = fields.findIndex(f => f.id === fieldId);
+              if (idx !== -1) {
+                  fields.splice(idx, 1);
+                  return true;
+              }
+              for (const field of fields) {
+                  if (field.fields && deleteInFields(field.fields)) return true;
+              }
+              return false;
+          };
+
           state.form.pages.forEach((page) => {
             page.sections.forEach((section) => {
               section.rows.forEach((row) => {
-                row.fields = row.fields.filter((f) => f.id !== fieldId);
+                 // Try to delete from top level
+                 if (!deleteInFields(row.fields)) {
+                     // If not found at top (or inside top), it might be inside a deeper struct if we had one,
+                     // but deleteInFields handles recursion.
+                 }
               });
               // Cleanup empty rows
               section.rows = section.rows.filter(
@@ -464,33 +487,137 @@ export const useFormBuilderStore = create<FormBuilderState>()(
 
       duplicateField: (fieldId) =>
         set((state) => {
-          let found = false;
+          const duplicateInFields = (fields: FormField[]): boolean => {
+              const idx = fields.findIndex(f => f.id === fieldId);
+              if (idx !== -1) {
+                  const original = fields[idx];
+                  
+                  // Helper to recursively regenerate IDs for duplicated nested fields
+                  const regenerateIds = (field: FormField): FormField => ({
+                      ...field,
+                      id: uuidv4(),
+                      fields: field.fields?.map(regenerateIds)
+                  });
+
+                  const clone: FormField = {
+                      ...regenerateIds(original),
+                      label: `${original.label} (Copy)`,
+                  };
+                  
+                  fields.splice(idx + 1, 0, clone);
+                  state.selectedElementId = clone.id;
+                  return true;
+              }
+              for (const field of fields) {
+                  if (field.fields && duplicateInFields(field.fields)) return true;
+              }
+              return false;
+          };
+
           state.form.pages.forEach((page) => {
             page.sections.forEach((section) => {
               section.rows.forEach((row, rowIndex) => {
-                const fieldIndex = row.fields.findIndex((f) => f.id === fieldId);
-                if (fieldIndex !== -1 && !found) {
-                  const original = row.fields[fieldIndex];
-                  const clone: FormField = {
-                    ...original,
-                    id: uuidv4(),
-                    label: `${original.label} (Copy)`,
-                  };
+                 if (!duplicateInFields(row.fields)) {
+                     // Check if we need to split row if it was a top level add?
+                     // The original logic checked row.fields.length < 4.
+                     // But if we are recursing, we are duplicating *inside* a container or just in the row.
+                     
+                     // If duplicateInFields returned true, it means it handled it. 
+                     // BUT, if it was at the top level of the row, we should perhaps respect the 4 col limit if it's a grid?
+                     // The original logic:
+                     /*
+                        if (row.fields.length < 4) {
+                            row.fields.splice(fieldIndex + 1, 0, clone);
+                        } else {
+                            section.rows.splice(rowIndex + 1, 0, { ... });
+                        }
+                     */
+                     // My recursive logic blindly inserts. 
+                     // To restore grid logic for top level items:
+                     const fieldIndex = row.fields.findIndex(f => f.id === fieldId);
+                     if (fieldIndex !== -1) {
+                         // It IS a top level item
+                         const original = row.fields[fieldIndex];
+                         const clone: FormField = {
+                             ...original,
+                             id: uuidv4(),
+                             label: `${original.label} (Copy)`,
+                             fields: original.fields // This needs ID regeneration too!
+                         };
+                         // Fix ID regeneration for top level clone
+                         const regenerateIds = (field: FormField): FormField => ({
+                            ...field,
+                            id: uuidv4(),
+                            fields: field.fields?.map(regenerateIds)
+                         });
+                         const finalClone = regenerateIds(clone);
+                         // Don't double copy the label suffix? regenerateIds creates new IDs but keeps other props. 
+                         // clone already has new ID.
+                         // Let's just use regenerateIds on the original and then update label.
+                         const cleanClone = { ...regenerateIds(original), label: `${original.label} (Copy)` };
 
-                  if (row.fields.length < 4) {
-                    row.fields.splice(fieldIndex + 1, 0, clone);
-                  } else {
-                    section.rows.splice(rowIndex + 1, 0, {
-                      id: uuidv4(),
-                      fields: [clone],
-                    });
-                  }
-                  state.selectedElementId = clone.id;
-                  found = true;
-                }
+                         if (row.fields.length < 4) {
+                             row.fields.splice(fieldIndex + 1, 0, cleanClone);
+                         } else {
+                             section.rows.splice(rowIndex + 1, 0, {
+                                 id: uuidv4(),
+                                 fields: [cleanClone]
+                             });
+                         }
+                         state.selectedElementId = cleanClone.id;
+                         return; // Done
+                     }
+                     // If not top level, try recursive
+                     for (const field of row.fields) {
+                         if (field.fields && duplicateInFields(field.fields)) return;
+                     }
+                 }
               });
             });
           });
+        }),
+
+      addFieldToRepeat: (parentId, type, index) =>
+        set((state) => {
+            const newField: FormField = {
+                id: uuidv4(),
+                type,
+                label: `New ${type} field`,
+                required: false,
+                placeholder: '',
+                options: ['select', 'radio', 'checkbox'].includes(type)
+                  ? [
+                      { label: 'Option 1', value: 'option-1' },
+                      { label: 'Option 2', value: 'option-2' },
+                    ]
+                  : undefined,
+            };
+
+            const addToParent = (fields: FormField[]): boolean => {
+                for (const field of fields) {
+                    if (field.id === parentId) {
+                        if (!field.fields) field.fields = [];
+                        if (index !== undefined) {
+                            field.fields.splice(index, 0, newField);
+                        } else {
+                            field.fields.push(newField);
+                        }
+                        return true;
+                    }
+                    if (field.fields && addToParent(field.fields)) return true;
+                }
+                return false;
+            };
+
+            state.form.pages.forEach(page => {
+                page.sections.forEach(section => {
+                    section.rows.forEach(row => {
+                        addToParent(row.fields);
+                    });
+                });
+            });
+            
+            state.selectedElementId = newField.id;
         }),
 
       // --- Section Actions ---

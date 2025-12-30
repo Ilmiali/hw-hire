@@ -113,13 +113,7 @@ export const FormPreview = () => {
         }
     };
 
-    const handleRemoveFile = (fieldId: string, index: number) => {
-        const currentFiles = Array.isArray(formValues[fieldId]) ? [...formValues[fieldId]] : [];
-        currentFiles.splice(index, 1);
-        const newValue = currentFiles.length > 0 ? currentFiles : undefined;
 
-        handleChange(fieldId, newValue);
-    };
 
     const validatePage = (pageIndex: number): boolean => {
          const page = form.pages[pageIndex];
@@ -202,12 +196,8 @@ export const FormPreview = () => {
     };
 
     // Helper to render field based on type
-    const renderField = (field: FormField) => {
-        // Skip if hidden
-        if (!visibleFieldIds.has(field.id)) return null;
-
-        const value = formValues[field.id] || '';
-        const isRequired = requiredFieldIds.has(field.id);
+    const renderFieldItem = (field: FormField, value: any, onChange: (val: any) => void) => {
+        const isRequired = requiredFieldIds.has(field.id) || field.required; // Fallback to static required for nested
 
         switch (field.type) {
             case 'text':
@@ -218,8 +208,8 @@ export const FormPreview = () => {
                     <Input 
                         type={field.type} 
                         placeholder={field.placeholder}
-                        value={value}
-                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        value={value || ''}
+                        onChange={(e) => onChange(e.target.value)}
                         required={isRequired}
                     />
                 );
@@ -227,16 +217,16 @@ export const FormPreview = () => {
                 return (
                     <Textarea 
                         placeholder={field.placeholder}
-                        value={value}
-                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        value={value || ''}
+                        onChange={(e) => onChange(e.target.value)}
                         required={isRequired}
                     />
                 );
             case 'select':
                 return (
                     <Select 
-                        value={value} 
-                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        value={value || ''} 
+                        onChange={(e) => onChange(e.target.value)}
                         required={isRequired}
                     >
                         <option value="" disabled>Select an option</option>
@@ -248,8 +238,8 @@ export const FormPreview = () => {
             case 'radio':
                 return (
                     <RadioGroup 
-                        value={value} 
-                        onChange={(val) => handleChange(field.id, val)}
+                        value={value || ''} 
+                        onChange={(val) => onChange(val)}
                     >
                         {field.options?.map(opt => (
                             <RadioField key={opt.value}>
@@ -277,7 +267,7 @@ export const FormPreview = () => {
                                                 const idx = currentArr.indexOf(opt.value);
                                                 if (idx > -1) currentArr.splice(idx, 1);
                                             }
-                                            handleChange(field.id, currentArr);
+                                            onChange(currentArr);
                                         }}
                                     />
                                     <Label>{opt.label}</Label>
@@ -287,7 +277,7 @@ export const FormPreview = () => {
                     </CheckboxGroup>
                 );
             case 'file':
-                const files = Array.isArray(formValues[field.id]) ? formValues[field.id] : [];
+                const files = Array.isArray(value) ? value : [];
                 return (
                     <div className="space-y-3">
                         <Input 
@@ -296,9 +286,9 @@ export const FormPreview = () => {
                             onChange={(e) => {
                                 const newFiles = Array.from(e.target.files || []);
                                 if (field.multiple) {
-                                    handleChange(field.id, [...files, ...newFiles]);
+                                    onChange([...files, ...newFiles]);
                                 } else {
-                                    handleChange(field.id, newFiles);
+                                    onChange(newFiles);
                                 }
                                 // Reset input so same files can be selected again
                                 e.target.value = '';
@@ -317,7 +307,11 @@ export const FormPreview = () => {
                                         </div>
                                         <button 
                                             type="button"
-                                            onClick={() => handleRemoveFile(field.id, idx)}
+                                            onClick={() => {
+                                                const newFiles = [...files];
+                                                newFiles.splice(idx, 1);
+                                                onChange(newFiles.length > 0 ? newFiles : undefined);
+                                            }}
                                             className="p-1 hover:bg-white/10 rounded-md text-zinc-500 hover:text-red-400 transition-colors"
                                             title="Remove file"
                                         >
@@ -356,9 +350,64 @@ export const FormPreview = () => {
                         )}
                     </div>
                 );
+            case 'repeat':
+                const items = (Array.isArray(value) ? value : []) as Record<string, any>[];
+                return (
+                    <div className="space-y-4">
+                        {items.map((itemValue, index) => (
+                            <div key={index} className="relative p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                <div className="absolute right-4 top-4">
+                                     <button 
+                                        type="button"
+                                        onClick={() => {
+                                            const newItems = [...items];
+                                            newItems.splice(index, 1);
+                                            onChange(newItems);
+                                        }}
+                                        className="text-zinc-400 hover:text-red-500 transition-colors p-1"
+                                        title="Remove item"
+                                    >
+                                        <XMarkIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                     {field.fields?.map(child => (
+                                         <div key={child.id} className="flex flex-col gap-1.5">
+                                             {!['paragraph', 'divider', 'spacer', 'image'].includes(child.type) && (
+                                                <Label className="text-zinc-700 dark:text-zinc-300">
+                                                    {child.label} {child.required && <span className="text-red-500">*</span>}
+                                                </Label>
+                                             )}
+                                             {renderFieldItem(child, itemValue[child.id], (childVal) => {
+                                                 const newItems = [...items];
+                                                 newItems[index] = { ...newItems[index], [child.id]: childVal };
+                                                 onChange(newItems);
+                                             })}
+                                         </div>
+                                     ))}
+                                </div>
+                            </div>
+                        ))}
+                        <Button 
+                            type="button" 
+                            onClick={() => onChange([...items, {}])}
+                            outline
+                            className="w-full border-dashed"
+                        >
+                            + Add {field.label || 'Item'}
+                        </Button>
+                    </div>
+                );
             default:
                 return null;
         }
+    };
+
+    const renderField = (field: FormField) => {
+        // Skip if hidden
+        if (!visibleFieldIds.has(field.id)) return null;
+
+        return renderFieldItem(field, formValues[field.id], (val) => handleChange(field.id, val));
     };
 
     // Helper just for current page validation
