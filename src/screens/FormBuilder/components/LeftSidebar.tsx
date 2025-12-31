@@ -136,7 +136,7 @@ export const LeftSidebar = ({
                         section.rows.forEach((row, rowIndex) => {
                             const fieldIndex = row.fields.findIndex(f => f.id === targetId);
                             if (fieldIndex !== -1 && !found) {
-                                onReorderField(draggedId, section.id, rowIndex, freshPosition === 'below' ? fieldIndex + 1 : fieldIndex);
+                                onReorderField(draggedId, section.id, rowIndex + (freshPosition === 'below' ? 1 : 0));
                                 found = true;
                             }
                         });

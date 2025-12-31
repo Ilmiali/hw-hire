@@ -204,7 +204,7 @@ const FormBuilder = () => {
                            onClick={() => setActivePageId(page.id)}
                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${activePageId === page.id ? 'bg-white dark:bg-zinc-800 text-blue-600 shadow-sm border border-zinc-200 dark:border-white/10' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'}`}
                        >
-                           Page {index + 1}
+                           {page.title}
                        </button>
                    ))}
                    <button
