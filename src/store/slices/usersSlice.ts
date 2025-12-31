@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { serializeDate } from '../../utils/serialization';
 import { getDatabaseService, Document } from '../../services/databaseService';
 
 export interface User {
@@ -7,8 +8,8 @@ export interface User {
   email: string;
   role: string;
   organizations: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface UsersState {
@@ -47,8 +48,8 @@ export const fetchUsers = createAsyncThunk(
         email: user.data.email as string,
         role: user.data.role as string,
         organizations: user.data.organizations as string[],
-        createdAt: user.createdAt || new Date(),
-        updatedAt: user.updatedAt || new Date()
+        createdAt: serializeDate(user.createdAt || new Date()) || new Date().toISOString(),
+        updatedAt: serializeDate(user.updatedAt || new Date()) || new Date().toISOString()
       })) as User[];
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -77,8 +78,8 @@ export const fetchUserById = createAsyncThunk(
         email: document.data.email as string,
         role: document.data.role as string,
         organizations: document.data.organizations as string[],
-        createdAt: document.createdAt || new Date(),
-        updatedAt: document.updatedAt || new Date()
+        createdAt: serializeDate(document.createdAt || new Date()) || new Date().toISOString(),
+        updatedAt: serializeDate(document.updatedAt || new Date()) || new Date().toISOString()
       } as User;
 
       return user;

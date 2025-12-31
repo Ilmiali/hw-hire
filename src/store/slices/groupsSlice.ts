@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { serializeDate } from '../../utils/serialization';
 import { getDatabaseService, Document as DbDocument } from '../../services/databaseService';
 import { Group } from '../../types/group';
 import { RootState } from '../index';
@@ -26,7 +27,9 @@ export const createGroup = createAsyncThunk(
       const document = await db.addDocument('groups', groupData);
       return {
         id: document.id,
-        ...groupData
+        ...groupData,
+        createdAt: serializeDate(groupData.createdAt) || new Date().toISOString(),
+        updatedAt: serializeDate(groupData.updatedAt) || new Date().toISOString()
       } as Group;
     } catch (error) {
       if (error instanceof Error) {
@@ -44,7 +47,12 @@ export const updateGroup = createAsyncThunk(
     try {
       const db = getDatabaseService();
       await db.updateDocument('groups', id, groupData);
-      return { id, ...groupData } as Group;
+      return { 
+        id, 
+        ...groupData,
+        createdAt: serializeDate(groupData.createdAt) || new Date().toISOString(),
+        updatedAt: serializeDate(groupData.updatedAt) || new Date().toISOString()
+      } as Group;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -83,8 +91,8 @@ export const fetchGroups = createAsyncThunk(
         totalNumApplications: (group.data.totalNumApplications || group.data.totalNumTickets) as number,
         description: group.data.description as string,
         members: (group.data.members as string[]).filter((member: string) => member !== group.data.owner),
-        createdAt: group.createdAt || new Date(),
-        updatedAt: group.updatedAt || new Date()
+        createdAt: serializeDate(group.createdAt || new Date()) || new Date().toISOString(),
+        updatedAt: serializeDate(group.updatedAt || new Date()) || new Date().toISOString()
       })) as Group[];
     } catch (error) {
       if (error instanceof Error) {
@@ -112,8 +120,8 @@ export const fetchGroupById = createAsyncThunk(
         organizationId: document.data.organizationId as string,
         totalNumApplications: (document.data.totalNumApplications || document.data.totalNumTickets) as number,
         members: document.data.members as string[],
-        createdAt: document.createdAt || new Date(),
-        updatedAt: document.updatedAt || new Date()
+        createdAt: serializeDate(document.createdAt || new Date()) || new Date().toISOString(),
+        updatedAt: serializeDate(document.updatedAt || new Date()) || new Date().toISOString()
       } as Group;
 
       return group;

@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { serializeDate } from '../../utils/serialization';
 import { Document as DbDocument, getDatabaseService } from '../../services/databaseService';
 import { Organization } from '../../types/organization';
 import { RootState } from '../index';
@@ -40,12 +41,12 @@ export const fetchUserOrganizations = createAsyncThunk(
       console.log('Fetched Organizations:', filteredOrgs);
 
       return filteredOrgs.map(org => ({
-        createdAt: org.createdAt || new Date(),
-        updatedAt: org.updatedAt || new Date(),
         id: org.id,
         name: org.data.name as string,
         members: [], // Members are now in a subcollection, providing empty array for now to match type
-        owner: org.data.owner as string
+        owner: org.data.owner as string,
+        createdAt: serializeDate(org.createdAt || new Date()) || new Date().toISOString(),
+        updatedAt: serializeDate(org.updatedAt || new Date()) || new Date().toISOString()
       }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch organizations';

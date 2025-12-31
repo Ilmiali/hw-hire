@@ -2,7 +2,7 @@ export interface OrgMembership {
   id: string; // Document ID (orgId)
   name: string;
   role: string;
-  joinedAt: Date;
+  joinedAt: string;
 }
 
 export interface User {

@@ -21,6 +21,6 @@ export interface Message {
     name?: string;
     avatar?: string;
   }[],
-  sentAt: Date;
+  sentAt: string;
   ticketId: string;
 }

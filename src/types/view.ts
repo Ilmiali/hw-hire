@@ -19,8 +19,8 @@ export interface View {
       value: string;
     };
   };
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DatabaseView {

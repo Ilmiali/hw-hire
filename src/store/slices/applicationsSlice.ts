@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { serializeDate } from '../../utils/serialization';
 import { getDatabaseService, Document as DbDocument } from '../../services/databaseService';
 import { Application } from '../../types/application';
 
@@ -27,7 +28,12 @@ export const fetchApplications = createAsyncThunk(
       const applications = await db.getDocuments<Application>('applications', {
         sortBy: { field: 'createdAt', order: 'desc' }
       });
-      return applications;
+      return applications.map(app => ({
+        ...app,
+        updatedAt: serializeDate(app.updatedAt) || new Date().toISOString(),
+        appliedAt: serializeDate(app.appliedAt || (app as any).createdAt) || new Date().toISOString(),
+        candidate: app.candidate || (app as any).from
+      })) as Application[];
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -49,7 +55,7 @@ export const fetchApplicationById = createAsyncThunk(
       }
       const application: Application = {
         id: document.id,
-        updatedAt: document.updatedAt,
+        updatedAt: serializeDate(document.updatedAt) || new Date().toISOString(),
         subject: (document.data as any).subject,
         status: (document.data as any).status,
         priority: (document.data as any).priority,
@@ -60,7 +66,7 @@ export const fetchApplicationById = createAsyncThunk(
         tags: (document.data as any).tags,
         // type: (document.data as any).type, // Not in interface
         // source: (document.data as any).source, // Not in interface
-        appliedAt: document.createdAt,
+        appliedAt: serializeDate(document.createdAt) || new Date().toISOString(),
         candidate: (document.data as any).candidate || (document.data as any).from, // Fallback for transition
       } as unknown as Application;
       
@@ -87,7 +93,12 @@ export const fetchApplicationsByGroupId = createAsyncThunk(
         constraints: [{ field: 'groupId', operator: '==', value: groupId }],
         sortBy: { field: 'createdAt', order: 'desc' }
       });
-      return applications;
+      return applications.map(app => ({
+        ...app,
+        updatedAt: serializeDate(app.updatedAt) || new Date().toISOString(),
+        appliedAt: serializeDate(app.appliedAt || (app as any).createdAt) || new Date().toISOString(),
+        candidate: app.candidate || (app as any).from
+      })) as Application[];
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -107,7 +118,12 @@ export const fetchApplicationsByMembers = createAsyncThunk(
         constraints: [{ field: 'assignedTo', operator: 'in', value: memberIds }],
         sortBy: { field: 'createdAt', order: 'desc' }
       });
-      return applications;
+      return applications.map(app => ({
+        ...app,
+        updatedAt: serializeDate(app.updatedAt) || new Date().toISOString(),
+        appliedAt: serializeDate(app.appliedAt || (app as any).createdAt) || new Date().toISOString(),
+        candidate: app.candidate || (app as any).from
+      })) as Application[];
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -145,7 +161,7 @@ export const listenToApplicationChanges = createAsyncThunk(
           const doc = document as any;
           const application: Application = {
             id: doc.id,
-            updatedAt: doc.updatedAt,
+            updatedAt: serializeDate(doc.updatedAt) || new Date().toISOString(),
             subject: doc.data.subject,
             status: doc.data.status,
             priority: doc.data.priority,
@@ -156,7 +172,7 @@ export const listenToApplicationChanges = createAsyncThunk(
             tags: doc.data.tags,
             // type: doc.data.type,
             // source: doc.data.source,
-            appliedAt: doc.createdAt,
+            appliedAt: serializeDate(doc.createdAt) || new Date().toISOString(),
             candidate: doc.data.candidate || doc.data.from,
           } as unknown as Application;
           

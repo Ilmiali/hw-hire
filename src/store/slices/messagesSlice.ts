@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { serializeDate } from '../../utils/serialization';
 
 import { getDatabaseService, Document } from '../../services/databaseService';
 import { Message } from '../../types/message';
@@ -28,7 +29,7 @@ export const fetchMessagesByApplicationId = createAsyncThunk(
       const messages = payload.map(item => {
         return {
           id: item.id,
-          sentAt: item.createdAt,
+          sentAt: serializeDate(item.createdAt) || new Date().toISOString(),
           content: item.data.body,
           cc: item.data.cc,
           bcc: item.data.bcc,

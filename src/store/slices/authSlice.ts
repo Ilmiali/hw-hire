@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -12,8 +12,28 @@ import { User } from '../../types/user';
 import { getDatabaseService, Document } from '../../services/databaseService';
 import { fetchUserOrganizations } from './organizationSlice';
 
+export interface SerializableUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  providerId: string;
+  emailVerified: boolean;
+  isAnonymous: boolean;
+}
+
+const mapUserToSerializable = (user: FirebaseUser): SerializableUser => ({
+  uid: user.uid,
+  email: user.email,
+  displayName: user.displayName,
+  photoURL: user.photoURL,
+  providerId: user.providerId,
+  emailVerified: user.emailVerified,
+  isAnonymous: user.isAnonymous,
+});
+
 interface AuthState {
-  user: FirebaseUser | null;
+  user: SerializableUser | null;
   userData: User | null;
   loading: boolean;
   error: string | null;
@@ -32,7 +52,7 @@ export const loginUser = createAsyncThunk(
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      return mapUserToSerializable(userCredential.user);
     } catch (error) {
       const authError = error as AuthError;
       return rejectWithValue(authError.message);
@@ -45,7 +65,7 @@ export const registerUser = createAsyncThunk(
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      return mapUserToSerializable(userCredential.user);
     } catch (error) {
       const authError = error as AuthError;
       return rejectWithValue(authError.message);
@@ -84,8 +104,8 @@ export const fetchCurrentUser = createAsyncThunk(
         name: doc.data.name as string || '',
         role: doc.data.role as string || '',
         joinedAt: doc.data.joinedAt instanceof Object && 'toDate' in doc.data.joinedAt 
-          ? (doc.data.joinedAt as any).toDate() 
-          : new Date(doc.data.joinedAt as string || Date.now())
+          ? (doc.data.joinedAt as any).toDate().toISOString() 
+          : new Date(doc.data.joinedAt as string || Date.now()).toISOString()
       }));
 
       // Map document data to User type
@@ -117,7 +137,8 @@ export const initializeAuth = createAsyncThunk(
   async (_, { dispatch }) => {
     return new Promise<void>((resolve) => {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        dispatch(setUser(user));
+        const serializableUser = user ? mapUserToSerializable(user) : null;
+        dispatch(setUser(serializableUser));
         
         if (user) {
           // If user is logged in, fetch their data
@@ -141,7 +162,7 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action) => {
+    setUser: (state, action: PayloadAction<SerializableUser | null>) => {
       state.user = action.payload;
       if (!action.payload) {
         state.userData = null;
@@ -204,7 +225,7 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       })
       // Fetch Current User
-      .addCase(fetchCurrentUser.pending, (state) => {
+      .addCase(fetchCurrentUser.pending, () => {
         // We might not want to set global loading here to avoid full page screen blocks if it's a background fetch
         // dependent on UX requirements. For now, we'll keep it simple.
       })

@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { serializeDate } from '../../utils/serialization';
 import { getDatabaseService } from '../../services/databaseService';
 import { Form, FormVersion } from '../../types/forms';
 import { FormSchema } from '../../types/form-builder';
@@ -30,14 +31,14 @@ const mapDocumentToForm = (doc: any): Form => ({
   description: doc.data?.description || '',
   status: doc.data?.status || 'active',
   publishedVersionId: doc.data?.publishedVersionId,
-  createdAt: doc.createdAt?.toISOString?.() || doc.data?.createdAt || new Date().toISOString(),
-  updatedAt: doc.updatedAt?.toISOString?.() || doc.data?.updatedAt || new Date().toISOString(),
+  createdAt: serializeDate(doc.createdAt) || (serializeDate(doc.data?.createdAt) as string) || new Date().toISOString(),
+  updatedAt: serializeDate(doc.updatedAt) || (serializeDate(doc.data?.updatedAt) as string) || new Date().toISOString(),
 });
 
 const mapDocumentToVersion = (doc: any): FormVersion => ({
   id: doc.id,
   data: doc.data?.data || doc.data || {} as FormSchema, // Handle case where it's mistakenly flat or nested
-  createdAt: doc.createdAt?.toISOString?.() || doc.data?.createdAt || new Date().toISOString(),
+  createdAt: serializeDate(doc.createdAt) || (serializeDate(doc.data?.createdAt) as string) || new Date().toISOString(),
 });
 
 // Helper to sanitize data for Firestore (remove undefined values)

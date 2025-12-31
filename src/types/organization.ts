@@ -6,6 +6,6 @@ export interface Organization {
     email: string;
     role: 'admin' | 'member';
   }[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 } 

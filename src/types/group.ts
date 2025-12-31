@@ -6,6 +6,6 @@ export interface Group extends Entity {
   organizationId: string;
   totalNumApplications: number;
   members: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 } 

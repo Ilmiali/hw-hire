@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { serializeDate } from '../../utils/serialization';
 import { Document as DbDocument, getDatabaseService } from '../../services/databaseService';
 import { View, DatabaseView } from '../../types/view';
 import { Group } from '../../types/group';
@@ -49,8 +50,8 @@ export const fetchOrganizationViews = createAsyncThunk(
             totalNumApplications: (groupDoc.data.totalNumApplications || groupDoc.data.totalNumTickets) as number,
             organizationId: groupDoc.data.organizationId as string,
             members: groupDoc.data.members as string[],
-            createdAt: groupDoc.createdAt || new Date(),
-            updatedAt: groupDoc.updatedAt || new Date()
+            createdAt: serializeDate(groupDoc.createdAt || new Date()) || new Date().toISOString(),
+            updatedAt: serializeDate(groupDoc.updatedAt || new Date()) || new Date().toISOString()
           } as Group;
         }));
         
@@ -62,8 +63,8 @@ export const fetchOrganizationViews = createAsyncThunk(
         const totalNumApplications = validGroups.reduce((sum, group) => sum + (group.totalNumApplications || 0), 0);
         const {owner, members} = view.data as {owner: string, members: string[]};
         return {
-          createdAt: view.createdAt || new Date(),
-          updatedAt: view.updatedAt || new Date(),
+          createdAt: serializeDate(view.createdAt || new Date()) || new Date().toISOString(),
+          updatedAt: serializeDate(view.updatedAt || new Date()) || new Date().toISOString(),
           owner: owner,
           id: view.id,
           layout: view.data.layout as View['layout'],
@@ -138,8 +139,9 @@ export const updateView = createAsyncThunk(
   async ({ id, data }: { id: string; data: Partial<View> }, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
+      const { createdAt, updatedAt, ...restData } = data;
       const updateData: Partial<DatabaseView> = {
-        ...data,
+        ...restData,
         groups: data.groups ? (data.groups as Group[]).map(group => group.id) : undefined,
         updatedAt: new Date()
       };

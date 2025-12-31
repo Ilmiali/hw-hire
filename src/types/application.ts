@@ -7,8 +7,8 @@ export interface Application {
   groupId: string;
   priority: string;
   tags: string[];
-  updatedAt: Date;
-  appliedAt: Date;
+  updatedAt: string;
+  appliedAt: string;
   assignedTo?: string | null;
   candidate: {
     email: string;
