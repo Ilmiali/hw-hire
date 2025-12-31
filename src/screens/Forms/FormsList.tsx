@@ -11,6 +11,7 @@ import NProgress from 'nprogress';
 import { DatabaseTable } from '../../database-components/databaseTable';
 import { Field } from '../../data-components/dataTable';
 import { Form } from '../../types/forms';
+import { Dialog, DialogActions, DialogDescription, DialogTitle } from '../../components/dialog';
 
 type FormDoc = Omit<Form, 'createdAt' | 'updatedAt'> & { 
   createdAt?: Date;
@@ -44,6 +45,8 @@ export default function FormsList() {
   const dispatch = useDispatch<AppDispatch>();
   const [isCreating, setIsCreating] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [formToDelete, setFormToDelete] = useState<FormDoc | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Memoize queryOptions to prevent infinite re-fetching in DatabaseTable
   const queryOptions = useMemo(() => ({}), []);
@@ -69,6 +72,23 @@ export default function FormsList() {
     } finally {
        setIsCreating(false);
        NProgress.done();
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!orgId || !formToDelete) return;
+    
+    setIsDeleting(true);
+    NProgress.start();
+    try {
+      await dispatch(deleteForm({ orgId, formId: formToDelete.id })).unwrap();
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error("Failed to delete form", error);
+    } finally {
+      NProgress.done();
+      setIsDeleting(false);
+      setFormToDelete(null);
     }
   };
 
@@ -101,21 +121,26 @@ export default function FormsList() {
             if (action === 'edit' || action === 'view') {
               navigate(`/orgs/${orgId}/forms/${item.id}`);
             } else if (action === 'delete') {
-              if (window.confirm('Are you sure you want to delete this form?')) {
-                NProgress.start();
-                try {
-                  await dispatch(deleteForm({ orgId, formId: item.id })).unwrap();
-                  setRefreshKey(prev => prev + 1);
-                } catch (error) {
-                  console.error("Failed to delete form", error);
-                } finally {
-                  NProgress.done();
-                }
-              }
+              setFormToDelete(item);
             }
           }}
         />
       </div>
+
+      <Dialog open={!!formToDelete} onClose={() => setFormToDelete(null)}>
+        <DialogTitle>Delete Form</DialogTitle>
+        <DialogDescription>
+          Are you sure you want to delete form "{formToDelete?.name}"? This action cannot be undone.
+        </DialogDescription>
+        <DialogActions>
+          <Button plain onClick={() => setFormToDelete(null)} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={handleDeleteConfirm} loading={isDeleting}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
