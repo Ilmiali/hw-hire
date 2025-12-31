@@ -11,7 +11,7 @@ import { Checkbox, CheckboxField, CheckboxGroup } from '../../../components/chec
 import { Label } from '../../../components/fieldset'; // Assuming Label is here, will verify in next step
 import { Heading } from '../../../components/heading';
 import { Text } from '../../../components/text';
-import { TrashIcon, Square2StackIcon } from '@heroicons/react/20/solid';
+import { TrashIcon, Square2StackIcon, PlusIcon } from '@heroicons/react/20/solid';
 
 interface CanvasProps {
     page: FormPage;
@@ -649,8 +649,21 @@ const Canvas = ({
             ))}
             
             {page.sections.length === 0 && (
-                 <div className="border-2 border-dashed border-zinc-200 dark:border-white/10 rounded-2xl p-20 flex flex-col items-center justify-center text-center bg-zinc-50/50 dark:bg-white/5">
-                    <p className="text-zinc-500 dark:text-zinc-400">Add a section to start adding fields</p>
+                 <div className="border-2 border-dashed border-zinc-200 dark:border-white/10 rounded-3xl p-12 flex flex-col items-center justify-center text-center bg-zinc-50/50 dark:bg-white/5 max-w-2xl mx-auto mt-8">
+                    <div className="w-16 h-16 bg-zinc-100 dark:bg-white/10 rounded-2xl flex items-center justify-center mb-6">
+                        <PlusIcon className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">Build your form</h3>
+                    <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-sm">
+                        Every form starts with sections. Add your first section to begin building your custom form.
+                    </p>
+                    <button
+                        onClick={() => onAddSection(0)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 active:scale-95"
+                    >
+                        <PlusIcon className="w-4 h-4" />
+                        Add First Section
+                    </button>
                 </div>
             )}
         </div>
