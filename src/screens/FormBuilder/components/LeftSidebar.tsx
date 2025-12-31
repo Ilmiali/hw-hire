@@ -136,6 +136,13 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, on
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <button 
+                                                onClick={(e) => { e.stopPropagation(); onSelectElement(page.id); onAddSection(); }}
+                                                className="opacity-0 group-hover/treeitem:opacity-100 p-1 hover:bg-blue-500/10 hover:text-blue-500 rounded transition-all"
+                                                title="Add Section to Page"
+                                            >
+                                                <PlusIcon className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button 
                                                 onClick={(e) => { e.stopPropagation(); onDuplicateElement(page.id, 'page'); }}
                                                 className="opacity-0 group-hover/treeitem:opacity-100 p-1 hover:bg-blue-500/10 hover:text-blue-500 rounded transition-all"
                                                 title="Duplicate Page"
@@ -219,22 +226,15 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, on
                         </div>
 
                         {/* Quick Add Actions in Tree */}
-                         <div className="pt-4 mt-4 border-t border-zinc-100 dark:border-white/5 space-y-2">
-                            <button 
-                                onClick={onAddPage}
-                                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors"
-                            >
-                                <PlusIcon className="w-3.5 h-3.5" />
-                                Add Page
-                            </button>
+                          <div className="pt-4 mt-4 border-t border-zinc-100 dark:border-white/5 space-y-2">
                              <button 
-                                onClick={onAddSection}
-                                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors"
-                            >
-                                <PlusIcon className="w-3.5 h-3.5" />
-                                Add Section
-                            </button>
-                         </div>
+                                 onClick={onAddPage}
+                                 className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors"
+                             >
+                                 <PlusIcon className="w-3.5 h-3.5" />
+                                 Add Page
+                             </button>
+                          </div>
                     </div>
                 )}
 
