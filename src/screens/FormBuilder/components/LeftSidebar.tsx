@@ -11,7 +11,7 @@ interface LeftSidebarProps {
     onDeleteElement: (id: string, type: 'field' | 'section' | 'page') => void;
     onDuplicateElement: (id: string, type: 'field' | 'section' | 'page') => void;
     onReorderPage: (id: string, targetIndex: number) => void;
-    onReorderSection: (id: string, targetIndex: number) => void;
+    onReorderSection: (id: string, targetIndex: number, targetPageId?: string) => void;
     onReorderField: (id: string, targetSectionId: string, targetRowIndex: number, targetColumnIndex?: number) => void;
     selectedId: string | null;
 }
@@ -64,8 +64,14 @@ export const LeftSidebar = ({
         setDropPosition(null);
     };
 
-    const handleDragOver = (e: React.DragEvent, id: string, type: 'page' | 'section' | 'field') => {
-        if (draggedType !== type) return;
+    const handleDragOver = (e: React.DragEvent, id: string, targetType: 'page' | 'section' | 'field') => {
+        const isValidDrop = 
+            draggedType === targetType || 
+            (draggedType === 'section' && targetType === 'page') ||
+            (draggedType === 'field' && targetType === 'section');
+
+        if (!isValidDrop) return;
+        
         e.preventDefault();
         e.stopPropagation();
         const rect = e.currentTarget.getBoundingClientRect();
@@ -91,37 +97,66 @@ export const LeftSidebar = ({
         setDropPosition(null);
         setDraggedType(null);
 
-        if (!draggedId || draggedId === targetId || draggedType !== targetType) return;
+        if (!draggedId || draggedId === targetId) return;
 
-        if (draggedType === 'page' && targetType === 'page') {
-            const targetIndex = form.pages.findIndex(p => p.id === targetId);
-            const finalIndex = freshPosition === 'below' ? targetIndex + 1 : targetIndex;
-            onReorderPage(draggedId, finalIndex);
-        } else if (draggedType === 'section' && targetType === 'section') {
-            const targetPage = form.pages.find(p => p.sections.some(s => s.id === targetId));
-            if (targetPage) {
-                const targetIndex = targetPage.sections.findIndex(s => s.id === targetId);
+        // --- Page Drops ---
+        if (targetType === 'page') {
+            if (draggedType === 'page') {
+                const targetIndex = form.pages.findIndex(p => p.id === targetId);
                 const finalIndex = freshPosition === 'below' ? targetIndex + 1 : targetIndex;
-                onReorderSection(draggedId, finalIndex);
+                onReorderPage(draggedId, finalIndex);
+            } else if (draggedType === 'section') {
+                // Moving section to a page (appends/inserts)
+                const targetIndex = freshPosition === 'below' ? form.pages.find(p => p.id === targetId)?.sections.length || 0 : 0;
+                onReorderSection(draggedId, targetIndex, targetId);
             }
-        } else if (draggedType === 'field' && targetType === 'field') {
-            let found = false;
-            form.pages.forEach(page => {
-                page.sections.forEach(section => {
-                    section.rows.forEach((row, rowIndex) => {
-                        const fieldIndex = row.fields.findIndex(f => f.id === targetId);
-                        if (fieldIndex !== -1 && !found) {
-                            onReorderField(draggedId, section.id, rowIndex, freshPosition === 'below' ? fieldIndex + 1 : fieldIndex);
-                            found = true;
-                        }
+        } 
+        
+        // --- Section Drops ---
+        else if (targetType === 'section') {
+            if (draggedType === 'section') {
+                const targetPage = form.pages.find(p => p.sections.some(s => s.id === targetId));
+                if (targetPage) {
+                    const targetIndex = targetPage.sections.findIndex(s => s.id === targetId);
+                    const finalIndex = freshPosition === 'below' ? targetIndex + 1 : targetIndex;
+                    onReorderSection(draggedId, finalIndex, targetPage.id);
+                }
+            } else if (draggedType === 'field') {
+                // Moving field to a section
+                onReorderField(draggedId, targetId, freshPosition === 'below' ? 999 : 0);
+            }
+        } 
+        
+        // --- Field Drops ---
+        else if (targetType === 'field') {
+            if (draggedType === 'field') {
+                let found = false;
+                form.pages.forEach(page => {
+                    page.sections.forEach(section => {
+                        section.rows.forEach((row, rowIndex) => {
+                            const fieldIndex = row.fields.findIndex(f => f.id === targetId);
+                            if (fieldIndex !== -1 && !found) {
+                                onReorderField(draggedId, section.id, rowIndex, freshPosition === 'below' ? fieldIndex + 1 : fieldIndex);
+                                found = true;
+                            }
+                        });
                     });
                 });
-            });
+            }
         }
     };
 
-    const getDragOverClass = (id: string, type: 'page' | 'section' | 'field') => {
-        if (dragOverId !== id || draggedType !== type) return '';
+    const getDragOverClass = (id: string, targetType: 'page' | 'section' | 'field') => {
+        if (dragOverId !== id) return '';
+        
+        // Only show indicator if types match OR if we allow cross-container drop
+        const isValidDrop = 
+            draggedType === targetType || 
+            (draggedType === 'section' && targetType === 'page') ||
+            (draggedType === 'field' && targetType === 'section');
+
+        if (!isValidDrop) return '';
+        
         return dropPosition === 'above' ? 'border-t-2 border-blue-500 shadow-[0_-2px_0_0_#3b82f6]' : 'border-b-2 border-blue-500 shadow-[0_2px_0_0_#3b82f6]';
     };
 

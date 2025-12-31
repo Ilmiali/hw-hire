@@ -45,7 +45,7 @@ interface FormBuilderState {
   updateSection: (sectionId: string, updates: Partial<FormSection>) => void;
   deleteSection: (sectionId: string) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
-  reorderSection: (sectionId: string, targetIndex: number) => void;
+  reorderSection: (sectionId: string, targetIndex: number, targetPageId?: string) => void;
   duplicateSection: (sectionId: string) => void;
 
   // Page Actions
@@ -679,7 +679,7 @@ export const useFormBuilderStore = create<FormBuilderState>()(
           });
         }),
 
-      reorderSection: (sectionId, targetIndex) =>
+      reorderSection: (sectionId, targetIndex, targetPageId) =>
         set((state) => {
           let sourceSection: FormSection | null = null;
 
@@ -693,8 +693,9 @@ export const useFormBuilderStore = create<FormBuilderState>()(
 
           if (!sourceSection) return;
 
-          // Insert into active page
-          const page = state.form.pages.find((p) => p.id === state.activePageId);
+          // Insert into target page
+          const pageId = targetPageId || state.activePageId;
+          const page = state.form.pages.find((p) => p.id === pageId);
           if (page) {
             page.sections.splice(targetIndex, 0, sourceSection);
           }
