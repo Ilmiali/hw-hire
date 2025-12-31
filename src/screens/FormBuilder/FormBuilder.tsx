@@ -47,6 +47,7 @@ const FormBuilder = () => {
     const duplicatePage = useFormBuilderStore(state => state.duplicatePage);
     const reorderField = useFormBuilderStore(state => state.reorderField);
     const reorderSection = useFormBuilderStore(state => state.reorderSection);
+    const reorderPage = useFormBuilderStore(state => state.reorderPage);
     const addSection = useFormBuilderStore(state => state.addSection);
     const addPage = useFormBuilderStore(state => state.addPage);
 
@@ -281,6 +282,9 @@ const FormBuilder = () => {
                         if (type === 'section') duplicateSection(id);
                         if (type === 'page') duplicatePage(id);
                     }}
+                    onReorderPage={reorderPage}
+                    onReorderSection={reorderSection}
+                    onReorderField={reorderField}
                     selectedId={selectedElementId}
                 />
                 

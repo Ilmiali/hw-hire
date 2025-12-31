@@ -10,6 +10,9 @@ interface LeftSidebarProps {
     onSelectElement: (id: string) => void;
     onDeleteElement: (id: string, type: 'field' | 'section' | 'page') => void;
     onDuplicateElement: (id: string, type: 'field' | 'section' | 'page') => void;
+    onReorderPage: (id: string, targetIndex: number) => void;
+    onReorderSection: (id: string, targetIndex: number) => void;
+    onReorderField: (id: string, targetSectionId: string, targetRowIndex: number, targetColumnIndex?: number) => void;
     selectedId: string | null;
 }
 
@@ -30,9 +33,97 @@ const fieldTypes: { type: FieldType; label: string; icon: string }[] = [
     { type: 'repeat', label: 'Repeat Group', icon: '🔁' },
 ];
 
-export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, onDeleteElement, onDuplicateElement, selectedId }: LeftSidebarProps) => {
+export const LeftSidebar = ({ 
+    form, 
+    onAddSection, 
+    onAddPage, 
+    onSelectElement, 
+    onDeleteElement, 
+    onDuplicateElement,
+    onReorderPage,
+    onReorderSection,
+    onReorderField,
+    selectedId 
+}: LeftSidebarProps) => {
     const [activeTab, setActiveTab] = useState<'elements' | 'tree' | 'rules'>('elements');
     const [searchTerm, setSearchTerm] = useState('');
+    const [dragOverId, setDragOverId] = useState<string | null>(null);
+    const [dropPosition, setDropPosition] = useState<'above' | 'below' | null>(null);
+    const [draggedType, setDraggedType] = useState<'page' | 'section' | 'field' | null>(null);
+
+    const handleDragStart = (e: React.DragEvent, id: string, type: 'page' | 'section' | 'field') => {
+        e.dataTransfer.setData('reorder-id', id);
+        e.dataTransfer.setData('reorder-type', type);
+        e.dataTransfer.effectAllowed = 'move';
+        setDraggedType(type);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedType(null);
+        setDragOverId(null);
+        setDropPosition(null);
+    };
+
+    const handleDragOver = (e: React.DragEvent, id: string, type: 'page' | 'section' | 'field') => {
+        if (draggedType !== type) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        const position = e.clientY < midpoint ? 'above' : 'below';
+        
+        setDragOverId(id);
+        setDropPosition(position);
+    };
+
+    const handleDrop = (e: React.DragEvent, targetId: string, targetType: 'page' | 'section' | 'field') => {
+        e.preventDefault();
+        e.stopPropagation();
+        const draggedId = e.dataTransfer.getData('reorder-id');
+        const draggedType = e.dataTransfer.getData('reorder-type') as 'page' | 'section' | 'field';
+        
+        // Calculate fresh position to ensure it matches indicator
+        const rect = e.currentTarget.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        const freshPosition = e.clientY < midpoint ? 'above' : 'below';
+
+        setDragOverId(null);
+        setDropPosition(null);
+        setDraggedType(null);
+
+        if (!draggedId || draggedId === targetId || draggedType !== targetType) return;
+
+        if (draggedType === 'page' && targetType === 'page') {
+            const targetIndex = form.pages.findIndex(p => p.id === targetId);
+            const finalIndex = freshPosition === 'below' ? targetIndex + 1 : targetIndex;
+            onReorderPage(draggedId, finalIndex);
+        } else if (draggedType === 'section' && targetType === 'section') {
+            const targetPage = form.pages.find(p => p.sections.some(s => s.id === targetId));
+            if (targetPage) {
+                const targetIndex = targetPage.sections.findIndex(s => s.id === targetId);
+                const finalIndex = freshPosition === 'below' ? targetIndex + 1 : targetIndex;
+                onReorderSection(draggedId, finalIndex);
+            }
+        } else if (draggedType === 'field' && targetType === 'field') {
+            let found = false;
+            form.pages.forEach(page => {
+                page.sections.forEach(section => {
+                    section.rows.forEach((row, rowIndex) => {
+                        const fieldIndex = row.fields.findIndex(f => f.id === targetId);
+                        if (fieldIndex !== -1 && !found) {
+                            onReorderField(draggedId, section.id, rowIndex, freshPosition === 'below' ? fieldIndex + 1 : fieldIndex);
+                            found = true;
+                        }
+                    });
+                });
+            });
+        }
+    };
+
+    const getDragOverClass = (id: string, type: 'page' | 'section' | 'field') => {
+        if (dragOverId !== id || draggedType !== type) return '';
+        return dropPosition === 'above' ? 'border-t-2 border-blue-500 shadow-[0_-2px_0_0_#3b82f6]' : 'border-b-2 border-blue-500 shadow-[0_2px_0_0_#3b82f6]';
+    };
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-white/10 w-80">
@@ -125,8 +216,17 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, on
                         
                         <div className="space-y-1">
                             {form.pages.map(page => (
-                                <div key={page.id} className="space-y-1">
+                                <div 
+                                    key={page.id} 
+                                    className={`space-y-1 transition-all ${getDragOverClass(page.id, 'page')}`}
+                                    onDragOver={(e) => handleDragOver(e, page.id, 'page')}
+                                    onDragLeave={() => setDragOverId(null)}
+                                    onDrop={(e) => handleDrop(e, page.id, 'page')}
+                                >
                                     <div 
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, page.id, 'page')}
+                                        onDragEnd={handleDragEnd}
                                         className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === page.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
                                         onClick={() => onSelectElement(page.id)}
                                     >
@@ -162,8 +262,17 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, on
                                     </div>
                                     <div className="pl-4 space-y-1 border-l border-zinc-100 dark:border-zinc-800 ml-3">
                                         {page.sections.map(section => (
-                                            <div key={section.id} className="space-y-1">
+                                            <div 
+                                                key={section.id} 
+                                                className={`space-y-1 transition-all ${getDragOverClass(section.id, 'section')}`}
+                                                onDragOver={(e) => handleDragOver(e, section.id, 'section')}
+                                                onDragLeave={() => setDragOverId(null)}
+                                                onDrop={(e) => handleDrop(e, section.id, 'section')}
+                                            >
                                                 <div 
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, section.id, 'section')}
+                                                    onDragEnd={handleDragEnd}
                                                     className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${selectedId === section.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-300'}`}
                                                     onClick={() => onSelectElement(section.id)}
                                                 >
@@ -192,8 +301,14 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, on
                                                     {section.rows.flatMap(r => r.fields).map((field) => (
                                                         <div 
                                                             key={field.id}
+                                                            draggable
+                                                            onDragStart={(e) => handleDragStart(e, field.id, 'field')}
+                                                            onDragEnd={handleDragEnd}
+                                                            onDragOver={(e) => handleDragOver(e, field.id, 'field')}
+                                                            onDragLeave={() => setDragOverId(null)}
+                                                            onDrop={(e) => handleDrop(e, field.id, 'field')}
                                                             onClick={(e) => { e.stopPropagation(); onSelectElement(field.id); }}
-                                                            className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${selectedId === field.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'}`}
+                                                            className={`group/treeitem flex items-center justify-between gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all ${getDragOverClass(field.id, 'field')} ${selectedId === field.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'}`}
                                                         >
                                                             <div className="flex items-center gap-2 truncate">
                                                                 <QueueListIcon className="w-3.5 h-3.5 text-zinc-500/50" />
@@ -239,7 +354,7 @@ export const LeftSidebar = ({ form, onAddSection, onAddPage, onSelectElement, on
                 )}
 
                 {activeTab === 'rules' && (
-                     <RulesSidebar />
+                    <RulesSidebar />
                 )}
             </div>
         </div>

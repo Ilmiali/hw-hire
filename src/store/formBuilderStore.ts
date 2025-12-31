@@ -53,6 +53,7 @@ interface FormBuilderState {
   updatePage: (pageId: string, updates: Partial<FormPage>) => void;
   deletePage: (pageId: string) => void;
   duplicatePage: (pageId: string) => void;
+  reorderPage: (pageId: string, targetIndex: number) => void;
 
   // Rule Actions
   addRule: (rule: Rule) => void;
@@ -797,6 +798,15 @@ export const useFormBuilderStore = create<FormBuilderState>()(
             state.form.pages.splice(index + 1, 0, clone);
             state.activePageId = clone.id;
             state.selectedElementId = clone.id;
+          }
+        }),
+
+      reorderPage: (pageId, targetIndex) =>
+        set((state) => {
+          const pageIndex = state.form.pages.findIndex(p => p.id === pageId);
+          if (pageIndex !== -1) {
+            const [movedPage] = state.form.pages.splice(pageIndex, 1);
+            state.form.pages.splice(targetIndex, 0, movedPage);
           }
         }),
 
