@@ -71,7 +71,7 @@ export function MembersTable({ members, onMembersChange, ownerId }: MembersTable
         entities={members}
         fields={memberFields}
         title="Team Members"
-        showChips={true}
+        showChips={false}
         addButtonText="Add Members"
         onEntitiesChange={onMembersChange}
         onAdd={() => setIsAddDialogOpen(true)}

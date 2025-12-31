@@ -1,4 +1,4 @@
-import { UserCircleIcon, Cog6ToothIcon, BellIcon, UserGroupIcon, ChatBubbleLeftRightIcon, FunnelIcon, EyeIcon } from '@heroicons/react/20/solid';
+import { UserCircleIcon, Cog6ToothIcon, BellIcon, UserGroupIcon, ChatBubbleLeftRightIcon, FunnelIcon, EyeIcon, UsersIcon } from '@heroicons/react/20/solid';
 import { AccountSettings } from './AccountSettings';
 import { PreferencesSettings } from './PreferencesSettings';
 import { NotificationsSettings } from './NotificationsSettings';
@@ -6,6 +6,7 @@ import { GroupsSettings } from './GroupsSettings';
 import { ChannelsSettings } from './ChannelsSettings';
 import { FiltersSettings } from './FiltersSettings';
 import { ViewsSettings } from './ViewsSettings';
+import { MembersSettings } from './MembersSettings';
 import { ReactNode, ComponentType } from 'react';
 
 interface SettingsSection {
@@ -58,4 +59,10 @@ export const settingsSections: SettingsSection[] = [
     icon: <EyeIcon className="w-5 h-5" />,
     component: ViewsSettings
   },
-]; 
+  { 
+    key: 'members', 
+    label: 'Members', 
+    icon: <UsersIcon className="w-5 h-5" />,
+    component: MembersSettings
+  },
+];
