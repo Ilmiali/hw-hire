@@ -231,14 +231,37 @@ const formsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+      .addCase(fetchFormById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchFormById.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentForm = action.payload;
       })
+      .addCase(fetchFormById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchLatestVersion.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(fetchLatestVersion.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentVersion = action.payload;
       })
+      .addCase(fetchLatestVersion.rejected, (state) => {
+        state.loading = false;
+      })
+      .addCase(fetchFormDraft.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(fetchFormDraft.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentVersion = action.payload; // mapped draft is essentially a version
+      })
+      .addCase(fetchFormDraft.rejected, (state) => {
+        state.loading = false;
       })
       .addCase(saveFormDraft.fulfilled, (state, action) => {
           state.currentVersion = action.payload.version;

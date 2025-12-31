@@ -1,19 +1,21 @@
 import { Button } from '../../components/button';
 import { Heading } from '../../components/heading';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/table';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PlusIcon } from '@heroicons/react/16/solid';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '../../components/badge';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchForms, createForm } from '../../store/slices/formsSlice';
+import NProgress from 'nprogress';
 
 export default function FormsList() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { forms, loading } = useSelector((state: RootState) => state.forms);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     if (orgId) {
@@ -24,14 +26,24 @@ export default function FormsList() {
   const handleCreateForm = async () => {
     if (!orgId) return;
     
-    const result = await dispatch(createForm({ 
-      orgId, 
-      name: 'New Form', 
-      description: '' 
-    })).unwrap();
+    setIsCreating(true);
+    NProgress.start();
     
-    if (result.id) {
-      navigate(`/orgs/${orgId}/forms/${result.id}`);
+    try {
+      const result = await dispatch(createForm({ 
+        orgId, 
+        name: 'New Form', 
+        description: '' 
+      })).unwrap();
+      
+      if (result.id) {
+        navigate(`/orgs/${orgId}/forms/${result.id}`);
+      }
+    } catch (error) {
+       console.error("Failed to create form", error);
+    } finally {
+       setIsCreating(false);
+       NProgress.done();
     }
   };
 
@@ -39,9 +51,9 @@ export default function FormsList() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <Heading>Forms</Heading>
-        <Button onClick={handleCreateForm}>
+        <Button onClick={handleCreateForm} disabled={isCreating}>
           <PlusIcon />
-          Create Form
+          {isCreating ? 'Creating...' : 'Create Form'}
         </Button>
       </div>
 

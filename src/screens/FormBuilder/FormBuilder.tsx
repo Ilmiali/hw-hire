@@ -48,6 +48,7 @@ const FormBuilder = () => {
     const reorderField = useFormBuilderStore(state => state.reorderField);
     const reorderSection = useFormBuilderStore(state => state.reorderSection);
     const reorderPage = useFormBuilderStore(state => state.reorderPage);
+    const addFieldToRepeat = useFormBuilderStore(state => state.addFieldToRepeat);
     const addSection = useFormBuilderStore(state => state.addSection);
     const addPage = useFormBuilderStore(state => state.addPage);
 
@@ -57,7 +58,9 @@ const FormBuilder = () => {
             dispatch(fetchFormById({ orgId, formId }));
         }
         return () => {
-            dispatch(clearCurrentForm());
+			dispatch(clearCurrentForm());
+            // Reset the zustand store so next time we open a form it doesn't flash the old one
+            useFormBuilderStore.getState().reset();
         };
     }, [dispatch, orgId, formId]);
 
@@ -158,6 +161,23 @@ const FormBuilder = () => {
                 });
             });
         });
+    }
+
+    // Access global loading state
+    const { loading } = useSelector((state: RootState) => state.forms);
+
+    if (loading) {
+        return (
+            <div className="flex flex-col h-screen w-full bg-white dark:bg-zinc-950 items-center justify-center">
+                <div className="text-zinc-500 dark:text-zinc-400 flex flex-col items-center gap-2">
+                    <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Loading Form...</span>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -303,7 +323,7 @@ const FormBuilder = () => {
                         }}
                         onDrop={addField}
                         onAddSection={addSection}
-                        onDropToField={useFormBuilderStore(state => state.addFieldToRepeat)}
+                        onDropToField={addFieldToRepeat}
                         onReorderField={reorderField}
                         onReorderSection={reorderSection}
                         onDelete={(id: string, type: 'field' | 'section') => {
