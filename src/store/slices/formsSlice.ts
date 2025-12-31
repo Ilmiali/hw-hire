@@ -206,6 +206,19 @@ export const publishForm = createAsyncThunk(
   }
 );
 
+export const deleteForm = createAsyncThunk(
+  'forms/deleteForm',
+  async ({ orgId, formId }: { orgId: string; formId: string }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      await db.deleteDocument(getFormsPath(orgId), formId);
+      return formId;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to delete form');
+    }
+  }
+);
+
 const formsSlice = createSlice({
   name: 'forms',
   initialState,
@@ -270,6 +283,9 @@ const formsSlice = createSlice({
       })
       .addCase(createForm.fulfilled, (state, action) => {
         state.forms.unshift(action.payload);
+      })
+      .addCase(deleteForm.fulfilled, (state, action) => {
+        state.forms = state.forms.filter(f => f.id !== action.payload);
       });
   },
 });

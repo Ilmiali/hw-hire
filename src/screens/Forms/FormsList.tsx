@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '../../components/badge';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../store';
-import { createForm } from '../../store/slices/formsSlice';
+import { createForm, deleteForm } from '../../store/slices/formsSlice';
 import NProgress from 'nprogress';
 import { DatabaseTable } from '../../database-components/databaseTable';
 import { Field } from '../../data-components/dataTable';
@@ -19,7 +19,7 @@ type FormDoc = Omit<Form, 'createdAt' | 'updatedAt'> & {
 };
 
 const fields: Field<FormDoc>[] = [
-  { key: 'name', label: 'Name', sortable: true },
+  { key: 'name', label: 'Name', sortable: true, isLink: true },
   { 
     key: 'status', 
     label: 'Status',
@@ -43,6 +43,7 @@ export default function FormsList() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const [isCreating, setIsCreating] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Memoize queryOptions to prevent infinite re-fetching in DatabaseTable
   const queryOptions = useMemo(() => ({}), []);
@@ -85,19 +86,32 @@ export default function FormsList() {
 
       <div className="flex-1 min-h-0">
          <DatabaseTable<FormDoc>
+          key={refreshKey}
           collection={`orgs/${orgId}/modules/hire/forms`}
           fields={fields}
           pageSize={15}
           selectable={false}
           sticky
-          isLink
-          actions={['edit']}
+          isLink={false}
+          actions={['edit', 'delete']}
           queryOptions={queryOptions}
           defaultSortField="updatedAt"
           defaultSortOrder="desc"
-          onAction={(action, item) => {
+          onAction={async (action, item) => {
             if (action === 'edit' || action === 'view') {
               navigate(`/orgs/${orgId}/forms/${item.id}`);
+            } else if (action === 'delete') {
+              if (window.confirm('Are you sure you want to delete this form?')) {
+                NProgress.start();
+                try {
+                  await dispatch(deleteForm({ orgId, formId: item.id })).unwrap();
+                  setRefreshKey(prev => prev + 1);
+                } catch (error) {
+                  console.error("Failed to delete form", error);
+                } finally {
+                  NProgress.done();
+                }
+              }
             }
           }}
         />

@@ -1,4 +1,5 @@
 import { Dropdown, DropdownButton, DropdownItem, DropdownMenu } from '../components/dropdown'
+import clsx from 'clsx'
 import { Badge } from '../components/badge'
 import { Checkbox } from '../components/checkbox'
 import { EllipsisHorizontalIcon } from '@heroicons/react/16/solid'
@@ -10,6 +11,7 @@ export type Field<T = Record<string, unknown>> = {
   label: string
   type?: 'text' | 'badge' | 'checkbox' | 'actions' | 'date',
   sortable?: boolean,
+  isLink?: boolean,
   render?: (item: T) => React.ReactNode
 }
 
@@ -37,6 +39,7 @@ export function DataTable<T extends { id: string; url?: string }>({
   fields,
   selectable = false,
   sticky = false,
+  isLink = false,
   sortField,
   sortOrder,
   onSort,
@@ -66,7 +69,18 @@ export function DataTable<T extends { id: string; url?: string }>({
 
   const renderCell = (field: Field<T>, item: T) => {
     if (field.render) {
-      return field.render(item)
+      const content = field.render(item)
+      return field.isLink ? (
+        <div 
+          onClick={(e) => {
+            e.stopPropagation()
+            onAction?.('view', item)
+          }}
+          className="cursor-pointer hover:underline underline-offset-4 decoration-zinc-400 dark:decoration-zinc-500"
+        >
+          {content}
+        </div>
+      ) : content
     }
 
     const value = item[field.key as keyof T]
@@ -109,7 +123,18 @@ export function DataTable<T extends { id: string; url?: string }>({
           </div>
         )
       default:
-        return String(value)
+        const content = String(value)
+        return field.isLink ? (
+          <span 
+            onClick={(e) => {
+              e.stopPropagation()
+              onAction?.('view', item)
+            }}
+            className="cursor-pointer hover:underline underline-offset-4 decoration-zinc-400 dark:decoration-zinc-500 font-medium"
+          >
+            {content}
+          </span>
+        ) : content
     }
   }
 
@@ -134,8 +159,11 @@ export function DataTable<T extends { id: string; url?: string }>({
         {data.map((item) => (
           <TableRow 
             key={item.id} 
-            onClick={() => onAction?.('view', item)}
-            className={selectedId === item.id ? 'bg-zinc-100 dark:bg-zinc-700' : ''}
+            onClick={isLink ? () => onAction?.('view', item) : undefined}
+            className={clsx(
+              selectedId === item.id ? 'bg-zinc-100 dark:bg-zinc-700' : '',
+              isLink ? 'cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50' : ''
+            )}
           >
             {selectable && (
               <TableCell>
