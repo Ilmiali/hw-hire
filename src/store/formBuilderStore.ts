@@ -9,7 +9,7 @@ interface FormBuilderState {
   form: FormSchema;
   activePageId: string;
   selectedElementId: string | null;
-  sidebarOpen: boolean;
+  isInitialized: boolean;
 
   // Global Actions
   setForm: (form: FormSchema) => void;
@@ -90,6 +90,7 @@ export const useFormBuilderStore = create<FormBuilderState>()(
   temporal(
     immer((set) => ({
       form: initialForm,
+      isInitialized: false,
       activePageId: initialForm.pages[0].id,
       selectedElementId: null,
       sidebarOpen: true,
@@ -97,6 +98,7 @@ export const useFormBuilderStore = create<FormBuilderState>()(
       setForm: (form) =>
         set((state) => {
           state.form = form;
+          state.isInitialized = true;
           // Reset active page if current not in new form, or just set to first
           if (!form.pages.find((p) => p.id === state.activePageId)) {
             state.activePageId = form.pages[0]?.id || '';
@@ -705,6 +707,7 @@ export const useFormBuilderStore = create<FormBuilderState>()(
       reset: () =>
         set((state) => {
           state.form = initialForm;
+          state.isInitialized = false;
           state.activePageId = initialForm.pages[0].id;
           state.selectedElementId = null;
           state.sidebarOpen = true; 
