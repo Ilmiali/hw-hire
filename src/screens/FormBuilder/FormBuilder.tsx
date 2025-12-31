@@ -1,22 +1,33 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from 'zustand';
 import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { FormField } from '../../types/form-builder';
 import { LeftSidebar } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { fetchFormById, saveFormDraft, publishForm, clearCurrentForm, fetchFormDraft } from '../../store/slices/formsSlice';
+import { useEffect, useState } from 'react';
 
 const FormBuilder = () => {
-    // Access state
+    const { orgId, formId } = useParams<{ orgId: string; formId: string }>();
+    const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
+    
+    const { currentForm, currentVersion } = useSelector((state: RootState) => state.forms);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
+
+    // Access zustand state
     const form = useFormBuilderStore(state => state.form);
     const activePageId = useFormBuilderStore(state => state.activePageId);
     const selectedElementId = useFormBuilderStore(state => state.selectedElementId);
     const isRightSidebarOpen = useFormBuilderStore(state => state.sidebarOpen);
 
     // Access actions
+    const setForm = useFormBuilderStore(state => state.setForm);
     const setTitle = useFormBuilderStore(state => state.setTitle);
-
     const setActivePageId = useFormBuilderStore(state => state.setActivePageId);
     const setSelectedElementId = useFormBuilderStore(state => state.setSelectedElementId);
     const setSidebarOpen = useFormBuilderStore(state => state.setSidebarOpen);
@@ -32,21 +43,87 @@ const FormBuilder = () => {
     const updatePage = useFormBuilderStore(state => state.updatePage);
     const deletePage = useFormBuilderStore(state => state.deletePage);
     const duplicatePage = useFormBuilderStore(state => state.duplicatePage);
-
-    const handleSave = () => {
-        console.log('Form Schema:', JSON.stringify(form, null, 2));
-        alert('Form saved! Check console for JSON.');
-    };
     const reorderField = useFormBuilderStore(state => state.reorderField);
     const reorderSection = useFormBuilderStore(state => state.reorderSection);
     const addSection = useFormBuilderStore(state => state.addSection);
     const addPage = useFormBuilderStore(state => state.addPage);
+
+    // Load form data
+    useEffect(() => {
+        if (orgId && formId) {
+            dispatch(fetchFormById({ orgId, formId }));
+        }
+        return () => {
+            dispatch(clearCurrentForm());
+        };
+    }, [dispatch, orgId, formId]);
+
+    useEffect(() => {
+        if (orgId && formId) {
+            dispatch(fetchFormDraft({ orgId, formId }));
+        }
+    }, [dispatch, orgId, formId]);
+
+    useEffect(() => {
+        if (currentVersion?.data) {
+            setForm(currentVersion.data);
+            // Explicitly set title if it differs (though it should be in data)
+            if (currentVersion.data.title) {
+                setTitle(currentVersion.data.title);
+            }
+        } else if (currentForm) {
+            // Fallback if no version found (should be rare now with createForm fix)
+            setForm({
+                id: formId!,
+                title: currentForm.name,
+                pages: [
+                    {
+                        id: 'page-1',
+                        title: 'Page 1',
+                        sections: []
+                    }
+                ],
+                rules: []
+            });
+            setTitle(currentForm.name);
+        }
+    }, [currentVersion, currentForm, setForm, setTitle, formId]);
+
+    const handleSave = async () => {
+        if (!orgId || !formId) return;
+        setIsSaving(true);
+        try {
+            // Ensure title is up to date in the form object before saving
+            // (Zustand store should be up to date, but just in case)
+            await dispatch(saveFormDraft({ orgId, formId, data: form })).unwrap();
+            alert('Form draft saved!');
+        } catch (error: any) {
+            console.error('Save failed:', error);
+            alert('Failed to save: ' + (error?.message || error || 'Unknown error'));
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handlePublish = async () => {
+        if (!orgId || !formId) return;
+        setIsPublishing(true);
+        try {
+            await dispatch(saveFormDraft({ orgId, formId, data: form })).unwrap();
+            await dispatch(publishForm({ orgId, formId })).unwrap();
+            alert('Form published successfully!');
+        } catch (error: any) {
+            alert('Failed to publish: ' + error.message);
+        } finally {
+            setIsPublishing(false);
+        }
+    };
     
     // Temporal (Undo/Redo)
     const temporalStore = useFormBuilderStore.temporal;
     const { undo: handleUndo, redo: handleRedo } = temporalStore.getState();
-    const pastStatesLength = useStore(temporalStore, (state) => state.pastStates.length);
-    const futureStatesLength = useStore(temporalStore, (state) => state.futureStates.length);
+    const pastStatesLength = useStore(temporalStore, (state: any) => state.pastStates.length);
+    const futureStatesLength = useStore(temporalStore, (state: any) => state.futureStates.length);
 
     // Helpers to find current page index
     const activePageIndex = Math.max(0, form.pages.findIndex(p => p.id === activePageId));
@@ -124,16 +201,24 @@ const FormBuilder = () => {
                 
                 <div className="flex gap-2">
                     <button 
-                        onClick={() => navigate('/form-builder/preview')}
+                        onClick={() => navigate(`/orgs/${orgId}/forms/${formId}/preview`)}
                         className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-zinc-200 dark:border-white/10"
                     >
                         Preview
                     </button>
                     <button 
                         onClick={handleSave}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
+                        disabled={isSaving}
+                        className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-zinc-200 dark:border-white/10 disabled:opacity-50"
                     >
-                        Save Form
+                        {isSaving ? 'Saving...' : 'Save Draft'}
+                    </button>
+                    <button 
+                        onClick={handlePublish}
+                        disabled={isPublishing}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                        {isPublishing ? 'Publishing...' : 'Publish'}
                     </button>
                 </div>
             </header>
@@ -146,8 +231,6 @@ const FormBuilder = () => {
                     onAddPage={addPage}
                     onSelectElement={(id) => {
                         setSelectedElementId(id);
-                        // Find which page this element belongs to and switch if needed
-                        // Find which page this element belongs to and switch if needed
                         const findInFields = (fields: FormField[]): boolean => {
                             for (const field of fields) {
                                 if (field.id === id) return true;

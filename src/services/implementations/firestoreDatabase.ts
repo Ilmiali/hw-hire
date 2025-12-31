@@ -12,6 +12,7 @@ import {
   limit as firestoreLimit,
   startAfter,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot
@@ -76,6 +77,23 @@ export class FirestoreDatabase implements Database {
     
     return {
       id: docRef.id,
+      data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  async setDocument(collectionName: string, id: string, data: Record<string, unknown>): Promise<Document> {
+    const docRef = doc(this.db, collectionName, id);
+    await setDoc(docRef, {
+      ...data,
+      createdAt: new Date(), // We might want to preserve original createdAt if it exists in data, but for now new Date
+      updatedAt: new Date()
+    }, { merge: true }); // Merge true to behave like upsert/update
+    
+    // For set, we usually want to return what we wrote.
+    return {
+      id,
       data,
       createdAt: new Date(),
       updatedAt: new Date()

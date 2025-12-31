@@ -1,12 +1,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { FormField, FormPage } from '../../types/form-builder';
 import { PageHeader } from './components/PageHeader';
 import { evaluateRules } from '../../utils/evaluateRules';
 import { buildZodSchema } from '../../utils/validation';
 import { z } from 'zod';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { fetchFormById, fetchFormDraft } from '../../store/slices/formsSlice';
 
 // UI Components
 import { Input } from '../../components/input';
@@ -21,11 +24,41 @@ import { Button } from '../../components/button';
 import { XMarkIcon } from '@heroicons/react/20/solid';
 
 export const FormPreview = () => {
+    const { orgId, formId } = useParams<{ orgId: string; formId: string }>();
+    const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
+    
+    const { currentForm, currentVersion } = useSelector((state: RootState) => state.forms);
     const form = useFormBuilderStore(state => state.form);
+    const setForm = useFormBuilderStore(state => state.setForm);
+
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [formValues, setFormValues] = useState<Record<string, any>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Load form data if navigation was direct
+    useEffect(() => {
+        if (orgId && formId && (!currentForm || currentForm.id !== formId)) {
+            dispatch(fetchFormById({ orgId, formId }));
+        }
+    }, [dispatch, orgId, formId, currentForm]);
+
+    useEffect(() => {
+        if (orgId && formId) {
+             // If we have a published version, we could prefer that, but for "Preview" 
+             // usually users want to see the latest draft if they are editing.
+             // However, strictly speaking "Preview this form" might mean different things.
+             // Given the bug report "previewing forms is not working", and likely they are in builder,
+             // let's try to fetch the most recent version first.
+            dispatch(fetchFormDraft({ orgId, formId }));
+        }
+    }, [dispatch, orgId, formId]);
+
+    useEffect(() => {
+        if (currentVersion?.data && form.id !== formId) {
+            setForm(currentVersion.data);
+        }
+    }, [currentVersion, setForm, formId, form.id]);
 
     const currentPage = form.pages[currentPageIndex];
     const isFirstPage = currentPageIndex === 0;
@@ -433,7 +466,7 @@ export const FormPreview = () => {
                     <span className="bg-blue-100 dark:bg-blue-500/20 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border border-blue-200 dark:border-blue-500/30">Preview Mode</span>
                     <Text className="text-sm text-blue-700 dark:text-blue-200">This is how your form will look to users.</Text>
                 </div>
-                <Button onClick={() => navigate('/form-builder')} outline>
+                <Button onClick={() => navigate(`/orgs/${orgId}/forms/${formId}`)} outline>
                     Back to Editor
                 </Button>
             </div>

@@ -6,6 +6,8 @@ import organizationReducer from './slices/organizationSlice';
 import viewsReducer from './slices/viewsSlice';
 import groupsReducer from './slices/groupsSlice';
 
+import formsReducer from './slices/formsSlice';
+
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -14,6 +16,7 @@ export const store = configureStore({
     organization: organizationReducer,
     views: viewsReducer,
     groups: groupsReducer,
+    forms: formsReducer,
   },
 });
 

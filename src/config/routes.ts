@@ -9,6 +9,7 @@ import {
   EyeIcon,
   QueueListIcon,
   BriefcaseIcon,
+  DocumentIcon,
 } from '@heroicons/react/16/solid';
 import Dashboard from '../screens/Dashboard';
 import Profile from '../screens/Profile';
@@ -22,6 +23,7 @@ import JobPipelineBoard from '../screens/Pipeline/JobPipelineBoard';
 import JobsListPage from '../screens/Jobs/JobsListPage';
 import JobCreatePage from '../screens/Jobs/JobCreatePage';
 import JobDetailPage from '../screens/Jobs/JobDetailPage';
+import FormsList from '../screens/Forms/FormsList';
 import { RouteConfig, RouteGroup } from '../types/routes';
 
 // Public routes (no authentication required)
@@ -55,7 +57,7 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
   {
-    path: '/orgs/:orgId/form-builder/preview',
+    path: '/orgs/:orgId/forms/:formId/preview',
     name: 'Form Preview',
     icon: EyeIcon,
     component: FormPreview,
@@ -96,6 +98,14 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
   {
+    path: '/orgs/:orgId/forms/:formId',
+    name: 'Form Builder',
+    icon: SparklesIcon,
+    component: FormBuilder,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
     path: '/orgs/:orgId/dashboard',
     name: 'Organization Dashboard',
     icon: HomeIcon,
@@ -121,10 +131,10 @@ export const mainRoutes: RouteGroup[] = [
         isAuthProtected: true,
       },
       {
-        path: '/orgs/:orgId/form-builder',
-        name: 'Form Builder',
-        icon: SparklesIcon,
-        component: FormBuilder,
+        path: '/orgs/:orgId/forms',
+        name: 'Forms',
+        icon: DocumentIcon,
+        component: FormsList,
         layout: 'authenticated',
         isAuthProtected: true,
       },

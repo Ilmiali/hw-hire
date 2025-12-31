@@ -67,6 +67,11 @@ export class DatabaseService {
     return doc as T;
   }
 
+  public async setDocument<T>(collection: string, id: string, data: Omit<T, 'id'>): Promise<T> {
+    const doc = await this.database.setDocument(collection, id, data);
+    return doc as T;
+  }
+
   private sortDocuments(docs: Document[], field: string, order: SortOrder): Document[] {
     return [...docs].sort((a, b) => {
       const aValue = (a as any)[field];
