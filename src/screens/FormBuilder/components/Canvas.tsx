@@ -24,7 +24,32 @@ interface CanvasProps {
     onDelete: (id: string, type: 'field' | 'section') => void;
     onDuplicate: (id: string, type: 'field' | 'section') => void;
     onDropToField: (parentId: string, type: FieldType, index?: number) => void;
+    onAddSection: (index?: number) => void;
 }
+
+const AddSectionTrigger = ({ onClick }: { onClick: () => void }) => {
+    return (
+        <div className="relative h-12 group/trigger flex items-center justify-center z-20">
+            {/* Hover area */}
+            <div className="absolute inset-0" />
+            
+            {/* The line */}
+            <div className="absolute inset-x-0 h-px bg-zinc-200 dark:bg-zinc-800 opacity-0 group-hover/trigger:opacity-100 transition-opacity" />
+            
+            {/* The button */}
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick();
+                }}
+                className="relative opacity-0 group-hover/trigger:opacity-100 transition-all scale-90 group-hover/trigger:scale-100 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-blue-500 hover:text-blue-600 text-zinc-500 dark:text-zinc-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm flex items-center gap-1.5"
+            >
+                <span className="text-sm leading-none">+</span>
+                Add Section
+            </button>
+        </div>
+    );
+};
 
 const DropIndicator = ({ isVisible, orientation = 'vertical', text }: { isVisible: boolean; orientation?: 'horizontal' | 'vertical'; text?: string }) => {
     if (!isVisible) return null;
@@ -522,7 +547,8 @@ const Canvas = ({
     onDelete,
     onReorderSection,
     onDuplicate,
-    onDropToField
+    onDropToField,
+    onAddSection
 }: CanvasProps) => {
     const [dragOverSectionIndex, setDragOverSectionIndex] = React.useState<number | null>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
@@ -586,7 +612,7 @@ const Canvas = ({
 
     return (
         <div 
-            className="max-w-5xl mx-auto space-y-12 pb-32"
+            className="max-w-5xl mx-auto space-y-4 pb-32"
             onDragOver={handleDragOver}
             onDragLeave={() => setDragOverSectionIndex(null)}
             onDrop={handleDrop}
@@ -600,6 +626,8 @@ const Canvas = ({
                 setDescription={(description) => onUpdatePage({ description })}
                 setCover={(cover) => onUpdatePage({ cover } as any)}
             />
+
+            <AddSectionTrigger onClick={() => onAddSection(0)} />
 
             {dragOverSectionIndex === 0 && <DropIndicator isVisible={true} text="Move Section Here" />}
 
@@ -616,6 +644,7 @@ const Canvas = ({
                         onDropToField={onDropToField}
                     />
                     {dragOverSectionIndex === index + 1 && <DropIndicator isVisible={true} text="Move Section Here" />}
+                    <AddSectionTrigger onClick={() => onAddSection(index + 1)} />
                 </React.Fragment>
             ))}
             

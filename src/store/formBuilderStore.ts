@@ -41,7 +41,7 @@ interface FormBuilderState {
   duplicateField: (fieldId: string) => void;
 
   // Section Actions
-  addSection: () => void;
+  addSection: (index?: number) => void;
   updateSection: (sectionId: string, updates: Partial<FormSection>) => void;
   deleteSection: (sectionId: string) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
@@ -622,7 +622,7 @@ export const useFormBuilderStore = create<FormBuilderState>()(
 
       // --- Section Actions ---
 
-      addSection: () =>
+      addSection: (index) =>
         set((state) => {
           const newSection: FormSection = {
             id: uuidv4(),
@@ -631,7 +631,11 @@ export const useFormBuilderStore = create<FormBuilderState>()(
           };
           const page = state.form.pages.find((p) => p.id === state.activePageId);
           if (page) {
-            page.sections.push(newSection);
+            if (index !== undefined) {
+              page.sections.splice(index, 0, newSection);
+            } else {
+              page.sections.push(newSection);
+            }
             state.selectedElementId = newSection.id;
           }
         }),

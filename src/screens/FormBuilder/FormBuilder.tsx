@@ -10,6 +10,7 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchFormById, saveFormDraft, publishForm, clearCurrentForm, fetchFormDraft } from '../../store/slices/formsSlice';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { ChevronLeftIcon } from '@heroicons/react/16/solid';
 
 const FormBuilder = () => {
     const { orgId, formId } = useParams<{ orgId: string; formId: string }>();
@@ -162,11 +163,18 @@ const FormBuilder = () => {
         <div className="flex flex-col h-screen w-full bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
             {/* Header / Navbar */}
             <header className="flex justify-between items-center w-full px-4 py-2 border-b border-zinc-200 dark:border-white/10 shrink-0">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => navigate(`/orgs/${orgId}/forms`)}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
+                        title="Back to Forms"
+                    >
+                        <ChevronLeftIcon className="w-5 h-5" />
+                    </button>
                     <input 
                         value={form.title} 
                         onChange={(e) => setTitle(e.target.value)}
-                        className="text-lg font-semibold bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-white p-0"
+                        className="text-lg font-semibold bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-white p-0 ml-2"
                     />
                     <div className="flex items-center gap-2 border-l border-zinc-200 dark:border-white/10 pl-4 ml-4">
                         <button
@@ -284,6 +292,7 @@ const FormBuilder = () => {
                             setSidebarOpen(true);
                         }}
                         onDrop={addField}
+                        onAddSection={addSection}
                         onDropToField={useFormBuilderStore(state => state.addFieldToRepeat)}
                         onReorderField={reorderField}
                         onReorderSection={reorderSection}
