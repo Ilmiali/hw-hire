@@ -23,7 +23,8 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const dispatch = useDispatch()
   const { currentOrganization, organizations } = useSelector((state: RootState) => state.organization)
   const [, setIsLoading] = useState(false)
-  const [collapsed, setCollapsed] = useState(() => location.pathname.includes('/form-builder'))
+  const isFormPage = location.pathname.includes('/forms/') && location.pathname.split('/').length > 4
+  const [collapsed, setCollapsed] = useState(() => isFormPage)
 
   // Sync current organization with URL parameter
   useEffect(() => {
@@ -35,14 +36,14 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     }
   }, [orgId, currentOrganization, organizations, dispatch])
 
-  // Default to collapsed for Form Builder
+  // Default to collapsed for Form Builder and Preview
   useEffect(() => {
-    if (location.pathname.includes('/form-builder')) {
+    if (isFormPage) {
       setCollapsed(true)
     } else {
       setCollapsed(false)
     }
-  }, [location.pathname])
+  }, [location.pathname, isFormPage])
 
   useEffect(() => {
     setIsLoading(true)

@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchFormById, saveFormDraft, publishForm, clearCurrentForm, fetchFormDraft } from '../../store/slices/formsSlice';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 
 const FormBuilder = () => {
     const { orgId, formId } = useParams<{ orgId: string; formId: string }>();
@@ -67,8 +68,10 @@ const FormBuilder = () => {
     useEffect(() => {
         if (currentVersion?.data) {
             setForm(currentVersion.data);
-            // Explicitly set title if it differs (though it should be in data)
-            if (currentVersion.data.title) {
+            // Favor currentForm.name for the title if available
+            if (currentForm) {
+                setTitle(currentForm.name);
+            } else if (currentVersion.data.title) {
                 setTitle(currentVersion.data.title);
             }
         } else if (currentForm) {
@@ -96,10 +99,10 @@ const FormBuilder = () => {
             // Ensure title is up to date in the form object before saving
             // (Zustand store should be up to date, but just in case)
             await dispatch(saveFormDraft({ orgId, formId, data: form })).unwrap();
-            alert('Form draft saved!');
+            toast.success('Form draft saved!');
         } catch (error: any) {
             console.error('Save failed:', error);
-            alert('Failed to save: ' + (error?.message || error || 'Unknown error'));
+            toast.error('Failed to save: ' + (error?.message || error || 'Unknown error'));
         } finally {
             setIsSaving(false);
         }
@@ -111,9 +114,9 @@ const FormBuilder = () => {
         try {
             await dispatch(saveFormDraft({ orgId, formId, data: form })).unwrap();
             await dispatch(publishForm({ orgId, formId })).unwrap();
-            alert('Form published successfully!');
+            toast.success('Form published successfully!');
         } catch (error: any) {
-            alert('Failed to publish: ' + error.message);
+            toast.error('Failed to publish: ' + error.message);
         } finally {
             setIsPublishing(false);
         }

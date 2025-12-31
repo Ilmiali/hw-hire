@@ -1,4 +1,5 @@
 // Removed unused useState import
+import { toast } from 'react-toastify';
 import {
   DndContext,
   closestCenter,
@@ -138,7 +139,7 @@ export default function StageListEditor({ stages, onChange }: Props) {
 
   const handleDeleteStage = (id: string) => {
     if (stages.length <= 1) {
-      alert("Pipeline must have at least one stage.");
+      toast.warning("Pipeline must have at least one stage.");
       return;
     }
     if(!confirm("Delete this stage?")) return;

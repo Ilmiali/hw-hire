@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/button';
 import { Heading } from '../../components/heading';
@@ -49,7 +50,7 @@ export default function JobDetailPage() {
     if (updated) {
         setJob(updated);
         // Toast success
-        alert('Job updated successfully');
+        toast.success('Job updated successfully');
     }
   };
 
@@ -62,7 +63,7 @@ export default function JobDetailPage() {
     JobService.savePosting(jobId, posting);
     setPostings(JobService.getPostingsForJob(jobId));
     // Toast success
-    alert('Posting draft saved');
+    toast.success('Posting draft saved');
   };
 
   const handleEditorPublish = (posting: JobPosting) => {
@@ -71,10 +72,10 @@ export default function JobDetailPage() {
     if (posting.simulateFailure) {
         const failedPosting = { ...posting, status: 'failed' as PostingStatus, error: 'Simulated failure: internal server error.' };
         JobService.savePosting(jobId, failedPosting);
-        alert('Publish failed (simulated)');
+        toast.error('Publish failed (simulated)');
     } else {
         JobService.savePosting(jobId, posting);
-        alert('Published successfully');
+        toast.success('Published successfully');
     }
     setPostings(JobService.getPostingsForJob(jobId));
   };
@@ -84,7 +85,7 @@ export default function JobDetailPage() {
      
      JobService.updatePostingStatus(jobId, channelId, 'draft');
      setPostings(JobService.getPostingsForJob(jobId));
-     alert('Unpublished');
+     toast.success('Unpublished');
   };
 
   const handleRetry = (channelId: string) => {

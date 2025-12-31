@@ -158,14 +158,18 @@ export const saveFormDraft = createAsyncThunk(
         data: sanitizeData(data),
       });
 
-      // Update form metadata updatedAt
-      await db.updateDocument(getFormsPath(orgId), formId, {
+      // Update form metadata (name and updatedAt)
+      const updatedFormDoc = await db.updateDocument(getFormsPath(orgId), formId, {
+        name: data.title,
         updatedAt: new Date() as any 
       });
 
-      // Return the updated draft as a version object
+      // Return the updated draft as a version object and the updated form metadata
       const draft = await db.getDocument(getDraftPath(orgId, formId), 'current');
-      return mapDocumentToVersion(draft);
+      return {
+          version: mapDocumentToVersion(draft),
+          form: mapDocumentToForm(updatedFormDoc)
+      };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to save draft');
     }
@@ -237,7 +241,8 @@ const formsSlice = createSlice({
         state.currentVersion = action.payload; // mapped draft is essentially a version
       })
       .addCase(saveFormDraft.fulfilled, (state, action) => {
-          state.currentVersion = action.payload;
+          state.currentVersion = action.payload.version;
+          state.currentForm = action.payload.form;
       })
       .addCase(createForm.fulfilled, (state, action) => {
         state.forms.unshift(action.payload);

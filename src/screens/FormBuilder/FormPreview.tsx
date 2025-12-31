@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchFormById, fetchFormDraft } from '../../store/slices/formsSlice';
+import { toast } from 'react-toastify';
 
 // UI Components
 import { Input } from '../../components/input';
@@ -185,7 +186,7 @@ export const FormPreview = () => {
         // Basic check for now
         if (!validatePage(currentPageIndex)) {
             // Scroll to error?
-            alert('Please fix validation errors before proceeding.');
+            toast.error('Please fix validation errors before proceeding.');
             return;
         }
 
@@ -220,12 +221,12 @@ export const FormPreview = () => {
                 }
             });
             setErrors(newErrors);
-            alert('Please fix validation errors.');
+            toast.error('Please fix validation errors.');
             return;
         }
 
         console.log('Form Submission:', formValues);
-        alert('Form submitted! value logged to console.');
+        toast.success('Form submitted! value logged to console.');
     };
 
     // Helper to render field based on type
