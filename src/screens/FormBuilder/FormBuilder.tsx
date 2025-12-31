@@ -10,7 +10,7 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchFormById, saveFormDraft, publishForm, clearCurrentForm, fetchFormDraft } from '../../store/slices/formsSlice';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { ChevronLeftIcon } from '@heroicons/react/16/solid';
+import { ChevronLeftIcon, PlusIcon } from '@heroicons/react/16/solid';
 
 const FormBuilder = () => {
     const { orgId, formId } = useParams<{ orgId: string; formId: string }>();
@@ -196,19 +196,25 @@ const FormBuilder = () => {
                     </div>
                 </div>
                 
-                {form.pages.length > 1 && (
-                    <div className="flex gap-2">
-                       {form.pages.map((page, index) => (
-                           <button 
-                               key={page.id}
-                               onClick={() => setActivePageId(page.id)}
-                               className={`px-3 py-1 rounded text-sm transition-colors ${activePageId === page.id ? 'bg-blue-600/10 text-blue-600 border border-blue-500/50 dark:bg-blue-600/20 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'}`}
-                           >
-                               Page {index + 1}
-                           </button>
-                       ))}
-                    </div>
-                )}
+                <div className="flex gap-2 bg-zinc-100/50 dark:bg-white/5 p-1 rounded-lg border border-zinc-200 dark:border-white/10">
+                   {form.pages.map((page, index) => (
+                       <button 
+                           key={page.id}
+                           onClick={() => setActivePageId(page.id)}
+                           className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${activePageId === page.id ? 'bg-white dark:bg-zinc-800 text-blue-600 shadow-sm border border-zinc-200 dark:border-white/10' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'}`}
+                       >
+                           Page {index + 1}
+                       </button>
+                   ))}
+                   <button
+                       onClick={() => addPage()}
+                       className="px-2 py-1 rounded-md text-zinc-400 hover:text-blue-600 hover:bg-white dark:hover:bg-zinc-800 transition-all flex items-center gap-1 group"
+                       title="Add New Page"
+                   >
+                       <PlusIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                       {form.pages.length === 1 && <span className="text-xs font-semibold uppercase tracking-wider pr-1">Add Page</span>}
+                   </button>
+                </div>
                 
                 <div className="flex gap-2">
                     <button 
