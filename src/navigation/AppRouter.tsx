@@ -9,10 +9,6 @@ const AppRouter = () => {
   const { currentOrganization } = useSelector((state: RootState) => state.organization);
   const routes = getAllRoutes();
 
-  if (loading) {
-    return null;
-  }
-
   return (
     <BrowserRouter>
       <Routes>
@@ -26,6 +22,21 @@ const AppRouter = () => {
               ) : (
                 <Navigate to="/orgs/" replace />
               )
+            ) : loading ? (
+               // While loading, we can just wait or redirect to orgs/dashboard if we assume success, 
+               // but simpler to do nothing or let it fall through? 
+               // actually root path '/' usually redirects. 
+               // If loading, let's render a skeleton/fallback or just Null (but inside Router so it doesn't break).
+               // But user wanted "application already".
+               // If we render AuthenticatedLayout here it expects children. 
+               // Let's redirect to a default likely route or just render empty.
+               // Actually, if we are loading, we don't know if we should go to login or dashboard.
+               // Let's hold off on redirecting '/' until loaded.
+               // Render a blank placeholder for '/' while loading? 
+               // Or render the protected layout?
+               // The request is about "the given page" (e.g. FormBuilder).
+               // So this '/' route matters less if they are deep linking.
+               <div className="min-h-screen bg-white dark:bg-zinc-950" />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -57,7 +68,7 @@ const AppRouter = () => {
         <Route
           path="/orgs/"
           element={
-            user ? (
+            user || loading ? (
               <AuthenticatedLayout>
                 <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
                   {/* The modal will show here via AuthenticatedLayout context if no org selected */}
@@ -72,7 +83,7 @@ const AppRouter = () => {
         {/* Protected routes wrapper */}
         <Route
           element={
-            user ? (
+            user || loading ? (
               <AuthenticatedLayout>
                 <Outlet />
               </AuthenticatedLayout>
