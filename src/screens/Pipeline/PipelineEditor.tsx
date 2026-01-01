@@ -249,6 +249,7 @@ export default function PipelineEditor() {
           onClose={() => setIsSettingsOpen(false)} 
           orgId={orgId!} 
           formId={id!} 
+          resourceType="pipelines"
       />
     </div>
   );

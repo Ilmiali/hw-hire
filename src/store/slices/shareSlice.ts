@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getDatabaseService } from '../../services/databaseService';
 import { AccessRole } from '../../types/access';
 import { serializeDate } from '../../utils/serialization';
-import { User } from './usersSlice';
+import { upsertUsers, User } from './usersSlice';
 
 export interface Access {
   uid: string;
@@ -171,6 +171,12 @@ export const revokeAccess = createAsyncThunk(
 
 // Fetch all users who have access (owners + values in access subcollection)
 // Smartly dedupes and checks current state to minimalize fetches
+import { upsertUsers, User } from './usersSlice';
+
+// ... (imports remain the same)
+
+// ...
+
 export const fetchResourceUsers = createAsyncThunk(
     'share/fetchResourceUsers',
     async ({ orgId, moduleId, resourceType, resourceId }: { orgId: string; moduleId: string; resourceType: string; resourceId: string }, { rejectWithValue, getState, dispatch }) => {
@@ -200,13 +206,14 @@ export const fetchResourceUsers = createAsyncThunk(
             const roleMap: Record<string, string> = {};
             ownerIds.forEach(uid => { roleMap[uid] = 'owner'; });
             accessDocs.forEach(doc => {
-                // If someone is both (shouldn't happen with our current logic but let's be safe), owner wins
                 if (!roleMap[doc.id]) {
                     roleMap[doc.id] = doc.data.role;
                 }
             });
 
             const allUserIds = Object.keys(roleMap);
+
+            if (allUserIds.length === 0) return [];
 
             // 4. Identify Missing Users
             const missingIds = allUserIds.filter(uid => !existingUsers.find(u => u.id === uid));
@@ -233,7 +240,6 @@ export const fetchResourceUsers = createAsyncThunk(
                     })) as User[];
 
                  if (validUsers.length > 0) {
-                    const { upsertUsers } = await import('../slices/usersSlice');
                     dispatch(upsertUsers(validUsers));
                  }
                  
@@ -247,6 +253,7 @@ export const fetchResourceUsers = createAsyncThunk(
             }));
 
         } catch (error: any) {
+            console.error('Failed to fetch resource users', error);
             return rejectWithValue(error.message || 'Failed to fetch resource users');
         }
     }

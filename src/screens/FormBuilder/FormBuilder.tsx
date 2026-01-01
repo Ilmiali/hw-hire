@@ -415,6 +415,7 @@ const FormBuilder = () => {
                 onClose={() => setIsSettingsOpen(false)} 
                 orgId={orgId!} 
                 formId={formId!} 
+                resourceType="forms"
             />
         </div>
     );
