@@ -8,7 +8,6 @@ import {
   Command, 
   CommandEmpty, 
   CommandGroup, 
-  CommandInput, 
   CommandItem, 
   CommandList 
 } from '@/components/ui/command';
@@ -20,7 +19,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
+import { XMarkIcon } from '@heroicons/react/20/solid';
 import { cn } from '@/lib/utils';
 
 interface DatabaseAutosuggestProps<T extends BaseItem> {
@@ -58,12 +57,19 @@ export function DatabaseAutosuggest<T extends BaseItem>({
   availableRoles = [],
   ignoreList = [],
   availableItems,
+  onRoleChange,
 }: DatabaseAutosuggestProps<T>) {
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(defineRole && availableRoles.length > 0 ? availableRoles[0] : '');
+
+  useEffect(() => {
+    if (defineRole && availableRoles.length > 0 && !selectedRole) {
+      setSelectedRole(availableRoles[0]);
+    }
+  }, [availableRoles, defineRole, selectedRole]);
 
   const filterItemsLocally = useCallback((search: string) => {
     if (!availableItems) return [];
@@ -152,15 +158,34 @@ export function DatabaseAutosuggest<T extends BaseItem>({
       className="pl-1 pr-1 py-0.5 gap-1.5 font-normal h-8"
     >
       <Avatar className="h-6 w-6">
-        <AvatarImage src={item.avatarUrl} alt={item.name} />
+        <AvatarImage src={item.avatarUrl || undefined} alt={item.name} />
         <AvatarFallback className="text-[10px] bg-primary/10">
           {(item.name || 'U').substring(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       <div className="flex flex-col leading-tight max-w-[150px]">
         <span className="truncate text-[11px] font-medium">{item.name}</span>
-        {item.role && <span className="text-[9px] text-muted-foreground capitalize">{item.role}</span>}
+        {item.role && !defineRole && <span className="text-[9px] text-muted-foreground capitalize">{item.role}</span>}
       </div>
+      
+      {defineRole && onRoleChange && (
+        <Select 
+          value={item.role} 
+          onValueChange={(value) => onRoleChange(item.id, value)}
+        >
+          <SelectTrigger className="h-6 w-auto border-none bg-transparent px-1 text-[9px] hover:bg-muted/50 focus:ring-0 capitalize">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {availableRoles.map(role => (
+              <SelectItem key={role} value={role} className="text-[10px] capitalize">
+                {role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
       <button
         onClick={(e) => {
           e.preventDefault();
@@ -184,81 +209,84 @@ export function DatabaseAutosuggest<T extends BaseItem>({
         ))}
       </div>
       
-      <div className="flex gap-2">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <div className="relative flex-1">
-              <input
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-text"
-                placeholder={loading ? 'Searching...' : placeholder}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  if (e.target.value.length > 0) setOpen(true);
-                }}
-                onFocus={() => {
-                   if (query.length > 0) setOpen(true);
-                }}
-              />
-              <ChevronDownIcon className="absolute right-3 top-2.5 h-4 w-4 opacity-50" />
-            </div>
-          </PopoverTrigger>
-          <PopoverContent 
-            className="p-0 w-[--radix-popover-trigger-width]" 
-            align="start"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-          >
-            <Command shouldFilter={false}>
-              <CommandList className="max-h-[200px]">
-                {loading && <div className="p-4 text-center text-sm text-muted-foreground">Searching...</div>}
-                {!loading && items.length === 0 && query.length > 0 && (
-                  <CommandEmpty>No members found.</CommandEmpty>
-                )}
-                {!loading && items.length > 0 && (
-                  <CommandGroup>
-                    {items.map((item) => (
-                      <CommandItem
-                        key={item.id}
-                        value={item.id}
-                        onSelect={() => handleSelect(item)}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        {renderItem ? renderItem(item) : (
-                          <div className="flex items-center gap-2 py-0.5">
-                            <Avatar className="h-7 w-7">
-                              <AvatarImage src={(item as any).avatarUrl} />
-                              <AvatarFallback className="text-[10px]">
-                                {(item.name || 'U').substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-sm">{item.name}</span>
-                              <span className="text-xs text-muted-foreground">{(item as any).email}</span>
+      <div className="relative flex items-center rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring overflow-hidden">
+        <div className="relative flex-1">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <div className="relative flex-1">
+                <input
+                  className="flex h-9 w-full bg-transparent px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 cursor-text"
+                  placeholder={loading ? 'Searching...' : placeholder}
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    if (e.target.value.length > 0) setOpen(true);
+                  }}
+                  onFocus={() => {
+                    if (query.length > 0) setOpen(true);
+                  }}
+                />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent 
+              className="p-0 w-[--radix-popover-trigger-width]" 
+              align="start"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <Command shouldFilter={false}>
+                <CommandList className="max-h-[200px]">
+                  {loading && <div className="p-4 text-center text-sm text-muted-foreground">Searching...</div>}
+                  {!loading && items.length === 0 && query.length > 0 && (
+                    <CommandEmpty>No members found.</CommandEmpty>
+                  )}
+                  {!loading && items.length > 0 && (
+                    <CommandGroup>
+                      {items.map((item) => (
+                        <CommandItem
+                          key={item.id}
+                          value={item.id}
+                          onSelect={() => handleSelect(item)}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          {renderItem ? renderItem(item) : (
+                            <div className="flex items-center gap-2 py-0.5">
+                              <Avatar className="h-7 w-7">
+                                <AvatarImage src={(item as any).avatarUrl} />
+                                <AvatarFallback className="text-[10px]">
+                                  {(item.name || 'U').substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-sm">{item.name}</span>
+                                <span className="text-xs text-muted-foreground">{(item as any).email}</span>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+                          )}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
 
         {defineRole && (
-          <Select value={selectedRole} onValueChange={setSelectedRole}>
-            <SelectTrigger className="w-[120px] h-9">
-              <SelectValue placeholder="Role" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableRoles.map(role => (
-                <SelectItem key={role} value={role} className="capitalize">
-                  {role}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="border-l h-9 flex items-center bg-muted/20">
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger className="border-none shadow-none focus:ring-0 h-full w-[110px] bg-transparent text-[11px] font-medium capitalize">
+                <SelectValue placeholder="Role" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableRoles.map(role => (
+                  <SelectItem key={role} value={role} className="text-[11px] capitalize">
+                    {role}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </div>
     </div>

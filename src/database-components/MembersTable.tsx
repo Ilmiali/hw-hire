@@ -45,8 +45,6 @@ export function MembersTable({
 }: MembersTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const ownerCount = members.filter(m => m.role === 'owner').length;
-  const currentUserRole = members.find(m => m.id === currentUserId)?.role;
 
   const handleRoleChange = (memberId: string, newRole: string) => {
     onMembersChange(
@@ -82,8 +80,10 @@ export function MembersTable({
           onValueChange={(value) => handleRoleChange(member.id, value)}
           disabled={
             !isOwner ||
-            (member.role === 'owner' && ownerCount === 1) ||
-            (currentUserRole !== 'owner' && member.id !== currentUserId)
+            (ownerIds.includes(member.id) && (
+              (member.id !== currentUserId) || // Cannot change role of other DB owners
+              (ownerIds.length === 1) // Cannot change own role if sole DB owner
+            ))
           }
         >
           <SelectTrigger className="h-7 w-[100px] text-[11px] capitalize">
@@ -142,15 +142,9 @@ export function MembersTable({
           if (!isOwner) return true; // Non-owners cannot take any action
           if (action === 'delete') {
             const member = entity as Member;
-            if (member.role === 'owner') {
-              // Cannot remove another owner unless maybe it's themselves? 
-              // Usually owner can manage everything. 
-              // But requirement says "only owner themselves can remove themselves"
-              // Let's refine: Owners can remove non-owners. 
-              // Owners can remove themselves if they are not the only owner.
-              
-              if (member.id !== currentUserId) return true; // Cannot remove other owners
-              if (ownerCount <= 1) return true; // Cannot remove self if sole owner
+            if (ownerIds.includes(member.id)) {
+              if (member.id !== currentUserId) return true; // Cannot remove other DB owners
+              if (ownerIds.length <= 1) return true; // Cannot remove self if sole DB owner
             }
           }
           return false;
