@@ -57,25 +57,23 @@ const AccessAvatarGroup = ({
   moduleId,
   resourceType,
   resourceId,
-  ownerIds,
 }: {
   orgId: string;
   moduleId: string;
   resourceType: string;
   resourceId: string;
-  ownerIds: string[];
 }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const [members, setMembers] = useState<User[]>([]);
+  const [members, setMembers] = useState<{ user: User, resourceRole: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
     dispatch(
       fetchResourceUsers({ orgId, moduleId, resourceType, resourceId })
-    ).unwrap().then((users) => {
+    ).unwrap().then((results) => {
         if (mounted) {
-            setMembers(users as User[]);
+            setMembers(results as { user: User, resourceRole: string }[]);
             setLoading(false);
         }
     }).catch(() => {
@@ -92,18 +90,18 @@ const AccessAvatarGroup = ({
   return (
     <div className="flex -space-x-2">
       <TooltipProvider delayDuration={0}>
-      {displayMembers.map((member) => (
-        <Tooltip key={member.id}>
+      {displayMembers.map(({ user, resourceRole }) => (
+        <Tooltip key={user.id}>
            <TooltipTrigger asChild>
                 <Avatar className="h-8 w-8 border-2 border-background bg-muted cursor-default ring-0">
-                    <AvatarImage src={(member as any).avatarUrl} alt={member.fullName || member.name || 'User'} />
+                    <AvatarImage src={(user as any).avatarUrl} alt={user.fullName || user.name || 'User'} />
                     <AvatarFallback className="text-[10px] font-medium">
-                        {getInitials(member.fullName || member.name)}
+                        {getInitials(user.fullName || user.name)}
                     </AvatarFallback>
                 </Avatar>
            </TooltipTrigger>
            <TooltipContent>
-               <p>{member.fullName || member.name || 'Unknown User'} ({ownerIds.includes(member.id) ? 'Owner' : 'Member'})</p>
+               <p className="capitalize">{user.fullName || user.name || 'Unknown User'} ({resourceRole})</p>
            </TooltipContent>
         </Tooltip>
       ))}

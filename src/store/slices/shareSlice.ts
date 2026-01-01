@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getDatabaseService } from '../../services/databaseService';
 import { AccessRole } from '../../types/access';
 import { serializeDate } from '../../utils/serialization';
+import { User } from './usersSlice';
 
 export interface Access {
   uid: string;
@@ -176,42 +177,44 @@ export const fetchResourceUsers = createAsyncThunk(
         try {
             const db = getDatabaseService();
             const state = getState() as any;
-            const existingUsers = state.users.users as { id: string }[];
+            const existingUsers = state.users.users as User[];
             
             // 1. Get Owner IDs
-            // Optimization: check if resource is in state first
             let ownerIds: string[] = [];
-            
-            // Try to find resource in state
             const resourcesInState = state.resource?.resources?.[resourceType] as any[];
             const cachedResource = resourcesInState?.find((r: any) => r.id === resourceId);
             
             if (cachedResource && cachedResource.ownerIds) {
                 ownerIds = cachedResource.ownerIds;
             } else {
-                 // Fallback to fetch
                  const resourcePath = getResourcePath(orgId, moduleId, resourceType);
                  const doc = await db.getDocument<{ id: string; data: any }>(resourcePath, resourceId);
                  ownerIds = (doc?.data?.ownerIds as string[]) || [];
             }
 
-            // 2. Get Shared Access IDs
-            // We use the existing fetchAccess logic but we want just the IDs here essentially
-            // But we can just query the collection directly to save overhead of the full action if needed, 
-            // but let's just do a direct query here to be "smart"
+            // 2. Get Shared Access Roles
             const accessPath = getAccessPath(orgId, moduleId, resourceType, resourceId);
-            const accessDocs = await db.getDocuments<{ id: string }>(accessPath);
-            const accessIds = accessDocs.map(d => d.id);
+            const accessDocs = await db.getDocuments<{ id: string; data: { role: string } }>(accessPath);
+            
+            // 3. Create ID -> Role Map
+            const roleMap: Record<string, string> = {};
+            ownerIds.forEach(uid => { roleMap[uid] = 'owner'; });
+            accessDocs.forEach(doc => {
+                // If someone is both (shouldn't happen with our current logic but let's be safe), owner wins
+                if (!roleMap[doc.id]) {
+                    roleMap[doc.id] = doc.data.role;
+                }
+            });
 
-            // 3. Combine Unique IDs
-            const allUserIds = Array.from(new Set([...ownerIds, ...accessIds]));
+            const allUserIds = Object.keys(roleMap);
 
             // 4. Identify Missing Users
             const missingIds = allUserIds.filter(uid => !existingUsers.find(u => u.id === uid));
 
+            let allLoadedUsers = existingUsers.filter(u => allUserIds.includes(u.id));
+
             // 5. Fetch Missing Users
             if (missingIds.length > 0) {
-                 // Fetch them in parallel
                  const fetchedUsers = await Promise.all(
                      missingIds.map(uid => db.getDocument<any>('users', uid)) 
                  );
@@ -227,28 +230,21 @@ export const fetchResourceUsers = createAsyncThunk(
                         organizations: doc!.data.organizations as string[],
                         createdAt: serializeDate(doc!.createdAt || new Date()) || new Date().toISOString(),
                         updatedAt: serializeDate(doc!.updatedAt || new Date()) || new Date().toISOString()
-                    }));
+                    })) as User[];
 
-                 // 6. Update User Store (Upsert)
-                 // We need to dispatch to usersSlice. We assume 'upsertUsers' exists or 'fetchUsers' was sufficient.
-                 // Ideally we dispatch an action to add these users to the store so we don't fetch them again.
-                 // Since we don't have direct import of upsertUsers here (to avoid circular dep if usersSlice imports shareSlice),
-                 // we can dynamically dispatch if we imported it. 
-                 // However, shareSlice imports from usersSlice is fine if usersSlice doesn't import shareSlice.
-                 // Let's assume we can import it.
-                 /* 
-                    Note: To allow this verify usersSlice doesn't import shareSlice. 
-                    usersSlice: imports serializeDate, databaseService. OK.
-                 */
-                 const { upsertUsers } = await import('../slices/usersSlice');
                  if (validUsers.length > 0) {
+                    const { upsertUsers } = await import('../slices/usersSlice');
                     dispatch(upsertUsers(validUsers));
                  }
                  
-                 return [...existingUsers.filter(u => allUserIds.includes(u.id)), ...validUsers];
+                 allLoadedUsers = [...allLoadedUsers, ...validUsers];
             }
 
-            return existingUsers.filter(u => allUserIds.includes(u.id));
+            // 6. Return Users with their Resource-Specific Roles
+            return allLoadedUsers.map(user => ({
+                user,
+                resourceRole: roleMap[user.id] || 'member'
+            }));
 
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to fetch resource users');
