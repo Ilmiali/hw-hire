@@ -167,7 +167,7 @@ export default function StageListEditor({ stages, onChange, selectedStageId, onS
           items={stages.map(s => s.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-col max-w-2xl">
+          <div className="flex flex-col">
             {stages.map((stage) => (
               <SortableItem 
                 key={stage.id} 

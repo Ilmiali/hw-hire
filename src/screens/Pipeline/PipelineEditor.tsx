@@ -18,6 +18,8 @@ import { PipelinePropertiesPanel } from './components/PipelinePropertiesPanel';
 import { toast } from 'react-toastify';
 import NProgress from 'nprogress';
 import FormSettingsDialog from '../FormBuilder/components/FormSettingsDialog';
+import PipelineEditorSkeleton from './components/PipelineEditorSkeleton';
+import { Spinner } from '@/components/ui/spinner';
 
 type Tab = 'stages' | 'transitions';
 
@@ -31,6 +33,10 @@ export default function PipelineEditor() {
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
+  // Processing states
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+
   // Working state
   const [name, setName] = useState('');
   const [stages, setStages] = useState<PipelineStage[]>([]);
@@ -58,7 +64,8 @@ export default function PipelineEditor() {
   }, [activeResource, activeDraft]);
 
   const handleSave = async () => {
-    if (!orgId || !id) return;
+    if (!orgId || !id || isSaving || isPublishing) return;
+    setIsSaving(true);
     NProgress.start();
     try {
         await dispatch(saveResourceDraft({
@@ -73,14 +80,17 @@ export default function PipelineEditor() {
     } catch (error) {
         toast.error("Failed to save pipeline");
     } finally {
+        setIsSaving(false);
         NProgress.done();
     }
   };
 
   const handlePublish = async () => {
-      if (!orgId || !id) return;
+      if (!orgId || !id || isSaving || isPublishing) return;
+      setIsPublishing(true);
       NProgress.start();
       try {
+          // First save draft to ensure latest changes are captured
           await dispatch(saveResourceDraft({
             orgId,
             moduleId: 'hire',
@@ -95,6 +105,7 @@ export default function PipelineEditor() {
       } catch (error) {
           toast.error("Failed to publish pipeline");
       } finally {
+          setIsPublishing(false);
           NProgress.done();
       }
   };
@@ -134,7 +145,10 @@ export default function PipelineEditor() {
       if (selectedStageId === stageId) setSelectedStageId(null);
   };
 
-  if (loading && !activeResource) return <div className="p-8">Loading...</div>;
+  if (loading && !activeResource) {
+      return <PipelineEditorSkeleton />;
+  }
+  
   if (!activeResource && !loading) return null;
 
   return (
@@ -168,17 +182,27 @@ export default function PipelineEditor() {
             <Button 
                 variant="secondary"
                 onClick={handleSave}
-                className="h-9 px-4 text-sm font-medium bg-secondary/50 hover:bg-secondary/80 border border-border/40 rounded-lg transition-all"
+                disabled={isSaving || isPublishing}
+                className="h-9 px-4 text-sm font-medium bg-secondary/50 hover:bg-secondary/80 border border-border/40 rounded-lg transition-all min-w-[120px]"
             >
-                <ArrowDownOnSquareIcon className="mr-2 h-4 w-4 opacity-70" />
-                Save Draft
+                {isSaving ? (
+                    <Spinner className="mr-2 h-4 w-4" />
+                ) : (
+                    <ArrowDownOnSquareIcon className="mr-2 h-4 w-4 opacity-70" />
+                )}
+                {isSaving ? "Saving..." : "Save Draft"}
             </Button>
             <Button 
                 onClick={handlePublish}
-                className="h-9 px-4 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20 rounded-lg transition-all"
+                disabled={isSaving || isPublishing}
+                className="h-9 px-4 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20 rounded-lg transition-all min-w-[110px]"
             >
-                <RocketLaunchIcon className="mr-2 h-4 w-4" />
-                Publish
+                {isPublishing ? (
+                    <Spinner className="mr-2 h-4 w-4" />
+                ) : (
+                    <RocketLaunchIcon className="mr-2 h-4 w-4" />
+                )}
+                {isPublishing ? "Publishing..." : "Publish"}
             </Button>
         </div>
       </header>
