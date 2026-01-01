@@ -1,9 +1,27 @@
 import { BaseItem } from '../components/autosuggest';
 import { Database } from '../types/database';
 import { QueryOptions } from '../types/database';
-import { useEffect, useState } from 'react';
-import { Input } from '../components/input';
-import { Chip } from '../components/chips';
+import { useEffect, useState, useCallback } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { 
+  Command, 
+  CommandEmpty, 
+  CommandGroup, 
+  CommandInput, 
+  CommandItem, 
+  CommandList 
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
+import { cn } from '@/lib/utils';
 
 interface DatabaseAutosuggestProps<T extends BaseItem> {
   collectionName: string;
@@ -21,6 +39,7 @@ interface DatabaseAutosuggestProps<T extends BaseItem> {
   availableRoles?: string[];
   onRoleChange?: (id: string, role: string) => void;
   ignoreList?: string[];
+  availableItems?: T[];
 }
 
 export function DatabaseAutosuggest<T extends BaseItem>({
@@ -29,7 +48,7 @@ export function DatabaseAutosuggest<T extends BaseItem>({
   onSelect,
   onRemove,
   database,
-  placeholder = 'Type to search...',
+  placeholder = 'Search team members...',
   renderItem,
   renderChip,
   className = '',
@@ -38,15 +57,27 @@ export function DatabaseAutosuggest<T extends BaseItem>({
   defineRole = false,
   availableRoles = [],
   ignoreList = [],
+  availableItems,
 }: DatabaseAutosuggestProps<T>) {
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(defineRole && availableRoles.length > 0 ? availableRoles[0] : '');
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
-  const fetchItems = async (query: string) => {
+  const filterItemsLocally = useCallback((search: string) => {
+    if (!availableItems) return [];
+    const lowerQuery = search.toLowerCase();
+    return availableItems.filter(item => 
+      (item.name?.toLowerCase().includes(lowerQuery) || 
+       item.id?.toLowerCase().includes(lowerQuery) ||
+       (item as any).email?.toLowerCase().includes(lowerQuery)) &&
+      !selectedItems.some(selected => selected.id === item.id) &&
+      !ignoreList.includes(item.id)
+    );
+  }, [availableItems, selectedItems, ignoreList]);
+
+  const fetchItems = async (search: string) => {
     setLoading(true);
     try {
       const options: QueryOptions = {
@@ -56,12 +87,12 @@ export function DatabaseAutosuggest<T extends BaseItem>({
           {
             field: searchField,
             operator: '>=',
-            value: query,
+            value: search,
           },
           {
             field: searchField,
             operator: '<=',
-            value: query + '\uf8ff',
+            value: search + '\uf8ff',
           },
         ],
       };
@@ -73,7 +104,6 @@ export function DatabaseAutosuggest<T extends BaseItem>({
           ...doc.data,
         })) as T[];
       
-      // Filter out already selected items and ignored items
       const selectedIds = new Set(selectedItems.map(item => item.id));
       const ignoredIds = new Set(ignoreList);
       const filteredItems = mappedItems.filter(item => 
@@ -89,8 +119,16 @@ export function DatabaseAutosuggest<T extends BaseItem>({
     }
   };
 
-  // Debounce the query to avoid too many requests
   useEffect(() => {
+    if (availableItems) {
+      if (query.length > 0) {
+        setItems(filterItemsLocally(query));
+      } else {
+        setItems([]);
+      }
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (query.length > 0) {
         fetchItems(query);
@@ -100,105 +138,129 @@ export function DatabaseAutosuggest<T extends BaseItem>({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, availableItems, filterItemsLocally]);
 
   const handleSelect = (item: T) => {
     onSelect({ ...item, role: selectedRole } as T & { role?: string });
     setQuery('');
-    setDropdownOpen(false);
-    setSelectedRole(defineRole && availableRoles.length > 0 ? availableRoles[0] : '');
+    setOpen(false);
   };
 
   const renderDefaultChip = (item: T & { role?: string }, onRemove: (id: string) => void) => (
-    <div className="flex items-center gap-2">
-      <Chip
-        name={item.name}
-        secondaryText={item.role}
-        avatarUrl={item.avatarUrl}
-        onRemove={() => onRemove(item.id)}
-      />
-    </div>
+    <Badge 
+      variant="secondary" 
+      className="pl-1 pr-1 py-0.5 gap-1.5 font-normal h-8"
+    >
+      <Avatar className="h-6 w-6">
+        <AvatarImage src={item.avatarUrl} alt={item.name} />
+        <AvatarFallback className="text-[10px] bg-primary/10">
+          {(item.name || 'U').substring(0, 2).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex flex-col leading-tight max-w-[150px]">
+        <span className="truncate text-[11px] font-medium">{item.name}</span>
+        {item.role && <span className="text-[9px] text-muted-foreground capitalize">{item.role}</span>}
+      </div>
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRemove(item.id);
+        }}
+        className="rounded-full hover:bg-muted p-0.5"
+      >
+        <XMarkIcon className="h-3.5 w-3.5 text-muted-foreground" />
+      </button>
+    </Badge>
   );
 
   return (
-    <div className={className}>
-      <div className="flex flex-wrap gap-2 mb-2">
+    <div className={cn("space-y-3", className)}>
+      <div className="flex flex-wrap gap-2">
         {selectedItems.map(item => (
           <div key={item.id}>
             {renderChip ? renderChip(item, onRemove) : renderDefaultChip(item, onRemove)}
           </div>
         ))}
       </div>
-      <div className="relative">
-        <div className="relative flex items-center rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus-within:border-zinc-500 dark:focus-within:border-zinc-400 transition-colors">
-          <Input
-            value={query}
-            onChange={e => {
-              setQuery(e.target.value);
-              setDropdownOpen(true);
-            }}
-            onFocus={() => setDropdownOpen(true)}
-            onBlur={() => setTimeout(() => setDropdownOpen(false), 100)}
-            placeholder={loading ? 'Loading...' : placeholder}
-            className="w-full border-0 focus:ring-0"
-            autoComplete="off"
-            rightButton={defineRole ? {
-              type: 'dropdown',
-              children: (
-                <div className="flex items-center gap-1 text-sm">
-                  <span className="whitespace-nowrap">{selectedRole}</span>
-                  <svg
-                    className={`h-4 w-4 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              ),
-              onClick: () => setRoleDropdownOpen(!roleDropdownOpen)
-            } : undefined}
-          />
-        </div>
-        {roleDropdownOpen && defineRole && (
-          <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20">
-            {availableRoles.map(role => (
-              <button
-                key={role}
-                type="button"
-                className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 first:rounded-t-lg last:rounded-b-lg dark:text-zinc-100 text-zinc-900"
-                onMouseDown={() => {
-                  setSelectedRole(role);
-                  setRoleDropdownOpen(false);
+      
+      <div className="flex gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <div className="relative flex-1">
+              <input
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-text"
+                placeholder={loading ? 'Searching...' : placeholder}
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  if (e.target.value.length > 0) setOpen(true);
                 }}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
-        )}
-        {dropdownOpen && items.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-60 overflow-auto">
-            {items.map(item => (
-              <button
-                type="button"
-                key={item.id}
-                className="flex items-center w-full px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left first:rounded-t-lg last:rounded-b-lg"
-                onMouseDown={() => handleSelect(item)}
-              >
-                {renderItem ? renderItem(item) : (
-                  <div className="flex items-center">
-                    <div>
-                      <div className="font-medium">{item.id}</div>
-                    </div>
-                  </div>
+                onFocus={() => {
+                   if (query.length > 0) setOpen(true);
+                }}
+              />
+              <ChevronDownIcon className="absolute right-3 top-2.5 h-4 w-4 opacity-50" />
+            </div>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="p-0 w-[--radix-popover-trigger-width]" 
+            align="start"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <Command shouldFilter={false}>
+              <CommandList className="max-h-[200px]">
+                {loading && <div className="p-4 text-center text-sm text-muted-foreground">Searching...</div>}
+                {!loading && items.length === 0 && query.length > 0 && (
+                  <CommandEmpty>No members found.</CommandEmpty>
                 )}
-              </button>
-            ))}
-          </div>
+                {!loading && items.length > 0 && (
+                  <CommandGroup>
+                    {items.map((item) => (
+                      <CommandItem
+                        key={item.id}
+                        value={item.id}
+                        onSelect={() => handleSelect(item)}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        {renderItem ? renderItem(item) : (
+                          <div className="flex items-center gap-2 py-0.5">
+                            <Avatar className="h-7 w-7">
+                              <AvatarImage src={(item as any).avatarUrl} />
+                              <AvatarFallback className="text-[10px]">
+                                {(item.name || 'U').substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm">{item.name}</span>
+                              <span className="text-xs text-muted-foreground">{(item as any).email}</span>
+                            </div>
+                          </div>
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
+        {defineRole && (
+          <Select value={selectedRole} onValueChange={setSelectedRole}>
+            <SelectTrigger className="w-[120px] h-9">
+              <SelectValue placeholder="Role" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableRoles.map(role => (
+                <SelectItem key={role} value={role} className="capitalize">
+                  {role}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
       </div>
     </div>
   );
-}
+} 

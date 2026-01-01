@@ -7,6 +7,8 @@ export interface Form {
   name: string;
   description: string;
   status: FormStatus;
+  visibility: 'private' | 'public';
+  ownerIds: string[];
   publishedVersionId?: string;
   createdAt: string;
   updatedAt: string;

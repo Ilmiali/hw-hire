@@ -2,12 +2,14 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { serializeDate } from '../../utils/serialization';
 import { getDatabaseService } from '../../services/databaseService';
 import { Form, FormVersion } from '../../types/forms';
+import { Access, AccessRole } from '../../types/access';
 import { FormSchema } from '../../types/form-builder';
 
 interface FormsState {
   forms: Form[];
   currentForm: Form | null;
   currentVersion: FormVersion | null;
+  currentFormAccess: Access[];
   loading: boolean;
   error: string | null;
 }
@@ -16,6 +18,7 @@ const initialState: FormsState = {
   forms: [],
   currentForm: null,
   currentVersion: null,
+  currentFormAccess: [],
   loading: false,
   error: null,
 };
@@ -23,6 +26,7 @@ const initialState: FormsState = {
 const getFormsPath = (orgId: string) => `orgs/${orgId}/modules/hire/forms`;
 const getDraftPath = (orgId: string, formId: string) => `orgs/${orgId}/modules/hire/forms/${formId}/draft`;
 const getVersionsPath = (orgId: string, formId: string) => `orgs/${orgId}/modules/hire/forms/${formId}/versions`;
+const getAccessPath = (orgId: string, formId: string) => `orgs/${orgId}/modules/hire/forms/${formId}/access`;
 
 // Helpers to map Database Document to our types
 const mapDocumentToForm = (doc: any): Form => ({
@@ -30,6 +34,8 @@ const mapDocumentToForm = (doc: any): Form => ({
   name: doc.data?.name || '',
   description: doc.data?.description || '',
   status: doc.data?.status || 'active',
+  visibility: doc.data?.visibility || 'private',
+  ownerIds: doc.data?.ownerIds || [],
   publishedVersionId: doc.data?.publishedVersionId,
   createdAt: serializeDate(doc.createdAt) || (serializeDate(doc.data?.createdAt) as string) || new Date().toISOString(),
   updatedAt: serializeDate(doc.updatedAt) || (serializeDate(doc.data?.updatedAt) as string) || new Date().toISOString(),
@@ -75,6 +81,7 @@ export const fetchFormById = createAsyncThunk(
   'forms/fetchFormById',
   async ({ orgId, formId }: { orgId: string; formId: string }, { rejectWithValue }) => {
     try {
+      const db = getDatabaseService();
       const form = await db.getDocument(getFormsPath(orgId), formId);
       if (!form) return rejectWithValue('Form not found');
       return mapDocumentToForm(form);
@@ -88,6 +95,7 @@ export const fetchLatestVersion = createAsyncThunk(
   'forms/fetchLatestVersion',
   async ({ orgId, formId, versionId }: { orgId: string; formId: string; versionId: string }, { rejectWithValue }) => {
     try {
+      const db = getDatabaseService();
       const version = await db.getDocument(getVersionsPath(orgId, formId), versionId);
       if (!version) return null;
       return mapDocumentToVersion(version);
@@ -115,16 +123,30 @@ export const fetchFormDraft = createAsyncThunk(
 
 export const createForm = createAsyncThunk(
   'forms/createForm',
-  async ({ orgId, name, description }: { orgId: string; name: string; description: string }, { rejectWithValue }) => {
+  async ({ orgId, name, description }: { orgId: string; name: string; description: string }, { rejectWithValue, getState }) => {
     try {
       const db = getDatabaseService();
+      const state = getState() as any;
+      const currentUserId = state.auth.user?.uid;
+
+      if (!currentUserId) throw new Error('User not authenticated');
+
       const docId = await db.addDocument(getFormsPath(orgId), {
         name,
         description,
         status: 'active',
+        visibility: 'private',
+        ownerIds: [currentUserId],
       });
       
       const actualFormId = typeof docId === 'string' ? docId : (docId as any).id;
+
+      // Add self as owner in access subcollection
+      await db.setDocument(getAccessPath(orgId, actualFormId), currentUserId, {
+        role: 'owner',
+        addedAt: new Date(),
+        addedBy: currentUserId
+      });
 
       // Create initial draft
       const initialData: FormSchema = {
@@ -219,6 +241,121 @@ export const deleteForm = createAsyncThunk(
   }
 );
 
+// Access Management Thunks
+
+export const fetchFormAccess = createAsyncThunk(
+  'forms/fetchAccess',
+  async ({ orgId, formId }: { orgId: string; formId: string }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      const docs = await db.getDocuments<{ id: string; data: any; createdAt: any; updatedAt: any }>(getAccessPath(orgId, formId));
+      return docs.map(doc => ({
+        uid: doc.id,
+        role: doc.data.role as AccessRole,
+        addedAt: serializeDate(doc.data.addedAt) || new Date().toISOString(),
+        addedBy: doc.data.addedBy as string
+      }));
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch access list');
+    }
+  }
+);
+
+export const grantFormAccess = createAsyncThunk(
+  'forms/grantAccess',
+  async ({ orgId, formId, userId, role }: { orgId: string; formId: string; userId: string; role: AccessRole }, { rejectWithValue, getState }) => {
+    try {
+      const db = getDatabaseService();
+      const state = getState() as any;
+      const currentUserId = state.auth.user?.uid;
+
+      if (!currentUserId) throw new Error('User not authenticated');
+
+      // 1. Update access subcollection
+      await db.setDocument(getAccessPath(orgId, formId), userId, {
+        role,
+        addedAt: new Date(),
+        addedBy: currentUserId
+      });
+
+      // 2. If role is editor or owner, allow update of ownerIds
+      const formDoc = await db.getDocument<{ id: string; data: any }>(getFormsPath(orgId), formId);
+      const currentOwnerIds = (formDoc?.data?.ownerIds as string[]) || [];
+      let newOwnerIds = [...currentOwnerIds];
+
+      if (role === 'owner' || role === 'editor') {
+        if (!newOwnerIds.includes(userId)) {
+          newOwnerIds.push(userId);
+        }
+      } else if (role === 'viewer') {
+        newOwnerIds = newOwnerIds.filter(id => id !== userId);
+      }
+
+      if (JSON.stringify(newOwnerIds) !== JSON.stringify(currentOwnerIds)) {
+         await db.updateDocument(getFormsPath(orgId), formId, {
+            ownerIds: newOwnerIds
+         });
+      }
+
+      // Return the new access object + updated ownerIds
+      return {
+          access: {
+            uid: userId,
+            role,
+            addedAt: new Date().toISOString(),
+            addedBy: currentUserId
+          },
+          ownerIds: newOwnerIds
+      };
+
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to grant access');
+    }
+  }
+);
+
+export const revokeFormAccess = createAsyncThunk(
+  'forms/revokeAccess',
+  async ({ orgId, formId, userId }: { orgId: string; formId: string; userId: string }, { rejectWithValue }) => {
+    try {
+      const db = getDatabaseService();
+      
+      // 1. Delete from access subcollection
+      await db.deleteDocument(getAccessPath(orgId, formId), userId);
+
+      // 2. Remove from ownerIds
+      const formDoc = await db.getDocument<{ id: string; data: any }>(getFormsPath(orgId), formId);
+      const currentOwnerIds = (formDoc?.data?.ownerIds as string[]) || [];
+      const newOwnerIds = currentOwnerIds.filter(id => id !== userId);
+
+      if (newOwnerIds.length !== currentOwnerIds.length) {
+         await db.updateDocument(getFormsPath(orgId), formId, {
+            ownerIds: newOwnerIds
+         });
+      }
+
+      return { userId, ownerIds: newOwnerIds };
+    } catch (error: any) {
+        return rejectWithValue(error.message || 'Failed to revoke access');
+    }
+  }
+);
+
+export const updateFormSettings = createAsyncThunk(
+    'forms/updateSettings',
+    async ({ orgId, formId, visibility }: { orgId: string; formId: string; visibility: 'private' | 'public' }, { rejectWithValue }) => {
+        try {
+            const db = getDatabaseService();
+            await db.updateDocument(getFormsPath(orgId), formId, {
+                visibility
+            });
+            return { visibility };
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to update settings');
+        }
+    }
+);
+
 const formsSlice = createSlice({
   name: 'forms',
   initialState,
@@ -229,6 +366,7 @@ const formsSlice = createSlice({
     clearCurrentForm: (state) => {
       state.currentForm = null;
       state.currentVersion = null;
+      state.currentFormAccess = [];
     }
   },
   extraReducers: (builder) => {
@@ -286,6 +424,45 @@ const formsSlice = createSlice({
       })
       .addCase(deleteForm.fulfilled, (state, action) => {
         state.forms = state.forms.filter(f => f.id !== action.payload);
+      })
+      // Access & Settings reducers
+      .addCase(fetchFormAccess.fulfilled, (state, action) => {
+          state.currentFormAccess = action.payload;
+      })
+      .addCase(grantFormAccess.fulfilled, (state, action) => {
+          // Update access list
+          const existing = state.currentFormAccess.findIndex(a => a.uid === action.payload.access.uid);
+          if (existing >= 0) {
+              state.currentFormAccess[existing] = action.payload.access;
+          } else {
+              state.currentFormAccess.push(action.payload.access);
+          }
+          // Update ownerIds in currentForm
+          if (state.currentForm) {
+              state.currentForm.ownerIds = action.payload.ownerIds;
+          }
+      })
+      .addCase(revokeFormAccess.fulfilled, (state, action) => {
+          state.currentFormAccess = state.currentFormAccess.filter(a => a.uid !== action.payload.userId);
+          if (state.currentForm) {
+              state.currentForm.ownerIds = action.payload.ownerIds;
+          }
+      })
+      .addCase(updateFormSettings.fulfilled, (state, action) => {
+          if (state.currentForm) {
+              state.currentForm = {
+                  ...state.currentForm,
+                  visibility: action.payload.visibility
+              };
+          }
+          // Also update in the list
+          const index = state.forms.findIndex(f => f.id === action.meta.arg.formId);
+          if (index !== -1) {
+              state.forms[index] = {
+                  ...state.forms[index],
+                  visibility: action.payload.visibility
+              };
+          }
       });
   },
 });

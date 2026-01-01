@@ -24,6 +24,8 @@ export interface Pipeline {
   createdAt: string;
   updatedAt: string;
   organizationId: string;
+  visibility: 'private' | 'public';
+  ownerIds: string[];
 }
 
 export interface StageMoveEvent {

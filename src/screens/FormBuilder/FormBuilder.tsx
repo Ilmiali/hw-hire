@@ -10,8 +10,9 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchFormById, saveFormDraft, publishForm, clearCurrentForm, fetchFormDraft } from '../../store/slices/formsSlice';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { ChevronLeftIcon, PlusIcon } from '@heroicons/react/16/solid';
+import { ChevronLeftIcon, PlusIcon, UsersIcon } from '@heroicons/react/16/solid';
 import FormBuilderSkeleton from './components/FormBuilderSkeleton';
+import FormSettingsDialog from './components/FormSettingsDialog';
 
 const FormBuilder = () => {
     const { orgId, formId } = useParams<{ orgId: string; formId: string }>();
@@ -21,6 +22,7 @@ const FormBuilder = () => {
     const { currentForm, currentVersion } = useSelector((state: RootState) => state.forms);
     const [isSaving, setIsSaving] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     // Access zustand state
     const form = useFormBuilderStore(state => state.form);
@@ -238,6 +240,13 @@ const FormBuilder = () => {
                 
                 <div className="flex gap-2">
                     <button 
+                         onClick={() => setIsSettingsOpen(true)}
+                         className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
+                         title="Sharing"
+                     >
+                         <UsersIcon className="w-5 h-5" />
+                     </button>
+                    <button 
                         onClick={() => navigate(`/orgs/${orgId}/forms/${formId}/preview`)}
                         className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-zinc-200 dark:border-white/10"
                     >
@@ -356,6 +365,13 @@ const FormBuilder = () => {
                     </div>
                 )}
             </div>
+
+            <FormSettingsDialog 
+                isOpen={isSettingsOpen} 
+                onClose={() => setIsSettingsOpen(false)} 
+                orgId={orgId!} 
+                formId={formId!} 
+            />
         </div>
     );
 };

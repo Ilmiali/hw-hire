@@ -1,8 +1,16 @@
-import { Avatar } from '../components/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Field } from '../data-components/dataTable';
 import { useState } from 'react';
 import { AddEntitiesDialog } from './AddEntitiesDialog';
 import { EntitiesTable, Entity } from './EntitiesTable';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 
 export interface Member extends Entity {
   id: string;
@@ -16,10 +24,28 @@ interface MembersTableProps {
   members: Member[];
   onMembersChange: (members: Member[]) => void;
   ownerId?: string;
+  defineRole?: boolean;
+  availableRoles?: string[];
+  orgId?: string;
+  moduleId?: string;
 }
 
-export function MembersTable({ members, onMembersChange, ownerId }: MembersTableProps) {
+export function MembersTable({ 
+  members, 
+  onMembersChange, 
+  ownerId,
+  defineRole = false,
+  availableRoles = ['viewer', 'editor', 'owner'],
+  orgId,
+  moduleId
+}: MembersTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  const handleRoleChange = (memberId: string, newRole: string) => {
+    onMembersChange(
+      members.map(m => m.id === memberId ? { ...m, role: newRole } : m)
+    );
+  };
 
   const memberFields: Field<Member>[] = [
     { 
@@ -27,20 +53,41 @@ export function MembersTable({ members, onMembersChange, ownerId }: MembersTable
       label: 'Name',
       render: (member: Member) => (
         <div className="flex items-center gap-3">
-          <Avatar 
-            src={member.avatarUrl} 
-            initials={member.name.split(' ').map(name => name[0]).join('').toUpperCase()} 
-            variant="round" 
-            className="size-8" 
-          />
-          <div className="flex flex-col">
-            <span className="font-medium capitalize">{member.name}</span>
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">{member.email}</span>
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={member.avatarUrl} alt={member.name} />
+            <AvatarFallback className="text-[10px] bg-primary/10">
+              {member.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col leading-tight">
+            <span className="font-medium text-sm capitalize">{member.name}</span>
+            <span className="text-[11px] text-muted-foreground">{member.email}</span>
           </div>
         </div>
       )
     },
-    { key: 'role', label: 'Role' },
+    { 
+      key: 'role', 
+      label: 'Role',
+      render: (member: Member) => (
+        <Select 
+          value={member.role} 
+          onValueChange={(value) => handleRoleChange(member.id, value)}
+          disabled={member.id === ownerId}
+        >
+          <SelectTrigger className="h-7 w-[100px] text-[11px] capitalize">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {availableRoles.map(role => (
+              <SelectItem key={role} value={role} className="text-[11px] capitalize">
+                {role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )
+    },
     { key: 'actions', label: '', type: 'actions' }
   ];
 
@@ -49,18 +96,21 @@ export function MembersTable({ members, onMembersChange, ownerId }: MembersTable
   };
 
   const renderMember = (member: Member) => (
-    <div className="flex items-center">
-      <Avatar
-        src={member.avatarUrl}
-        initials={member.name.split(' ').map(name => name[0]).join('')}
-        className="w-6 h-6 mr-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-      />
-      <div>
-        <div className="flex items-center">
-          <div className="font-medium text-zinc-900 dark:text-zinc-100 capitalize mr-2">{member.name}</div>
-          <div className="text-sm text-zinc-500">{member.role}</div>
+    <div className="flex items-center gap-2">
+      <Avatar className="h-7 w-7">
+        <AvatarImage src={member.avatarUrl} />
+        <AvatarFallback className="text-[10px]">
+          {member.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex flex-col leading-tight">
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-sm capitalize">{member.name}</span>
+          <Badge variant="secondary" className="text-[9px] px-1 h-3.5 border-0 font-normal">
+            {member.role}
+          </Badge>
         </div>
-        <div className="text-sm text-zinc-500">{member.email}</div>
+        <span className="text-[11px] text-muted-foreground">{member.email}</span>
       </div>
     </div>
   );
@@ -70,12 +120,13 @@ export function MembersTable({ members, onMembersChange, ownerId }: MembersTable
       <EntitiesTable<Member>
         entities={members}
         fields={memberFields}
-        title="Team Members"
+        title="Access List"
         showChips={false}
-        addButtonText="Add Members"
+        addButtonText="Grant Access"
         onEntitiesChange={onMembersChange}
         onAdd={() => setIsAddDialogOpen(true)}
         dense
+        actions={['delete']}
       />
 
       <AddEntitiesDialog<Member>
@@ -86,7 +137,11 @@ export function MembersTable({ members, onMembersChange, ownerId }: MembersTable
         searchField="name"
         title="Add Team Members"
         renderItem={renderMember}
+        defineRole={defineRole}
+        availableRoles={availableRoles}
         ignoreList={[...members.map(m => m.id), ...(ownerId ? [ownerId] : [])]}
+        orgId={orgId}
+        moduleId={moduleId}
       />
     </>
   );
