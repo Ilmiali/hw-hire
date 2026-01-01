@@ -9,7 +9,7 @@ import { Input } from '../../components/input';
 import { Field as FormField, Label } from '../../components/fieldset';
 import { DEFAULT_STAGES } from '../../types/pipeline';
 import NProgress from 'nprogress';
-import { ResourceListView } from '../../components/resource-list-view';
+import { ResourceListView } from '../../database-components/resource-list-view';
 
 export default function PipelineListPage() {
   const { orgId } = useParams<{ orgId: string }>();

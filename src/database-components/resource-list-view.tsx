@@ -5,9 +5,9 @@ import { AppDispatch } from '../store';
 import { createResource, deleteResource } from '../store/slices/resourceSlice';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from '@heroicons/react/16/solid';
-import { Heading } from './heading';
-import { Dialog, DialogActions, DialogDescription, DialogTitle } from './dialog';
-import { ResourceTable } from './resource-table';
+import { Heading } from '../components/heading';
+import { Dialog, DialogActions, DialogDescription, DialogTitle } from '../components/dialog';
+import { ResourceTable } from '../components/resource-table';
 import NProgress from 'nprogress';
 
 interface ResourceListViewProps {
@@ -118,7 +118,7 @@ export function ResourceListView({
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 bg-card rounded-lg shadow-sm border border-border">
+      <div className="flex-1 min-h-0">
          <ResourceTable
             orgId={orgId}
             moduleId={moduleId}

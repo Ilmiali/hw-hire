@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { ResourceListView } from '../../components/resource-list-view';
+import { ResourceListView } from '../../database-components/resource-list-view';
 
 export default function FormsList() {
   const { orgId } = useParams<{ orgId: string }>();

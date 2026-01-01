@@ -11,6 +11,8 @@ import {
   useReactTable,
   getSortedRowModel,
   SortingState,
+  getPaginationRowModel,
+  PaginationState,
 } from "@tanstack/react-table"
 import {
   Table,
@@ -30,6 +32,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   PlusIcon,
   EllipsisHorizontalIcon, 
@@ -41,7 +50,11 @@ import {
   LockClosedIcon,
   CheckCircleIcon,
   ClockIcon,
-  HandRaisedIcon
+  HandRaisedIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon
 } from '@heroicons/react/20/solid';
 import { cn } from '@/lib/utils';
 
@@ -139,6 +152,10 @@ export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowCl
   const { resources, loading: loadingResources } = useSelector((state: RootState) => state.resource);
   const { user: currentUser, loading: authLoading } = useSelector((state: RootState) => state.auth);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'updatedAt', desc: true }]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
   
   const resourceList = resources[resourceType] || [];
 
@@ -305,8 +322,11 @@ export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowCl
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    onPaginationChange: setPagination,
+    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
+      pagination,
     },
   })
 
@@ -368,81 +388,158 @@ export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowCl
   }
 
   return (
-    <div className="rounded-xl border border-border/40 overflow-hidden bg-background/50 backdrop-blur-sm">
-      <Table>
-        <TableHeader className="bg-muted/30">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="border-b border-border/40 hover:bg-transparent">
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id} className="h-10 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/50 px-4">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                )
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-                className="group cursor-pointer hover:bg-muted/50 border-b border-border/20 transition-all duration-200 last:border-0"
-                onClick={() => {
-                    onRowClick?.(row.original);
-                }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="px-4 py-3 group-hover:border-transparent">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+    <div className="flex flex-col h-full rounded-xl border border-border/40 overflow-hidden bg-background/50 backdrop-blur-sm shadow-sm">
+      <div className="flex-1 overflow-auto min-h-0">
+        <Table className="relative">
+          <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="border-b border-border/40 hover:bg-transparent">
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id} className="h-10 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/50 px-4">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  )
+                })}
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-[400px] text-center p-0 hover:bg-transparent">
-                <div className="flex flex-col items-center justify-center h-full space-y-4 animate-in fade-in zoom-in duration-300">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-primary/10 blur-2xl rounded-full" />
-                    <div className="relative bg-background border border-border/50 rounded-2xl p-4 shadow-xl">
-                      {resourceType === 'forms' ? (
-                        <CheckCircleIcon className="h-10 w-10 text-primary/60" />
-                      ) : (
-                        <ArrowsUpDownIcon className="h-10 w-10 text-primary/60" />
-                      )}
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="group cursor-pointer hover:bg-muted/50 border-b border-border/20 transition-all duration-200 last:border-0"
+                  onClick={() => {
+                      onRowClick?.(row.original);
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="px-4 py-3 group-hover:border-transparent">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-[400px] text-center p-0 hover:bg-transparent">
+                  <div className="flex flex-col items-center justify-center h-full space-y-4 animate-in fade-in zoom-in duration-300">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-primary/10 blur-2xl rounded-full" />
+                      <div className="relative bg-background border border-border/50 rounded-2xl p-4 shadow-xl">
+                        {resourceType === 'forms' ? (
+                          <CheckCircleIcon className="h-10 w-10 text-primary/60" />
+                        ) : (
+                          <ArrowsUpDownIcon className="h-10 w-10 text-primary/60" />
+                        )}
+                      </div>
                     </div>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold text-foreground tracking-tight">No {resourceType} found</h3>
+                      <p className="text-xs text-muted-foreground max-w-[200px] mx-auto leading-relaxed">
+                        Start by creating your first {resourceType.slice(0, -1)} to get things moving.
+                      </p>
+                    </div>
+                    {onCreate && (
+                      <Button 
+                        onClick={onCreate}
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl border-border/50 shadow-sm hover:bg-muted/50 transition-all duration-200 font-medium px-4"
+                      >
+                        <PlusIcon className="h-3.5 w-3.5 mr-2 opacity-60" />
+                        Create {resourceType.slice(0, -1)}
+                      </Button>
+                    )}
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-foreground tracking-tight">No {resourceType} found</h3>
-                    <p className="text-xs text-muted-foreground max-w-[200px] mx-auto leading-relaxed">
-                      Start by creating your first {resourceType.slice(0, -1)} to get things moving.
-                    </p>
-                  </div>
-                  {onCreate && (
-                    <Button 
-                      onClick={onCreate}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-xl border-border/50 shadow-sm hover:bg-muted/50 transition-all duration-200 font-medium px-4"
-                    >
-                      <PlusIcon className="h-3.5 w-3.5 mr-2 opacity-60" />
-                      Create {resourceType.slice(0, -1)}
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination Footer */}
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t border-border/40 shrink-0">
+        <div className="text-[11px] font-medium text-muted-foreground/60">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+        
+        <div className="flex items-center gap-6 lg:gap-8">
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-medium text-muted-foreground/70">Rows per page</p>
+            <Select
+              value={`${table.getState().pagination.pageSize}`}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value))
+              }}
+            >
+              <SelectTrigger className="h-7 w-[65px] text-[11px] font-semibold bg-transparent border-border/30 rounded-md ring-offset-0 focus:ring-0">
+                <SelectValue placeholder={table.getState().pagination.pageSize} />
+              </SelectTrigger>
+              <SelectContent side="top" className="min-w-[65px]">
+                {[10, 20, 30, 40, 50].map((pageSize) => (
+                  <SelectItem key={pageSize} value={`${pageSize}`} className="text-[11px]">
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-center text-[11px] font-semibold text-muted-foreground/80 min-w-max">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              className="hidden h-7 w-7 p-0 lg:flex border-border/30 bg-transparent hover:bg-muted/50"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to first page</span>
+              <ChevronDoubleLeftIcon className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+            <Button
+              variant="outline"
+              className="h-7 w-7 p-0 border-border/30 bg-transparent hover:bg-muted/50"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to previous page</span>
+              <ChevronLeftIcon className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+            <Button
+              variant="outline"
+              className="h-7 w-7 p-0 border-border/30 bg-transparent hover:bg-muted/50"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to next page</span>
+              <ChevronRightIcon className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+            <Button
+              variant="outline"
+              className="hidden h-7 w-7 p-0 lg:flex border-border/30 bg-transparent hover:bg-muted/50"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to last page</span>
+              <ChevronDoubleRightIcon className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
