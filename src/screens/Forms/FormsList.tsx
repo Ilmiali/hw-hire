@@ -1,4 +1,4 @@
-import { Button } from '../../components/button';
+import { Button } from '@/components/ui/button';
 import { Heading } from '../../components/heading';
 import { useState } from 'react';
 import { PlusIcon } from '@heroicons/react/16/solid';
@@ -75,8 +75,16 @@ export default function FormsList() {
     <div className="p-8 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6 flex-shrink-0">
         <Heading>Forms</Heading>
-        <Button onClick={handleCreateForm} disabled={isCreating}>
-          <PlusIcon />
+        <Button 
+          onClick={handleCreateForm} 
+          disabled={isCreating}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-tight shadow-lg shadow-primary/10 rounded-xl px-5 transition-all duration-200"
+        >
+          {isCreating ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2" />
+          ) : (
+            <PlusIcon className="mr-2 h-4 w-4" />
+          )}
           {isCreating ? 'Creating...' : 'Create Form'}
         </Button>
       </div>
@@ -97,10 +105,18 @@ export default function FormsList() {
           Are you sure you want to delete form "{formToDelete?.name}"? This action cannot be undone.
         </DialogDescription>
         <DialogActions>
-          <Button plain onClick={() => setFormToDelete(null)} disabled={isDeleting}>
+          <Button variant="ghost" onClick={() => setFormToDelete(null)} disabled={isDeleting}>
             Cancel
           </Button>
-          <Button color="red" onClick={handleDeleteConfirm} loading={isDeleting}>
+          <Button 
+            variant="destructive" 
+            onClick={handleDeleteConfirm} 
+            disabled={isDeleting}
+            className="rounded-lg shadow-sm font-medium"
+          >
+            {isDeleting && (
+               <div className="h-4 w-4 animate-spin rounded-full border-2 border-destructive-foreground border-t-transparent mr-2" />
+            )}
             Delete
           </Button>
         </DialogActions>
