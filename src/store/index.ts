@@ -8,6 +8,7 @@ import groupsReducer from './slices/groupsSlice';
 
 import formsReducer from './slices/formsSlice';
 import shareReducer from './slices/shareSlice';
+import resourceReducer from './slices/resourceSlice';
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
     groups: groupsReducer,
     forms: formsReducer,
     share: shareReducer,
+    resource: resourceReducer,
   },
 });
 
