@@ -33,19 +33,34 @@ export const fetchResources = createAsyncThunk(
       if (!currentUserId) throw new Error('User not authenticated');
 
       // 1. Fetch Public Resources
-      const publicDocsPromise = db.getDocuments<Document>(getResourcePath(orgId, moduleId, resourceType), {
+      const resourcePath = getResourcePath(orgId, moduleId, resourceType);
+      const publicDocsPromise = db.getDocuments<Document>(resourcePath, {
         constraints: [{ field: 'visibility', operator: '==', value: 'public' }]
       });
 
       // 2. Fetch Shared Resources (ids from user's shares subcollection)
-      const sharesPromise = db.getDocuments<Document>(getUserSharePath(orgId, moduleId, currentUserId));
+      const userSharePath = getUserSharePath(orgId, moduleId, currentUserId);
+      console.log(`[resourceSlice] Paths:`, { resourcePath, userSharePath });
+      const sharesPromise = db.getDocuments<Document>(userSharePath);
 
-      const [publicDocs, shareDocs] = await Promise.all([publicDocsPromise, sharesPromise]);
+      // 3. Fetch Owned Resources
+      const ownedDocsPromise = db.getDocuments<Document>(resourcePath, {
+        constraints: [{ field: 'ownerIds', operator: 'array-contains', value: currentUserId }]
+      });
+
+      const [publicDocs, shareDocs, ownedDocs] = await Promise.all([publicDocsPromise, sharesPromise, ownedDocsPromise]);
+      console.log(`[resourceSlice] Fetching ${resourceType}:`, { 
+        publicCount: publicDocs.length, 
+        shareCount: shareDocs.length,
+        ownedCount: ownedDocs.length 
+      });
 
       // Filter shares for this resource type (ids are like "forms_123", "pipelines_456")
       const sharedResourceIds = shareDocs
         .filter((doc) => doc.id.startsWith(`${resourceType}_`))
         .map((doc) => doc.id.replace(`${resourceType}_`, '')); // Extract actual ID
+      
+      console.log(`[resourceSlice] Found ${sharedResourceIds.length} shared IDs for ${resourceType}:`, sharedResourceIds);
 
       // Fetch full documents for shared resources
       const sharedDocsPromises = sharedResourceIds.map(id => 
@@ -54,8 +69,9 @@ export const fetchResources = createAsyncThunk(
 
       const sharedDocs = await Promise.all(sharedDocsPromises);
       const validSharedDocs = sharedDocs.filter(doc => doc !== null);
+      console.log(`[resourceSlice] Successfully fetched ${validSharedDocs.length} full shared docs`);
 
-      // 3. Merge and Deduplicate
+      // 4. Merge and Deduplicate
       const allDocsMap = new Map();
 
       // Add public docs
@@ -63,7 +79,12 @@ export const fetchResources = createAsyncThunk(
         allDocsMap.set(doc.id, doc);
       });
 
-      // Add shared docs (overwrite if exists - unlikely to differ significantly, but ensures we have accessible ones)
+      // Add owned docs
+      ownedDocs.forEach(doc => {
+        allDocsMap.set(doc.id, doc);
+      });
+
+      // Add shared docs (overwrite if exists)
       validSharedDocs.forEach(doc => {
         allDocsMap.set(doc!.id, doc);
       });
