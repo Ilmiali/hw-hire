@@ -128,6 +128,8 @@ export default function FormSettingsDialog({ isOpen, onClose, orgId, formId }: F
         avatarUrl: item.avatarUrl
     }));
 
+    const { user } = useSelector((state: RootState) => state.auth);
+
     return (
         <SharingDialog 
             isOpen={isOpen}
@@ -141,6 +143,7 @@ export default function FormSettingsDialog({ isOpen, onClose, orgId, formId }: F
             availableRoles={['viewer', 'editor', 'owner']}
             orgId={orgId}
             moduleId="hire"
+            currentUserId={user?.uid}
         />
     );
 }

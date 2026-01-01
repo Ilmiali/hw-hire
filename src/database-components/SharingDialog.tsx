@@ -24,6 +24,7 @@ interface SharingDialogProps {
     availableRoles?: string[];
     orgId?: string;
     moduleId?: string;
+    currentUserId?: string;
 }
 
 export function SharingDialog({
@@ -37,7 +38,8 @@ export function SharingDialog({
     ownerId,
     availableRoles = ['viewer', 'editor', 'owner'],
     orgId,
-    moduleId
+    moduleId,
+    currentUserId
 }: SharingDialogProps) {
     const [localVisibility, setLocalVisibility] = useState<'private' | 'public'>(initialVisibility);
     const [localMembers, setLocalMembers] = useState<Member[]>(initialMembers);
@@ -112,6 +114,7 @@ export function SharingDialog({
                                     availableRoles={availableRoles}
                                     orgId={orgId}
                                     moduleId={moduleId}
+                                    currentUserId={currentUserId}
                                 />
                             </div>
                         </div>

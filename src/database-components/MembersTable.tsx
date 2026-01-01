@@ -28,6 +28,7 @@ interface MembersTableProps {
   availableRoles?: string[];
   orgId?: string;
   moduleId?: string;
+  currentUserId?: string;
 }
 
 export function MembersTable({ 
@@ -37,9 +38,13 @@ export function MembersTable({
   defineRole = false,
   availableRoles = ['viewer', 'editor', 'owner'],
   orgId,
-  moduleId
+  moduleId,
+  currentUserId,
 }: MembersTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  const ownerCount = members.filter(m => m.role === 'owner').length;
+  const currentUserRole = members.find(m => m.id === currentUserId)?.role;
 
   const handleRoleChange = (memberId: string, newRole: string) => {
     onMembersChange(
@@ -73,7 +78,12 @@ export function MembersTable({
         <Select 
           value={member.role} 
           onValueChange={(value) => handleRoleChange(member.id, value)}
-          disabled={member.id === ownerId}
+          disabled={
+            member.id === ownerId || 
+            (member.role === 'owner' && ownerCount === 1) ||
+            (member.role === 'owner' && member.id !== currentUserId) ||
+            (currentUserRole !== 'owner' && member.id !== currentUserId)
+          }
         >
           <SelectTrigger className="h-7 w-[100px] text-[11px] capitalize">
             <SelectValue />
@@ -127,6 +137,25 @@ export function MembersTable({
         onAdd={() => setIsAddDialogOpen(true)}
         dense
         actions={['delete']}
+        isActionDisabled={(action, entity) => {
+          if (action === 'delete') {
+            const member = entity as Member;
+            // 1. Only owners can remove themselves or others? 
+            // The requirement: "only owner themselves can remove themselves"
+            // And "cannot remove another owner"
+            
+            if (member.role === 'owner') {
+              // Cannot remove another owner
+              if (member.id !== currentUserId) return true;
+              // Cannot remove if sole owner
+              if (ownerCount <= 1) return true;
+            } else {
+              // Non-owners can be removed if user is an owner or editor
+              if (currentUserRole !== 'owner' && currentUserRole !== 'editor') return true;
+            }
+          }
+          return false;
+        }}
       />
 
       <AddEntitiesDialog<Member>

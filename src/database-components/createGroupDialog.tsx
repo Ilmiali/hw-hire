@@ -130,6 +130,7 @@ export function CreateGroupDialog({ isOpen, onClose, groupId }: CreateGroupDialo
               members={members}
               onMembersChange={setMembers}
               ownerId={currentUser?.uid}
+              currentUserId={currentUser?.uid}
             />
           </div>
         </DialogBody>

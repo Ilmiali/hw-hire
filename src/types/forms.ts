@@ -9,6 +9,7 @@ export interface Form {
   status: FormStatus;
   visibility: 'private' | 'public';
   ownerIds: string[];
+  createdBy: string;
   publishedVersionId?: string;
   createdAt: string;
   updatedAt: string;

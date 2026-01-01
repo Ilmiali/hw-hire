@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { useParams } from 'react-router-dom';
 import { getDatabaseService } from '../../services/databaseService';
 import { MembersTable, Member } from '../../database-components/MembersTable';
@@ -21,6 +23,7 @@ interface UserProfile {
 
 export function MembersSettings() {
   const { orgId } = useParams<{ orgId: string }>();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const moduleId = 'hire'; 
@@ -87,6 +90,7 @@ export function MembersSettings() {
         <MembersTable 
           members={members} 
           onMembersChange={handleMembersChange}
+          currentUserId={user?.uid}
         />
       )}
     </div>

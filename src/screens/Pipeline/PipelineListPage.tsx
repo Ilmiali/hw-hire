@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { Button } from '../../components/button';
 import { DataTable, Field } from '../../data-components/dataTable';
 import { pipelineService } from '../../services/mockPipelineService';
@@ -11,6 +13,7 @@ import { Field as FormField, Label } from '../../components/fieldset';
 
 export default function PipelineListPage() {
   const navigate = useNavigate();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
@@ -25,7 +28,7 @@ export default function PipelineListPage() {
 
   const handleCreate = () => {
     if (!newPipelineName.trim()) return;
-    const newPipeline = pipelineService.createPipeline(newPipelineName);
+    const newPipeline = pipelineService.createPipeline(newPipelineName, user?.uid);
     setPipelines([...pipelines, newPipeline]);
     setIsCreateDialogOpen(false);
     setNewPipelineName('');

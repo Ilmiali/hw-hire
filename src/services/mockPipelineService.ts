@@ -12,6 +12,10 @@ const generateDefaultPipeline = (): Pipeline => {
     updatedAt: now,
     organizationId: 'org-1',
     activeVersionId: 'v1',
+    visibility: 'private',
+    ownerIds: ['user-1'],
+    createdBy: 'user-1',
+    members: [{ uid: 'user-1', role: 'owner' }],
     versions: [
       {
         id: 'v1',
@@ -59,7 +63,7 @@ class MockPipelineService {
     return this.pipelines.find(p => p.id === id);
   }
 
-  createPipeline(name: string): Pipeline {
+  createPipeline(name: string, userId: string = 'user-1'): Pipeline {
     const now = new Date().toISOString();
     const newPipeline: Pipeline = {
       id: uuidv4(),
@@ -68,6 +72,10 @@ class MockPipelineService {
       updatedAt: now,
       organizationId: 'org-1',
       activeVersionId: 'v1',
+      visibility: 'private',
+      ownerIds: [userId],
+      createdBy: userId,
+      members: [{ uid: userId, role: 'owner' }],
       versions: [
         {
           id: 'v1',

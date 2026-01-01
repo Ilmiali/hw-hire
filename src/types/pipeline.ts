@@ -26,6 +26,8 @@ export interface Pipeline {
   organizationId: string;
   visibility: 'private' | 'public';
   ownerIds: string[];
+  createdBy: string;
+  members: { uid: string; role: string }[];
 }
 
 export interface StageMoveEvent {

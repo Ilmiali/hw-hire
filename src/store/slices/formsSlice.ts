@@ -36,6 +36,7 @@ const mapDocumentToForm = (doc: any): Form => ({
   status: doc.data?.status || 'active',
   visibility: doc.data?.visibility || 'private',
   ownerIds: doc.data?.ownerIds || [],
+  createdBy: doc.data?.createdBy || '',
   publishedVersionId: doc.data?.publishedVersionId,
   createdAt: serializeDate(doc.createdAt) || (serializeDate(doc.data?.createdAt) as string) || new Date().toISOString(),
   updatedAt: serializeDate(doc.updatedAt) || (serializeDate(doc.data?.updatedAt) as string) || new Date().toISOString(),
@@ -137,6 +138,7 @@ export const createForm = createAsyncThunk(
         status: 'active',
         visibility: 'private',
         ownerIds: [currentUserId],
+        createdBy: currentUserId,
       });
       
       const actualFormId = typeof docId === 'string' ? docId : (docId as any).id;
@@ -146,6 +148,13 @@ export const createForm = createAsyncThunk(
         role: 'owner',
         addedAt: new Date(),
         addedBy: currentUserId
+      });
+
+      // Add to user's shares subcollection for querying
+      const userSharePath = `orgs/${orgId}/modules/hire/members/${currentUserId}/shares`;
+      await db.setDocument(userSharePath, `forms_${actualFormId}`, {
+        resourceName: name,
+        resourceUpdatedAt: new Date().toISOString()
       });
 
       // Create initial draft
@@ -186,6 +195,16 @@ export const saveFormDraft = createAsyncThunk(
         name: data.title,
         updatedAt: new Date() as any 
       });
+
+      // Update all member shares with the new name
+      const accessDocs = await db.getDocuments<any>(getAccessPath(orgId, formId));
+      for (const access of accessDocs) {
+        const userSharePath = `orgs/${orgId}/modules/hire/members/${access.id}/shares`;
+        await db.updateDocument(userSharePath, `forms_${formId}`, {
+          resourceName: data.title,
+          resourceUpdatedAt: new Date().toISOString()
+        });
+      }
 
       // Return the updated draft as a version object and the updated form metadata
       const draft = await db.getDocument(getDraftPath(orgId, formId), 'current');
@@ -278,8 +297,15 @@ export const grantFormAccess = createAsyncThunk(
         addedBy: currentUserId
       });
 
-      // 2. If role is editor or owner, allow update of ownerIds
+      // 2. Update user's shares subcollection
       const formDoc = await db.getDocument<{ id: string; data: any }>(getFormsPath(orgId), formId);
+      const userSharePath = `orgs/${orgId}/modules/hire/members/${userId}/shares`;
+      await db.setDocument(userSharePath, `forms_${formId}`, {
+        resourceName: formDoc?.data?.name || 'Unknown Form',
+        resourceUpdatedAt: new Date().toISOString()
+      });
+
+      // 3. If role is editor or owner, allow update of ownerIds
       const currentOwnerIds = (formDoc?.data?.ownerIds as string[]) || [];
       let newOwnerIds = [...currentOwnerIds];
 
@@ -322,6 +348,10 @@ export const revokeFormAccess = createAsyncThunk(
       
       // 1. Delete from access subcollection
       await db.deleteDocument(getAccessPath(orgId, formId), userId);
+
+      // 2. Remove from user's shares subcollection
+      const userSharePath = `orgs/${orgId}/modules/hire/members/${userId}/shares`;
+      await db.deleteDocument(userSharePath, `forms_${formId}`);
 
       // 2. Remove from ownerIds
       const formDoc = await db.getDocument<{ id: string; data: any }>(getFormsPath(orgId), formId);

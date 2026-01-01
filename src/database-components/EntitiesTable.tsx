@@ -31,6 +31,7 @@ interface EntitiesTableProps<T extends Entity> {
   nameField?: keyof T;
   avatarField?: keyof T;
   maxChips?: number;
+  isActionDisabled?: (action: 'view' | 'edit' | 'delete', entity: T) => boolean;
 }
 
 export function EntitiesTable<T extends Entity>({
@@ -47,6 +48,7 @@ export function EntitiesTable<T extends Entity>({
   nameField = 'name' as keyof T,
   avatarField = 'avatarUrl' as keyof T,
   maxChips,
+  isActionDisabled,
 }: EntitiesTableProps<T>) {
   const handleEntityAction = (action: 'view' | 'edit' | 'delete', entity: T) => {
     if (action === 'delete') {
@@ -115,6 +117,7 @@ export function EntitiesTable<T extends Entity>({
                             size="icon" 
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             onClick={() => handleEntityAction('view', entity)}
+                            disabled={isActionDisabled?.('view', entity)}
                           >
                             <EyeIcon className="h-4 w-4" />
                           </Button>
@@ -125,6 +128,7 @@ export function EntitiesTable<T extends Entity>({
                             size="icon" 
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             onClick={() => handleEntityAction('edit', entity)}
+                            disabled={isActionDisabled?.('edit', entity)}
                           >
                             <PencilIcon className="h-4 w-4" />
                           </Button>
@@ -135,6 +139,7 @@ export function EntitiesTable<T extends Entity>({
                             size="icon" 
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
                             onClick={() => handleEntityAction('delete', entity)}
+                            disabled={isActionDisabled?.('delete', entity)}
                           >
                             <TrashIcon className="h-4 w-4" />
                           </Button>
