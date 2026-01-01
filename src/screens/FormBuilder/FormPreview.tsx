@@ -21,8 +21,14 @@ import { Checkbox, CheckboxField, CheckboxGroup } from '../../components/checkbo
 import { Label, Field } from '../../components/fieldset';
 import { Heading } from '../../components/heading';
 import { Text } from '../../components/text';
-import { Button } from '../../components/button';
-import { XMarkIcon } from '@heroicons/react/20/solid';
+import { Button } from '@/components/ui/button';
+import { 
+    XMarkIcon, 
+    ArrowLeftIcon, 
+    ArrowRightIcon, 
+    CheckIcon,
+    PlusIcon
+} from '@heroicons/react/20/solid';
 
 export const FormPreview = () => {
     const { orgId, formId } = useParams<{ orgId: string; formId: string }>();
@@ -425,10 +431,11 @@ export const FormPreview = () => {
                         <Button 
                             type="button" 
                             onClick={() => onChange([...items, {}])}
-                            outline
-                            className="w-full border-dashed"
+                            variant="outline"
+                            className="w-full border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 rounded-xl py-6"
                         >
-                            + Add {field.label || 'Item'}
+                            <PlusIcon className="mr-2 h-4 w-4" />
+                            Add {field.label || 'Item'}
                         </Button>
                     </div>
                 );
@@ -467,7 +474,12 @@ export const FormPreview = () => {
                     <span className="bg-blue-100 dark:bg-blue-500/20 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border border-blue-200 dark:border-blue-500/30">Preview Mode</span>
                     <Text className="text-sm text-blue-700 dark:text-blue-200">This is how your form will look to users.</Text>
                 </div>
-                <Button onClick={() => navigate(`/orgs/${orgId}/forms/${formId}`)} outline>
+                <Button 
+                    variant="outline" 
+                    onClick={() => navigate(`/orgs/${orgId}/forms/${formId}`)}
+                    className="bg-white dark:bg-zinc-800 border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all rounded-lg"
+                >
+                    <ArrowLeftIcon className="mr-2 h-4 w-4" />
                     Back to Editor
                 </Button>
             </div>
@@ -580,22 +592,37 @@ export const FormPreview = () => {
                             </div>
 
                             {/* Navigation / Submit */}
-                            <div className="flex justify-between pt-8 border-t border-zinc-100 dark:border-white/5 mt-8">
+                            <div className="flex justify-between pt-8 border-t border-zinc-100 dark:border-white/5 mt-12 pb-12">
                                 <div>
                                     {!isFirstPage && (
-                                        <Button type="button" onClick={handlePrev} plain>
-                                            &larr; Previous Step
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            onClick={handlePrev}
+                                            className="text-muted-foreground hover:text-foreground transition-all rounded-lg"
+                                        >
+                                            <ArrowLeftIcon className="mr-2 h-4 w-4" />
+                                            Previous Step
                                         </Button>
                                     )}
                                 </div>
                                 <div>
                                     {isLastPage ? (
-                                        <Button type="submit" color="blue">
+                                        <Button 
+                                            type="submit" 
+                                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-tight shadow-lg shadow-primary/20 rounded-xl px-8 py-6 transition-all duration-200"
+                                        >
+                                            <CheckIcon className="mr-2 h-5 w-5" />
                                             Submit Form
                                         </Button>
                                     ) : (
-                                        <Button type="button" onClick={handleNext} color="blue">
-                                            Next Step &rarr;
+                                        <Button 
+                                            type="button" 
+                                            onClick={handleNext} 
+                                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-tight shadow-md rounded-xl px-8 py-6 transition-all duration-200"
+                                        >
+                                            Next Step
+                                            <ArrowRightIcon className="ml-2 h-5 w-5" />
                                         </Button>
                                     )}
                                 </div>

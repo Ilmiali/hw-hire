@@ -10,7 +10,15 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchFormById, saveFormDraft, publishForm, clearCurrentForm, fetchFormDraft } from '../../store/slices/formsSlice';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { ChevronLeftIcon, PlusIcon, UsersIcon } from '@heroicons/react/16/solid';
+import { Button } from '@/components/ui/button';
+import { 
+    ChevronLeftIcon, 
+    PlusIcon, 
+    UsersIcon,
+    EyeIcon,
+    ArrowDownOnSquareIcon,
+    RocketLaunchIcon
+} from '@heroicons/react/20/solid';
 import FormBuilderSkeleton from './components/FormBuilderSkeleton';
 import FormSettingsDialog from './components/FormSettingsDialog';
 
@@ -239,33 +247,48 @@ const FormBuilder = () => {
                 </div>
                 
                 <div className="flex gap-2">
-                    <button 
+                    <Button 
+                         variant="ghost"
+                         size="icon"
                          onClick={() => setIsSettingsOpen(true)}
-                         className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
+                         className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
                          title="Sharing"
                      >
-                         <UsersIcon className="w-5 h-5" />
-                     </button>
-                    <button 
+                         <UsersIcon className="w-4 h-4" />
+                     </Button>
+                    <Button 
+                        variant="ghost"
                         onClick={() => navigate(`/orgs/${orgId}/forms/${formId}/preview`)}
-                        className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-zinc-200 dark:border-white/10"
+                        className="h-9 px-4 text-sm font-medium hover:bg-muted/50 border border-transparent hover:border-border/40 rounded-lg transition-all"
                     >
+                        <EyeIcon className="mr-2 h-4 w-4 opacity-70" />
                         Preview
-                    </button>
-                    <button 
+                    </Button>
+                    <Button 
+                        variant="secondary"
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-zinc-200 dark:border-white/10 disabled:opacity-50"
+                        className="h-9 px-4 text-sm font-medium bg-secondary/50 hover:bg-secondary/80 border border-border/40 rounded-lg transition-all"
                     >
+                        {isSaving ? (
+                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent mr-2" />
+                        ) : (
+                           <ArrowDownOnSquareIcon className="mr-2 h-4 w-4 opacity-70" />
+                        )}
                         {isSaving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    <button 
+                    </Button>
+                    <Button 
                         onClick={handlePublish}
                         disabled={isPublishing}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                        className="h-9 px-4 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20 rounded-lg transition-all"
                     >
+                        {isPublishing ? (
+                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2" />
+                        ) : (
+                           <RocketLaunchIcon className="mr-2 h-4 w-4" />
+                        )}
                         {isPublishing ? 'Publishing...' : 'Publish'}
-                    </button>
+                    </Button>
                 </div>
             </header>
 
