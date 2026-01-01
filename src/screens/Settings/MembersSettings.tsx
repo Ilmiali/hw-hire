@@ -90,7 +90,9 @@ export function MembersSettings() {
         <MembersTable 
           members={members} 
           onMembersChange={handleMembersChange}
+          ownerIds={members.filter(m => m.role === 'owner').map(m => m.id)}
           currentUserId={user?.uid}
+          isOwner={members.find(m => m.id === user?.uid)?.role === 'owner'}
         />
       )}
     </div>

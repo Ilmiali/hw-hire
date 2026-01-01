@@ -25,7 +25,7 @@ interface SharingDialogProps {
     description?: string;
     visibility: 'private' | 'public';
     onVisibilityChange?: (visibility: 'private' | 'public') => Promise<void>;
-    ownerId?: string;
+    ownerIds: string[];
     availableRoles?: string[];
     orgId: string;
     moduleId: string;
@@ -41,7 +41,7 @@ export function SharingDialog({
     description = "Manage who can view and edit this resource.",
     visibility: initialVisibility,
     onVisibilityChange,
-    ownerId,
+    ownerIds,
     availableRoles = ['viewer', 'editor', 'owner'],
     orgId,
     moduleId,
@@ -112,6 +112,7 @@ export function SharingDialog({
     }, [accessList]);
 
     const isLoading = isAccessLoading || isDetailsLoading;
+    const isOwner = !!currentUserId && ownerIds.includes(currentUserId);
 
 
     const handleSave = async () => {
@@ -207,8 +208,16 @@ export function SharingDialog({
                             id="public-toggle"
                             checked={isPublic}
                             onCheckedChange={(checked) => setLocalVisibility(checked ? 'public' : 'private')}
+                            disabled={!isOwner}
                         />
                     </div>
+
+                    {!isOwner && (
+                        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-200">
+                            Only owners can modify sharing settings and visibility. 
+                            Your current view is read-only.
+                        </div>
+                    )}
 
                     {/* Access Management (Private Only) */}
                     {!isPublic && (
@@ -229,12 +238,13 @@ export function SharingDialog({
                                     <MembersTable 
                                         members={members}
                                         onMembersChange={setMembers}
-                                        ownerId={ownerId}
+                                        ownerIds={ownerIds}
                                         defineRole={true}
                                         availableRoles={availableRoles}
                                         orgId={orgId}
                                         moduleId={moduleId}
                                         currentUserId={currentUserId}
+                                        isOwner={isOwner}
                                     />
                                 )}
                             </div>
@@ -244,11 +254,13 @@ export function SharingDialog({
 
                 <DialogFooter className="mt-6 border-t pt-4">
                     <Button variant="outline" onClick={() => onClose(false)} disabled={isSaving}>
-                        Cancel
+                        {isOwner ? "Cancel" : "Close"}
                     </Button>
-                    <Button onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? "Saving..." : "Save Changes"}
-                    </Button>
+                    {isOwner && (
+                        <Button onClick={handleSave} disabled={isSaving}>
+                            {isSaving ? "Saving..." : "Save Changes"}
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

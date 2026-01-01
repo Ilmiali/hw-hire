@@ -29,7 +29,7 @@ export default function FormSettingsDialog({ isOpen, onClose, orgId, formId }: F
             description="Manage who can view and edit this form."
             visibility={currentForm?.visibility || 'private'}
             onVisibilityChange={handleVisibilityChange}
-            ownerId={currentForm?.ownerIds?.[0]}
+            ownerIds={currentForm?.ownerIds || []}
             availableRoles={['viewer', 'editor', 'owner']}
             orgId={orgId}
             moduleId="hire"

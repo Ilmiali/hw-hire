@@ -23,23 +23,25 @@ export interface Member extends Entity {
 interface MembersTableProps {
   members: Member[];
   onMembersChange: (members: Member[]) => void;
-  ownerId?: string;
+  ownerIds: string[];
   defineRole?: boolean;
   availableRoles?: string[];
   orgId?: string;
   moduleId?: string;
   currentUserId?: string;
+  isOwner?: boolean;
 }
 
 export function MembersTable({ 
   members, 
   onMembersChange, 
-  ownerId,
+  ownerIds,
   defineRole = false,
   availableRoles = ['viewer', 'editor', 'owner'],
   orgId,
   moduleId,
   currentUserId,
+  isOwner = false,
 }: MembersTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -79,9 +81,8 @@ export function MembersTable({
           value={member.role} 
           onValueChange={(value) => handleRoleChange(member.id, value)}
           disabled={
-            member.id === ownerId || 
+            !isOwner ||
             (member.role === 'owner' && ownerCount === 1) ||
-            (member.role === 'owner' && member.id !== currentUserId) ||
             (currentUserRole !== 'owner' && member.id !== currentUserId)
           }
         >
@@ -134,24 +135,22 @@ export function MembersTable({
         showChips={false}
         addButtonText="Grant Access"
         onEntitiesChange={onMembersChange}
-        onAdd={() => setIsAddDialogOpen(true)}
+        onAdd={isOwner ? () => setIsAddDialogOpen(true) : undefined}
         dense
         actions={['delete']}
         isActionDisabled={(action, entity) => {
+          if (!isOwner) return true; // Non-owners cannot take any action
           if (action === 'delete') {
             const member = entity as Member;
-            // 1. Only owners can remove themselves or others? 
-            // The requirement: "only owner themselves can remove themselves"
-            // And "cannot remove another owner"
-            
             if (member.role === 'owner') {
-              // Cannot remove another owner
-              if (member.id !== currentUserId) return true;
-              // Cannot remove if sole owner
-              if (ownerCount <= 1) return true;
-            } else {
-              // Non-owners can be removed if user is an owner or editor
-              if (currentUserRole !== 'owner' && currentUserRole !== 'editor') return true;
+              // Cannot remove another owner unless maybe it's themselves? 
+              // Usually owner can manage everything. 
+              // But requirement says "only owner themselves can remove themselves"
+              // Let's refine: Owners can remove non-owners. 
+              // Owners can remove themselves if they are not the only owner.
+              
+              if (member.id !== currentUserId) return true; // Cannot remove other owners
+              if (ownerCount <= 1) return true; // Cannot remove self if sole owner
             }
           }
           return false;
@@ -168,7 +167,7 @@ export function MembersTable({
         renderItem={renderMember}
         defineRole={defineRole}
         availableRoles={availableRoles}
-        ignoreList={[...members.map(m => m.id), ...(ownerId ? [ownerId] : [])]}
+        ignoreList={[...members.map(m => m.id), ...ownerIds]}
         orgId={orgId}
         moduleId={moduleId}
       />
