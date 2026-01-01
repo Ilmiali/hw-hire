@@ -1346,6 +1346,13 @@
   dependencies:
     undici-types "~6.20.0"
 
+"@types/node@^25.0.3":
+  version "25.0.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-25.0.3.tgz#79b9ac8318f373fbfaaf6e2784893efa9701f269"
+  integrity sha512-W609buLVRVmeW693xKfzHeIV6nJGGz98uCPfeXI1ELMLXVeKYZ9m15fAMSaUPBHYLGFsVRcMmSCksQOrZV9BYA==
+  dependencies:
+    undici-types "~7.16.0"
+
 "@types/nprogress@^0.2.3":
   version "0.2.3"
   resolved "https://registry.npmjs.org/@types/nprogress/-/nprogress-0.2.3.tgz"
@@ -1575,6 +1582,13 @@ chalk@^4.0.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
+class-variance-authority@^0.7.1:
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/class-variance-authority/-/class-variance-authority-0.7.1.tgz#4008a798a0e4553a781a57ac5177c9fb5d043787"
+  integrity sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==
+  dependencies:
+    clsx "^2.1.1"
+
 cliui@^8.0.1:
   version "8.0.1"
   resolved "https://registry.npmjs.org/cliui/-/cliui-8.0.1.tgz"
@@ -1588,6 +1602,13 @@ clsx@^2.0.0, clsx@^2.1.1:
   version "2.1.1"
   resolved "https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz"
   integrity sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==
+
+cobe@^0.6.5:
+  version "0.6.5"
+  resolved "https://registry.yarnpkg.com/cobe/-/cobe-0.6.5.tgz#193c0fb38f23b3e9fc80fa64828ad95d58858c18"
+  integrity sha512-MA8bu81EFY6JjQpj+FovEuhyJ25khx2Q7Lh+ot/UkCJe5yKyDgzdc6u2lGZIOmsZTXK6Itg1i4lQZIJZbPWnAg==
+  dependencies:
+    phenomenon "^1.6.0"
 
 color-convert@^2.0.1:
   version "2.0.1"
@@ -1934,6 +1955,15 @@ fraction.js@^4.3.7:
   resolved "https://registry.npmjs.org/fraction.js/-/fraction.js-4.3.7.tgz"
   integrity sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==
 
+framer-motion@^12.23.26:
+  version "12.23.26"
+  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-12.23.26.tgz#2a684e9b156118e1c4989d7fc9327def83480391"
+  integrity sha512-cPcIhgR42xBn1Uj+PzOyheMtZ73H927+uWPDVhUMqxy8UHt6Okavb6xIz9J/phFUHUj0OncR6UvMfJTXoc/LKA==
+  dependencies:
+    motion-dom "^12.23.23"
+    motion-utils "^12.23.6"
+    tslib "^2.4.0"
+
 framer-motion@^12.6.1:
   version "12.6.1"
   resolved "https://registry.npmjs.org/framer-motion/-/framer-motion-12.6.1.tgz"
@@ -2247,6 +2277,11 @@ lru-cache@^5.1.1:
   dependencies:
     yallist "^3.0.2"
 
+lucide-react@^0.562.0:
+  version "0.562.0"
+  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-0.562.0.tgz#217796c2f57624f012b484ea7f08505067c90d51"
+  integrity sha512-82hOAu7y0dbVuFfmO4bYF1XEwYk/mEbM5E+b1jgci/udUBEE/R7LF5Ip0CCEmXe8AybRM8L+04eP+LGZeDvkiw==
+
 merge2@^1.3.0:
   version "1.4.1"
   resolved "https://registry.npmjs.org/merge2/-/merge2-1.4.1.tgz"
@@ -2279,6 +2314,13 @@ moment@^2.30.1:
   resolved "https://registry.npmjs.org/moment/-/moment-2.30.1.tgz"
   integrity sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==
 
+motion-dom@^12.23.23:
+  version "12.23.23"
+  resolved "https://registry.yarnpkg.com/motion-dom/-/motion-dom-12.23.23.tgz#8f874333ea1a04ee3a89eb928f518b463d589e0e"
+  integrity sha512-n5yolOs0TQQBRUFImrRfs/+6X4p3Q4n1dUEqt/H58Vx7OW6RF+foWEgmTVDhIWJIMXOuNNL0apKH2S16en9eiA==
+  dependencies:
+    motion-utils "^12.23.6"
+
 motion-dom@^12.6.1:
   version "12.6.1"
   resolved "https://registry.npmjs.org/motion-dom/-/motion-dom-12.6.1.tgz"
@@ -2286,10 +2328,23 @@ motion-dom@^12.6.1:
   dependencies:
     motion-utils "^12.5.0"
 
+motion-utils@^12.23.6:
+  version "12.23.6"
+  resolved "https://registry.yarnpkg.com/motion-utils/-/motion-utils-12.23.6.tgz#fafef80b4ea85122dd0d6c599a0c63d72881f312"
+  integrity sha512-eAWoPgr4eFEOFfg2WjIsMoqJTW6Z8MTUCgn/GZ3VRpClWBdnbjryiA3ZSNLyxCTmCQx4RmYX6jX1iWHbenUPNQ==
+
 motion-utils@^12.5.0:
   version "12.5.0"
   resolved "https://registry.npmjs.org/motion-utils/-/motion-utils-12.5.0.tgz"
   integrity sha512-+hFFzvimn0sBMP9iPxBa9OtRX35ZQ3py0UHnb8U29VD+d8lQ8zH3dTygJWqK7av2v6yhg7scj9iZuvTS0f4+SA==
+
+motion@^12.23.26:
+  version "12.23.26"
+  resolved "https://registry.yarnpkg.com/motion/-/motion-12.23.26.tgz#7309d3f13df43795b774fa98821c6ee5d6fab4f1"
+  integrity sha512-Ll8XhVxY8LXMVYTCfme27WH2GjBrCIzY4+ndr5QKxsK+YwCtOi2B/oBi5jcIbik5doXuWT/4KKDOVAZJkeY5VQ==
+  dependencies:
+    framer-motion "^12.23.26"
+    tslib "^2.4.0"
 
 ms@^2.1.3:
   version "2.1.3"
@@ -2363,6 +2418,11 @@ path-key@^3.1.0:
   version "3.1.1"
   resolved "https://registry.npmjs.org/path-key/-/path-key-3.1.1.tgz"
   integrity sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==
+
+phenomenon@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/phenomenon/-/phenomenon-1.6.0.tgz#7b5b7647d0b48152cc0846994da3d92e8f6da677"
+  integrity sha512-7h9/fjPD3qNlgggzm88cY58l9sudZ6Ey+UmZsizfhtawO6E3srZQXywaNm2lBwT72TbpHYRPy7ytIHeBUD/G0A==
 
 picocolors@^1.0.0, picocolors@^1.1.1:
   version "1.1.1"
@@ -2644,6 +2704,16 @@ tabbable@^6.0.0:
   resolved "https://registry.npmjs.org/tabbable/-/tabbable-6.2.0.tgz"
   integrity sha512-Cat63mxsVJlzYvN51JmVXIgNoUokrIaT2zLclCXjRd8boZ0004U4KCs/sToJ75C6sdlByWxpYnb5Boif1VSFew==
 
+tailwind-merge@^3.4.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/tailwind-merge/-/tailwind-merge-3.4.0.tgz#5a264e131a096879965f1175d11f8c36e6b64eca"
+  integrity sha512-uSaO4gnW+b3Y2aWoWfFpX62vn2sR3skfhbjsEnaBI81WD1wBLlHZe5sWf0AqjksNdYTbGBEd0UasQMT3SNV15g==
+
+tailwindcss-animate@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/tailwindcss-animate/-/tailwindcss-animate-1.0.7.tgz#318b692c4c42676cc9e67b19b78775742388bef4"
+  integrity sha512-bl6mpH3T7I3UFxuvDEXLxy/VuFxBk5bbzplh7tXI68mwMokNYd1t9qPBHlnyTwfa4JGC4zP516I1hYYtQ/vspA==
+
 tailwindcss@4.0.17:
   version "4.0.17"
   resolved "https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.0.17.tgz"
@@ -2681,6 +2751,11 @@ turbo-stream@2.4.0:
   resolved "https://registry.npmjs.org/turbo-stream/-/turbo-stream-2.4.0.tgz"
   integrity sha512-FHncC10WpBd2eOmGwpmQsWLDoK4cqsA/UT/GqNoaKOQnT8uzhtCbg3EoUDMvqpOSAI0S26mr0rkjzbOO6S3v1g==
 
+tw-animate-css@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/tw-animate-css/-/tw-animate-css-1.4.0.tgz#b4a06f68244cba39428aa47e65e6e4c0babc21ee"
+  integrity sha512-7bziOlRqH0hJx80h/3mbicLW7o8qLsH5+RaLR2t+OHM3D0JlWGODQKQ4cxbK7WlvmUxpcj6Kgu6EKqjrGFe3QQ==
+
 type-check@^0.4.0, type-check@~0.4.0:
   version "0.4.0"
   resolved "https://registry.npmjs.org/type-check/-/type-check-0.4.0.tgz"
@@ -2706,6 +2781,11 @@ undici-types@~6.20.0:
   version "6.20.0"
   resolved "https://registry.npmjs.org/undici-types/-/undici-types-6.20.0.tgz"
   integrity sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==
+
+undici-types@~7.16.0:
+  version "7.16.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-7.16.0.tgz#ffccdff36aea4884cbfce9a750a0580224f58a46"
+  integrity sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==
 
 update-browserslist-db@^1.1.1:
   version "1.1.3"

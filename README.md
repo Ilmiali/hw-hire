@@ -2,6 +2,31 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
+## Getting Started
+
+### Prerequisites
+- Use **Node.js 22**. You can ensure this by running:
+  ```bash
+  nvm use 22
+  ```
+
+### Installation
+- Use **Yarn** for managing dependencies. To install a new package, use:
+  ```bash
+  yarn add <package-name>
+  ```
+
+## Development Guidelines
+
+### Components
+- **General Components**: Place our custom Tailwind + React components in `src/components/`.
+- **UI Components (Shadcn)**: Use [shadcn/ui](https://ui.shadcn.com/) for core UI components. These are located in `src/components/ui/`.
+- **Adding Components**: To add a new shadcn component that we don't have yet, run:
+  ```bash
+  npx shadcn@latest add <component-name>
+  ```
+
+## Official Plugins
 Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
