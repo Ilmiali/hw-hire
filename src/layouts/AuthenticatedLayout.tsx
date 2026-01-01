@@ -22,7 +22,6 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const { orgId } = useParams<{ orgId: string }>()
   const dispatch = useDispatch()
   const { currentOrganization, organizations } = useSelector((state: RootState) => state.organization)
-  const [, setIsLoading] = useState(false)
   const isFormPage = location.pathname.includes('/forms/') && location.pathname.split('/').length > 4
   const [collapsed, setCollapsed] = useState(() => isFormPage)
 
@@ -46,19 +45,11 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   }, [location.pathname, isFormPage])
 
   useEffect(() => {
-    setIsLoading(true)
-    NProgress.start()
-    
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-      NProgress.done()
-    }, 500) // Small delay to ensure smooth animation
-
-    return () => {
-      clearTimeout(timer)
-      NProgress.done()
-    }
-  }, [location])
+    // Only show NProgress on actual route changes if needed, but removing artificial delay
+    // NProgress.start();
+    // NProgress.done();
+    // For now we can remove this effect if it only served to add delay
+  }, [])
 
   return (
     <>
