@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../store';
-import { updateFormSettings } from '../../../store/slices/formsSlice';
+import { updateResourceSettings } from '../../../store/slices/resourceSlice';
 import { SharingDialog } from '../../../database-components/SharingDialog';
 
 interface FormSettingsDialogProps {
@@ -12,12 +12,18 @@ interface FormSettingsDialogProps {
 
 export default function FormSettingsDialog({ isOpen, onClose, orgId, formId }: FormSettingsDialogProps) {
     const dispatch = useDispatch<AppDispatch>();
-    const { currentForm } = useSelector((state: RootState) => state.forms);
+    const { activeResource: currentForm } = useSelector((state: RootState) => state.resource);
     const { user } = useSelector((state: RootState) => state.auth);
 
     const handleVisibilityChange = async (visibility: 'private' | 'public') => {
         if (visibility !== (currentForm?.visibility || 'private')) {
-            await dispatch(updateFormSettings({ orgId, formId, visibility })).unwrap();
+            await dispatch(updateResourceSettings({ 
+                orgId, 
+                moduleId: 'hire', 
+                resourceType: 'forms', 
+                resourceId: formId, 
+                settings: { visibility } 
+            })).unwrap();
         }
     };
 

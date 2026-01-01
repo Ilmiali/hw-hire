@@ -9,7 +9,7 @@ import { buildZodSchema } from '../../utils/validation';
 import { z } from 'zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
-import { fetchFormById, fetchFormDraft } from '../../store/slices/formsSlice';
+import { fetchResourceById, fetchResourceDraft } from '../../store/slices/resourceSlice';
 import { toast } from 'react-toastify';
 
 // UI Components
@@ -35,7 +35,7 @@ export const FormPreview = () => {
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
     
-    const { currentForm, currentVersion } = useSelector((state: RootState) => state.forms);
+    const { activeResource: currentForm, activeDraft: currentVersion } = useSelector((state: RootState) => state.resource);
     const form = useFormBuilderStore(state => state.form);
     const setForm = useFormBuilderStore(state => state.setForm);
 
@@ -46,7 +46,7 @@ export const FormPreview = () => {
     // Load form data if navigation was direct
     useEffect(() => {
         if (orgId && formId && (!currentForm || currentForm.id !== formId)) {
-            dispatch(fetchFormById({ orgId, formId }));
+            dispatch(fetchResourceById({ orgId, moduleId: 'hire', resourceType: 'forms', resourceId: formId }));
         }
     }, [dispatch, orgId, formId, currentForm]);
 
@@ -57,7 +57,7 @@ export const FormPreview = () => {
              // However, strictly speaking "Preview this form" might mean different things.
              // Given the bug report "previewing forms is not working", and likely they are in builder,
              // let's try to fetch the most recent version first.
-            dispatch(fetchFormDraft({ orgId, formId }));
+            dispatch(fetchResourceDraft({ orgId, moduleId: 'hire', resourceType: 'forms', resourceId: formId }));
         }
     }, [dispatch, orgId, formId]);
 

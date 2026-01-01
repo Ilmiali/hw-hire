@@ -7,7 +7,7 @@ import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
-import { fetchFormById, saveFormDraft, publishForm, clearCurrentForm, fetchFormDraft } from '../../store/slices/formsSlice';
+import { fetchResourceById, saveResourceDraft, publishResource, clearActiveResource, fetchResourceDraft } from '../../store/slices/resourceSlice';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ const FormBuilder = () => {
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
     
-    const { currentForm, currentVersion } = useSelector((state: RootState) => state.forms);
+    const { activeResource: currentForm, activeDraft: currentVersion, loading } = useSelector((state: RootState) => state.resource);
     const [isSaving, setIsSaving] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -66,10 +66,10 @@ const FormBuilder = () => {
     // Load form data
     useEffect(() => {
         if (orgId && formId) {
-            dispatch(fetchFormById({ orgId, formId }));
+            dispatch(fetchResourceById({ orgId, moduleId: 'hire', resourceType: 'forms', resourceId: formId }));
         }
         return () => {
-			dispatch(clearCurrentForm());
+			dispatch(clearActiveResource());
             // Reset the zustand store so next time we open a form it doesn't flash the old one
             useFormBuilderStore.getState().reset();
         };
@@ -77,7 +77,7 @@ const FormBuilder = () => {
 
     useEffect(() => {
         if (orgId && formId) {
-            dispatch(fetchFormDraft({ orgId, formId }));
+            dispatch(fetchResourceDraft({ orgId, moduleId: 'hire', resourceType: 'forms', resourceId: formId }));
         }
     }, [dispatch, orgId, formId]);
 
@@ -114,7 +114,14 @@ const FormBuilder = () => {
         try {
             // Ensure title is up to date in the form object before saving
             // (Zustand store should be up to date, but just in case)
-            await dispatch(saveFormDraft({ orgId, formId, data: form })).unwrap();
+            await dispatch(saveResourceDraft({ 
+                orgId, 
+                moduleId: 'hire', 
+                resourceType: 'forms', 
+                resourceId: formId, 
+                data: form,
+                resourceUpdates: { name: form.title } // Update form name in resource doc
+            })).unwrap();
             toast.success('Form draft saved!');
         } catch (error: any) {
             console.error('Save failed:', error);
@@ -128,8 +135,22 @@ const FormBuilder = () => {
         if (!orgId || !formId) return;
         setIsPublishing(true);
         try {
-            await dispatch(saveFormDraft({ orgId, formId, data: form })).unwrap();
-            await dispatch(publishForm({ orgId, formId })).unwrap();
+            await dispatch(saveResourceDraft({ 
+                orgId, 
+                moduleId: 'hire', 
+                resourceType: 'forms', 
+                resourceId: formId, 
+                data: form,
+                resourceUpdates: { name: form.title }
+            })).unwrap();
+            
+            await dispatch(publishResource({ 
+                orgId, 
+                moduleId: 'hire', 
+                resourceType: 'forms', 
+                resourceId: formId 
+            })).unwrap();
+            
             toast.success('Form published successfully!');
         } catch (error: any) {
             toast.error('Failed to publish: ' + error.message);
@@ -177,7 +198,7 @@ const FormBuilder = () => {
     const isInitialized = useFormBuilderStore(state => state.isInitialized);
 
     // Access global loading state
-    const { loading, error } = useSelector((state: RootState) => state.forms);
+    // already accessed above from resource state
 
     // Show skeleton if:
     // 1. Redux is fetching (loading=true)

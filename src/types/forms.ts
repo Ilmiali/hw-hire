@@ -1,18 +1,12 @@
 import { FormSchema } from './form-builder';
 
-export type FormStatus = 'active' | 'draft' | 'archived';
+import { Resource, ResourceStatus } from './resource';
 
-export interface Form {
-  id: string;
-  name: string;
-  description: string;
-  status: FormStatus;
-  visibility: 'private' | 'public';
-  ownerIds: string[];
-  createdBy: string;
-  publishedVersionId?: string;
-  createdAt: string;
-  updatedAt: string;
+export type FormStatus = ResourceStatus;
+
+export interface Form extends Resource {
+  // Form specific fields can go here if any.
+  // Currently Form matches Resource exactly, but we keep the interface for type safety/extension.
 }
 
 export interface FormVersion {

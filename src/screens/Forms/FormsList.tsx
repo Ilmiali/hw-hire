@@ -5,8 +5,7 @@ import { PlusIcon } from '@heroicons/react/16/solid';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../store';
-import { createForm, deleteForm } from '../../store/slices/formsSlice';
-import { fetchResources } from '../../store/slices/resourceSlice';
+import { createResource, deleteResource, fetchResources } from '../../store/slices/resourceSlice';
 import NProgress from 'nprogress';
 import { Form } from '../../types/forms';
 import { Dialog, DialogActions, DialogDescription, DialogTitle } from '../../components/dialog';
@@ -34,14 +33,27 @@ export default function FormsList() {
     NProgress.start();
     
     try {
-      const result = await dispatch(createForm({ 
+      // Define initial draft generator
+      const initialDraftGenerator = (id: string) => ({
+          id,
+          title: 'New Form',
+          pages: [{ id: 'page-1', title: 'Page 1', sections: [] }],
+          rules: []
+      });
+
+      const result = await dispatch(createResource({ 
         orgId, 
-        name: 'New Form', 
-        description: '' 
+        moduleId: 'hire', 
+        resourceType: 'forms',
+        data: {
+            name: 'New Form', 
+            description: '' 
+        },
+        initialDraftData: initialDraftGenerator
       })).unwrap();
       
-      if (result.id) {
-        navigate(`/orgs/${orgId}/forms/${result.id}`);
+      if (result.resource.id) {
+        navigate(`/orgs/${orgId}/forms/${result.resource.id}`);
       }
     } catch (error) {
        console.error("Failed to create form", error);
@@ -57,9 +69,10 @@ export default function FormsList() {
     setIsDeleting(true);
     NProgress.start();
     try {
-      await dispatch(deleteForm({ orgId, formId: formToDelete.id })).unwrap();
-      // Refresh list
-      dispatch(fetchResources({ orgId, moduleId: 'hire', resourceType: 'forms' }));
+      await dispatch(deleteResource({ orgId, moduleId: 'hire', resourceType: 'forms', resourceId: formToDelete.id })).unwrap();
+      // Refresh list (resourceSlice handle update automatically but fetching ensures consistency if needed, though deleteResource reducer updates local state)
+      // No need to fetchResources again if reducer works, but fetching is safer for shared resources lists sometimes.
+      // Actually resourceSlice reducer filters it out.
     } catch (error) {
       console.error("Failed to delete form", error);
     } finally {

@@ -15,18 +15,12 @@ export interface PipelineVersion {
   publishedAt?: string; // ISO Date
 }
 
-export interface Pipeline {
-  id: string;
-  name: string;
-  description?: string;
+import { Resource } from './resource';
+
+export interface Pipeline extends Resource {
   activeVersionId: string;
   versions: PipelineVersion[]; // History of versions
-  createdAt: string;
-  updatedAt: string;
   organizationId: string;
-  visibility: 'private' | 'public';
-  ownerIds: string[];
-  createdBy: string;
   members: { uid: string; role: string }[];
 }
 

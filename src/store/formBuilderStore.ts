@@ -9,6 +9,7 @@ interface FormBuilderState {
   form: FormSchema;
   activePageId: string;
   selectedElementId: string | null;
+  sidebarOpen: boolean;
   isInitialized: boolean;
 
   // Global Actions
