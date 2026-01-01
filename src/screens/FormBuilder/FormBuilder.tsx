@@ -20,7 +20,7 @@ import {
     RocketLaunchIcon
 } from '@heroicons/react/20/solid';
 import FormBuilderSkeleton from './components/FormBuilderSkeleton';
-import FormSettingsDialog from './components/FormSettingsDialog';
+import { SharingDialog } from '../../database-components/SharingDialog';
 
 const FormBuilder = () => {
     const { orgId, formId } = useParams<{ orgId: string; formId: string }>();
@@ -28,6 +28,7 @@ const FormBuilder = () => {
     const navigate = useNavigate();
     
     const { activeResource: currentForm, activeDraft: currentVersion, loading } = useSelector((state: RootState) => state.resource);
+    const { user } = useSelector((state: RootState) => state.auth);
     const [isSaving, setIsSaving] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -410,12 +411,19 @@ const FormBuilder = () => {
                 )}
             </div>
 
-            <FormSettingsDialog 
+            <SharingDialog 
                 isOpen={isSettingsOpen} 
                 onClose={() => setIsSettingsOpen(false)} 
-                orgId={orgId!} 
-                formId={formId!} 
+                title="Sharing"
+                description="Manage who can view and edit this form."
+                visibility={currentForm?.visibility || 'private'}
+                ownerIds={currentForm?.ownerIds || []}
+                availableRoles={['viewer', 'editor', 'owner']}
+                orgId={orgId!}
+                moduleId="hire"
                 resourceType="forms"
+                resourceId={formId!}
+                currentUserId={user?.uid}
             />
         </div>
     );

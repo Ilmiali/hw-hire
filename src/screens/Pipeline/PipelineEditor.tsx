@@ -17,7 +17,7 @@ import { PipelineLeftSidebar } from './components/PipelineLeftSidebar';
 import { PipelinePropertiesPanel } from './components/PipelinePropertiesPanel';
 import { toast } from 'react-toastify';
 import NProgress from 'nprogress';
-import FormSettingsDialog from '../FormBuilder/components/FormSettingsDialog';
+import { SharingDialog } from '../../database-components/SharingDialog';
 import PipelineEditorSkeleton from './components/PipelineEditorSkeleton';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -28,6 +28,7 @@ export default function PipelineEditor() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { activeResource, activeDraft, loading } = useSelector((state: RootState) => state.resource);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const [activeTab, setActiveTab] = useState<Tab>('stages');
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
@@ -244,12 +245,19 @@ export default function PipelineEditor() {
         )}
       </div>
 
-      <FormSettingsDialog 
+      <SharingDialog 
           isOpen={isSettingsOpen} 
           onClose={() => setIsSettingsOpen(false)} 
+          title="Sharing"
+          description="Manage who can view and edit this pipeline."
+          visibility={activeResource?.visibility || 'private'}
+          ownerIds={activeResource?.ownerIds || []}
+          availableRoles={['viewer', 'editor', 'owner']}
           orgId={orgId!} 
-          formId={id!} 
+          moduleId="hire"
           resourceType="pipelines"
+          resourceId={id!} 
+          currentUserId={user?.uid}
       />
     </div>
   );

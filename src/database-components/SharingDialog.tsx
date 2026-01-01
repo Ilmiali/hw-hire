@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
 import { fetchAccess, grantAccess, revokeAccess } from '../store/slices/shareSlice';
+import { updateResourceSettings } from '../store/slices/resourceSlice';
 import { getDatabaseService } from '../services/databaseService';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -24,7 +25,6 @@ interface SharingDialogProps {
     title?: string;
     description?: string;
     visibility: 'private' | 'public';
-    onVisibilityChange?: (visibility: 'private' | 'public') => Promise<void>;
     ownerIds: string[];
     availableRoles?: string[];
     orgId: string;
@@ -40,7 +40,6 @@ export function SharingDialog({
     title = "Sharing Settings",
     description = "Manage who can view and edit this resource.",
     visibility: initialVisibility,
-    onVisibilityChange,
     ownerIds,
     availableRoles = ['viewer', 'editor', 'owner'],
     orgId,
@@ -132,8 +131,14 @@ export function SharingDialog({
         setIsSaving(true);
         try {
             // 1. Update visibility if changed
-            if (onVisibilityChange && localVisibility !== initialVisibility) {
-                await onVisibilityChange(localVisibility);
+            if (localVisibility !== initialVisibility) {
+                await dispatch(updateResourceSettings({ 
+                    orgId, 
+                    moduleId, 
+                    resourceType, 
+                    resourceId, 
+                    settings: { visibility: localVisibility } 
+                })).unwrap();
             }
 
             // Source of truth: combination of ownerIds (props) and accessList (redux)
