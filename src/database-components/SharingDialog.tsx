@@ -1,4 +1,8 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { fetchAccess, grantAccess, revokeAccess } from '../store/slices/shareSlice';
+import { getDatabaseService } from '../services/databaseService';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,6 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { MembersTable, Member } from './MembersTable';
+import { AccessRole } from '../types/access';
+import { toast } from 'react-toastify';
 
 interface SharingDialogProps {
     isOpen: boolean;
@@ -18,12 +24,13 @@ interface SharingDialogProps {
     title?: string;
     description?: string;
     visibility: 'private' | 'public';
-    members: Member[];
-    onSave: (data: { visibility: 'private' | 'public', members: Member[] }) => Promise<void>;
+    onVisibilityChange?: (visibility: 'private' | 'public') => Promise<void>;
     ownerId?: string;
     availableRoles?: string[];
-    orgId?: string;
-    moduleId?: string;
+    orgId: string;
+    moduleId: string;
+    resourceType: string;
+    resourceId: string;
     currentUserId?: string;
 }
 
@@ -33,31 +40,139 @@ export function SharingDialog({
     title = "Sharing Settings",
     description = "Manage who can view and edit this resource.",
     visibility: initialVisibility,
-    members: initialMembers,
-    onSave,
+    onVisibilityChange,
     ownerId,
     availableRoles = ['viewer', 'editor', 'owner'],
     orgId,
     moduleId,
+    resourceType,
+    resourceId,
     currentUserId
 }: SharingDialogProps) {
+    const dispatch = useDispatch<AppDispatch>();
+    const { accessList, loading: isAccessLoading } = useSelector((state: RootState) => state.share);
+    
     const [localVisibility, setLocalVisibility] = useState<'private' | 'public'>(initialVisibility);
-    const [localMembers, setLocalMembers] = useState<Member[]>(initialMembers);
+    // mapped members with details
+    const [members, setMembers] = useState<Member[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
-    // Update local state when dialog opens or initial props change
+    // Initial load: Fetch access list when dialog opens
+    useEffect(() => {
+        if (isOpen && orgId && moduleId && resourceType && resourceId) {
+            dispatch(fetchAccess({ orgId, moduleId, resourceType, resourceId }));
+        }
+    }, [isOpen, orgId, moduleId, resourceType, resourceId, dispatch]);
+
+    // Update local visibility when prop changes
     useEffect(() => {
         if (isOpen) {
             setLocalVisibility(initialVisibility);
-            setLocalMembers(initialMembers);
         }
-    }, [isOpen, initialVisibility, initialMembers]);
+    }, [isOpen, initialVisibility]);
+
+    // Fetch user details whenever accessList changes
+    useEffect(() => {
+        const fetchDetails = async () => {
+            if (!accessList || accessList.length === 0) {
+                 setMembers([]);
+                 setIsDetailsLoading(false);
+                 return;
+            }
+
+            setIsDetailsLoading(true);
+            const db = getDatabaseService();
+            const details = await Promise.all(accessList.map(async (access) => {
+                try {
+                    const userDoc = await db.getDocument<{ data: any }>('users', access.uid);
+                    const userData = userDoc?.data || {};
+                    return {
+                        id: access.uid,
+                        name: userData.fullName || userData.name || 'Unknown User',
+                        email: userData.email || '',
+                        avatarUrl: userData.avatarUrl || userData.photoURL,
+                        role: access.role as any,
+                        addedAt: access.addedAt
+                    };
+                } catch (e) {
+                    return {
+                        id: access.uid,
+                        name: 'Unknown User',
+                        email: '',
+                        role: access.role as any,
+                        addedAt: access.addedAt
+                    };
+                }
+            }));
+            setMembers(details);
+            setIsDetailsLoading(false);
+        };
+        fetchDetails();
+    }, [accessList]);
+
+    const isLoading = isAccessLoading || isDetailsLoading;
+
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await onSave({ visibility: localVisibility, members: localMembers });
+            // 1. Update visibility if changed
+            if (onVisibilityChange && localVisibility !== initialVisibility) {
+                await onVisibilityChange(localVisibility);
+            }
+
+            // 2. Diff members logic
+            
+            // Current members in UI (local modifications are done on 'members' state via MembersTable)
+            // But wait, MembersTable updates 'members' state directly. 
+            // We need to compare 'members' (state) vs 'accessList' (redux/db state).
+            
+            const originalUids = accessList.map(a => a.uid);
+            const newUids = members.map(m => m.id);
+
+            // Added or Updated
+            const toAddOrUpdate = members.filter(m => {
+                const original = accessList.find(a => a.uid === m.id);
+                return !original || original.role !== m.role;
+            });
+
+            // Removed
+            const removedUids = originalUids.filter(uid => !newUids.includes(uid));
+
+            // Execute changes
+            const promises = [];
+            
+            for (const m of toAddOrUpdate) {
+                promises.push(dispatch(grantAccess({ 
+                    orgId, 
+                    moduleId, 
+                    resourceType, 
+                    resourceId, 
+                    userId: m.id, 
+                    role: m.role as AccessRole 
+                })).unwrap());
+            }
+
+            for (const uid of removedUids) {
+                promises.push(dispatch(revokeAccess({ 
+                    orgId, 
+                    moduleId, 
+                    resourceType, 
+                    resourceId, 
+                    userId: uid 
+                })).unwrap());
+            }
+
+            if (promises.length > 0) {
+                await Promise.all(promises);
+            }
+
+            toast.success('Sharing settings saved');
             onClose(false);
+        } catch (error: any) {
+            console.error(error);
+            toast.error('Failed to save sharing settings');
         } finally {
             setIsSaving(false);
         }
@@ -105,17 +220,23 @@ export function SharingDialog({
                                 </p>
                             </div>
                             
-                            <div className="border rounded-md p-1 bg-card">
-                                <MembersTable 
-                                    members={localMembers}
-                                    onMembersChange={setLocalMembers}
-                                    ownerId={ownerId}
-                                    defineRole={true}
-                                    availableRoles={availableRoles}
-                                    orgId={orgId}
-                                    moduleId={moduleId}
-                                    currentUserId={currentUserId}
-                                />
+                            <div className="border rounded-md p-1 bg-card min-h-[200px] flex flex-col">
+                                {isLoading ? (
+                                    <div className="flex-1 flex items-center justify-center p-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900 dark:border-white"></div>
+                                    </div>
+                                ) : (
+                                    <MembersTable 
+                                        members={members}
+                                        onMembersChange={setMembers}
+                                        ownerId={ownerId}
+                                        defineRole={true}
+                                        availableRoles={availableRoles}
+                                        orgId={orgId}
+                                        moduleId={moduleId}
+                                        currentUserId={currentUserId}
+                                    />
+                                )}
                             </div>
                         </div>
                     )}

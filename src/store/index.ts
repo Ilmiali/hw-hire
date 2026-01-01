@@ -7,6 +7,7 @@ import viewsReducer from './slices/viewsSlice';
 import groupsReducer from './slices/groupsSlice';
 
 import formsReducer from './slices/formsSlice';
+import shareReducer from './slices/shareSlice';
 
 export const store = configureStore({
   reducer: {
@@ -17,6 +18,7 @@ export const store = configureStore({
     views: viewsReducer,
     groups: groupsReducer,
     forms: formsReducer,
+    share: shareReducer,
   },
 });
 

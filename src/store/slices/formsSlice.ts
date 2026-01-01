@@ -2,14 +2,13 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { serializeDate } from '../../utils/serialization';
 import { getDatabaseService } from '../../services/databaseService';
 import { Form, FormVersion } from '../../types/forms';
-import { Access, AccessRole } from '../../types/access';
 import { FormSchema } from '../../types/form-builder';
+import { grantAccess, revokeAccess } from './shareSlice';
 
 interface FormsState {
   forms: Form[];
   currentForm: Form | null;
   currentVersion: FormVersion | null;
-  currentFormAccess: Access[];
   loading: boolean;
   error: string | null;
 }
@@ -18,7 +17,6 @@ const initialState: FormsState = {
   forms: [],
   currentForm: null,
   currentVersion: null,
-  currentFormAccess: [],
   loading: false,
   error: null,
 };
@@ -260,116 +258,10 @@ export const deleteForm = createAsyncThunk(
   }
 );
 
-// Access Management Thunks
+// Access Management Thunks (Moved to shareSlice.ts)
 
-export const fetchFormAccess = createAsyncThunk(
-  'forms/fetchAccess',
-  async ({ orgId, formId }: { orgId: string; formId: string }, { rejectWithValue }) => {
-    try {
-      const db = getDatabaseService();
-      const docs = await db.getDocuments<{ id: string; data: any; createdAt: any; updatedAt: any }>(getAccessPath(orgId, formId));
-      return docs.map(doc => ({
-        uid: doc.id,
-        role: doc.data.role as AccessRole,
-        addedAt: serializeDate(doc.data.addedAt) || new Date().toISOString(),
-        addedBy: doc.data.addedBy as string
-      }));
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch access list');
-    }
-  }
-);
 
-export const grantFormAccess = createAsyncThunk(
-  'forms/grantAccess',
-  async ({ orgId, formId, userId, role }: { orgId: string; formId: string; userId: string; role: AccessRole }, { rejectWithValue, getState }) => {
-    try {
-      const db = getDatabaseService();
-      const state = getState() as any;
-      const currentUserId = state.auth.user?.uid;
 
-      if (!currentUserId) throw new Error('User not authenticated');
-
-      // 1. Update access subcollection
-      await db.setDocument(getAccessPath(orgId, formId), userId, {
-        role,
-        addedAt: new Date(),
-        addedBy: currentUserId
-      });
-
-      // 2. Update user's shares subcollection
-      const formDoc = await db.getDocument<{ id: string; data: any }>(getFormsPath(orgId), formId);
-      const userSharePath = `orgs/${orgId}/modules/hire/members/${userId}/shares`;
-      await db.setDocument(userSharePath, `forms_${formId}`, {
-        resourceName: formDoc?.data?.name || 'Unknown Form',
-        resourceUpdatedAt: new Date().toISOString()
-      });
-
-      // 3. If role is editor or owner, allow update of ownerIds
-      const currentOwnerIds = (formDoc?.data?.ownerIds as string[]) || [];
-      let newOwnerIds = [...currentOwnerIds];
-
-      if (role === 'owner' || role === 'editor') {
-        if (!newOwnerIds.includes(userId)) {
-          newOwnerIds.push(userId);
-        }
-      } else if (role === 'viewer') {
-        newOwnerIds = newOwnerIds.filter(id => id !== userId);
-      }
-
-      if (JSON.stringify(newOwnerIds) !== JSON.stringify(currentOwnerIds)) {
-         await db.updateDocument(getFormsPath(orgId), formId, {
-            ownerIds: newOwnerIds
-         });
-      }
-
-      // Return the new access object + updated ownerIds
-      return {
-          access: {
-            uid: userId,
-            role,
-            addedAt: new Date().toISOString(),
-            addedBy: currentUserId
-          },
-          ownerIds: newOwnerIds
-      };
-
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to grant access');
-    }
-  }
-);
-
-export const revokeFormAccess = createAsyncThunk(
-  'forms/revokeAccess',
-  async ({ orgId, formId, userId }: { orgId: string; formId: string; userId: string }, { rejectWithValue }) => {
-    try {
-      const db = getDatabaseService();
-      
-      // 1. Delete from access subcollection
-      await db.deleteDocument(getAccessPath(orgId, formId), userId);
-
-      // 2. Remove from user's shares subcollection
-      const userSharePath = `orgs/${orgId}/modules/hire/members/${userId}/shares`;
-      await db.deleteDocument(userSharePath, `forms_${formId}`);
-
-      // 2. Remove from ownerIds
-      const formDoc = await db.getDocument<{ id: string; data: any }>(getFormsPath(orgId), formId);
-      const currentOwnerIds = (formDoc?.data?.ownerIds as string[]) || [];
-      const newOwnerIds = currentOwnerIds.filter(id => id !== userId);
-
-      if (newOwnerIds.length !== currentOwnerIds.length) {
-         await db.updateDocument(getFormsPath(orgId), formId, {
-            ownerIds: newOwnerIds
-         });
-      }
-
-      return { userId, ownerIds: newOwnerIds };
-    } catch (error: any) {
-        return rejectWithValue(error.message || 'Failed to revoke access');
-    }
-  }
-);
 
 export const updateFormSettings = createAsyncThunk(
     'forms/updateSettings',
@@ -396,7 +288,6 @@ const formsSlice = createSlice({
     clearCurrentForm: (state) => {
       state.currentForm = null;
       state.currentVersion = null;
-      state.currentFormAccess = [];
     }
   },
   extraReducers: (builder) => {
@@ -456,27 +347,16 @@ const formsSlice = createSlice({
         state.forms = state.forms.filter(f => f.id !== action.payload);
       })
       // Access & Settings reducers
-      .addCase(fetchFormAccess.fulfilled, (state, action) => {
-          state.currentFormAccess = action.payload;
+      // Access & Settings reducers
+      .addCase(grantAccess.fulfilled, (state, action) => {
+        if (state.currentForm && action.payload.resourceType === 'forms' && action.payload.resourceId === state.currentForm.id) {
+           state.currentForm.ownerIds = action.payload.ownerIds;
+        }
       })
-      .addCase(grantFormAccess.fulfilled, (state, action) => {
-          // Update access list
-          const existing = state.currentFormAccess.findIndex(a => a.uid === action.payload.access.uid);
-          if (existing >= 0) {
-              state.currentFormAccess[existing] = action.payload.access;
-          } else {
-              state.currentFormAccess.push(action.payload.access);
-          }
-          // Update ownerIds in currentForm
-          if (state.currentForm) {
-              state.currentForm.ownerIds = action.payload.ownerIds;
-          }
-      })
-      .addCase(revokeFormAccess.fulfilled, (state, action) => {
-          state.currentFormAccess = state.currentFormAccess.filter(a => a.uid !== action.payload.userId);
-          if (state.currentForm) {
-              state.currentForm.ownerIds = action.payload.ownerIds;
-          }
+      .addCase(revokeAccess.fulfilled, (state, action) => {
+        if (state.currentForm && action.payload.resourceType === 'forms' && action.payload.resourceId === state.currentForm.id) {
+           state.currentForm.ownerIds = action.payload.ownerIds;
+        }
       })
       .addCase(updateFormSettings.fulfilled, (state, action) => {
           if (state.currentForm) {
