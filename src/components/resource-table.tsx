@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,7 +96,7 @@ const AccessAvatarGroup = ({
   if (loading && members.length === 0) return (
     <div className="flex -space-x-1">
         {[1, 2].map((i) => (
-            <div key={i} className="h-5 w-5 rounded-full bg-muted animate-pulse border border-background" />
+            <Skeleton key={i} className="h-5 w-5 rounded-full border border-background" />
         ))}
     </div>
   );
@@ -305,12 +306,57 @@ export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowCl
   // Loading state
   if ((loadingResources || authLoading) && resourceList.length === 0) {
      return (
-         <div className="rounded-xl border border-border/40 p-12 flex justify-center items-center bg-background/20 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-3">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                <p className="text-xs font-medium text-muted-foreground/70 tracking-tight">Loading {resourceType}...</p>
-            </div>
-         </div>
+        <div className="rounded-xl border border-border/40 overflow-hidden bg-background/50 backdrop-blur-sm">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="border-b border-border/40 hover:bg-transparent">
+                {columns.map((_, i) => (
+                  <TableHead key={i} className="h-10 px-4">
+                    <Skeleton className="h-3 w-16" />
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <TableRow key={i} className="border-b border-border/20 last:border-0 h-[53px]">
+                   <TableCell className="px-4">
+                      <div className="flex flex-col gap-2">
+                        <Skeleton className="h-4 w-[180px]" />
+                        <Skeleton className="h-3 w-[120px]" />
+                      </div>
+                   </TableCell>
+                   <TableCell className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-3.5 w-3.5 rounded-full" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                   </TableCell>
+                   <TableCell className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-3.5 w-3.5 rounded-full" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                   </TableCell>
+                   <TableCell className="px-4">
+                     <div className="flex -space-x-1">
+                        <Skeleton className="h-5 w-5 rounded-full" />
+                        <Skeleton className="h-5 w-5 rounded-full" />
+                     </div>
+                   </TableCell>
+                   <TableCell className="px-4">
+                      <Skeleton className="h-3 w-20" />
+                   </TableCell>
+                   <TableCell className="px-4">
+                      <div className="flex justify-end">
+                        <Skeleton className="h-6 w-6 rounded-md" />
+                      </div>
+                   </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
      );
   }
 
