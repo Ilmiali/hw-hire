@@ -31,6 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { 
+  PlusIcon,
   EllipsisHorizontalIcon, 
   TrashIcon, 
   ChevronUpIcon, 
@@ -50,6 +51,7 @@ interface ResourceTableProps {
   resourceType: string;
   onDelete?: (resource: any) => void;
   onRowClick?: (resource: any) => void;
+  onCreate?: () => void;
 }
 
 const getInitials = (name?: string) => {
@@ -132,7 +134,7 @@ const AccessAvatarGroup = ({
   );
 };
 
-export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowClick }: ResourceTableProps) {
+export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowClick, onCreate }: ResourceTableProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { resources, loading: loadingResources } = useSelector((state: RootState) => state.resource);
   const { user: currentUser, loading: authLoading } = useSelector((state: RootState) => state.auth);
@@ -145,6 +147,11 @@ export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowCl
       dispatch(fetchResources({ orgId, moduleId, resourceType }));
     }
   }, [dispatch, orgId, moduleId, resourceType, currentUser]);
+
+// ... (skipping columns definition for this chunk as it's large)
+// I will split this into two calls if necessary, but actually I only need to change the function head and the bottom part.
+// Wait, I can use multi_replace_file_content or just two separate calls.
+// Let's do function head first.
 
   const columns: ColumnDef<any>[] = useMemo(() => [
       {
@@ -401,8 +408,36 @@ export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowCl
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-32 text-center text-muted-foreground/50 text-xs font-medium italic">
-                No items found.
+              <TableCell colSpan={columns.length} className="h-[400px] text-center p-0 hover:bg-transparent">
+                <div className="flex flex-col items-center justify-center h-full space-y-4 animate-in fade-in zoom-in duration-300">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/10 blur-2xl rounded-full" />
+                    <div className="relative bg-background border border-border/50 rounded-2xl p-4 shadow-xl">
+                      {resourceType === 'forms' ? (
+                        <CheckCircleIcon className="h-10 w-10 text-primary/60" />
+                      ) : (
+                        <ArrowsUpDownIcon className="h-10 w-10 text-primary/60" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight">No {resourceType} found</h3>
+                    <p className="text-xs text-muted-foreground max-w-[200px] mx-auto leading-relaxed">
+                      Start by creating your first {resourceType.slice(0, -1)} to get things moving.
+                    </p>
+                  </div>
+                  {onCreate && (
+                    <Button 
+                      onClick={onCreate}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl border-border/50 shadow-sm hover:bg-muted/50 transition-all duration-200 font-medium px-4"
+                    >
+                      <PlusIcon className="h-3.5 w-3.5 mr-2 opacity-60" />
+                      Create {resourceType.slice(0, -1)}
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           )}

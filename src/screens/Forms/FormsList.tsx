@@ -109,6 +109,7 @@ export default function FormsList() {
             resourceType="forms"
             onRowClick={(resource: any) => navigate(`/orgs/${orgId}/forms/${resource.id}`)}
             onDelete={(resource: any) => setFormToDelete(resource as FormDoc)}
+            onCreate={handleCreateForm}
          />
       </div>
 

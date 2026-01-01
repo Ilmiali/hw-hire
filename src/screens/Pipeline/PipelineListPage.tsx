@@ -1,64 +1,68 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../store';
+import { createResource, deleteResource } from '../../store/slices/resourceSlice';
 import { Button } from '../../components/button';
-import { DataTable, Field } from '../../data-components/dataTable';
-import { pipelineService } from '../../services/mockPipelineService';
-import { Pipeline } from '../../types/pipeline';
 import { PlusIcon } from '@heroicons/react/16/solid';
 import { Dialog, DialogActions, DialogBody, DialogDescription, DialogTitle } from '../../components/dialog';
 import { Input } from '../../components/input';
 import { Field as FormField, Label } from '../../components/fieldset';
+import { ResourceTable } from '../../components/resource-table';
+import { DEFAULT_STAGES } from '../../types/pipeline';
+import NProgress from 'nprogress';
 
 export default function PipelineListPage() {
+  const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const [isCreating, setIsCreating] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
 
-  useEffect(() => {
-    loadPipelines();
-  }, []);
+  const handleCreate = async () => {
+    if (!newPipelineName.trim() || !orgId) return;
+    
+    setIsCreating(true);
+    NProgress.start();
 
-  const loadPipelines = () => {
-    setPipelines(pipelineService.getPipelines());
-  };
+    try {
+        const initialDraftGenerator = (id: string) => ({
+            id,
+            stages: DEFAULT_STAGES
+        });
 
-  const handleCreate = () => {
-    if (!newPipelineName.trim()) return;
-    const newPipeline = pipelineService.createPipeline(newPipelineName, user?.uid);
-    setPipelines([...pipelines, newPipeline]);
-    setIsCreateDialogOpen(false);
-    setNewPipelineName('');
-    navigate(`/pipelines/${newPipeline.id}`);
-  };
+        const result = await dispatch(createResource({
+            orgId,
+            moduleId: 'hire',
+            resourceType: 'pipelines',
+            data: {
+                name: newPipelineName,
+                description: 'Recruitment pipeline'
+            },
+            initialDraftData: initialDraftGenerator
+        })).unwrap();
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this pipeline?')) {
-      pipelineService.deletePipeline(id);
-      loadPipelines();
+        if (result.resource.id) {
+            navigate(`/orgs/${orgId}/pipelines/${result.resource.id}`);
+        }
+    } catch (error) {
+        console.error("Failed to create pipeline", error);
+    } finally {
+        setIsCreating(false);
+        setIsCreateDialogOpen(false);
+        setNewPipelineName('');
+        NProgress.done();
     }
   };
 
-  const fields: Field<Pipeline>[] = [
-    { key: 'name', label: 'Name', sortable: true, type: 'text' },
-    { 
-      key: 'stages', 
-      label: 'Stages', 
-      render: (pipeline) => {
-        const activeVersion = pipeline.versions.find(v => v.id === pipeline.activeVersionId);
-        return <span className="text-zinc-500">{activeVersion?.stages.length || 0} stages</span>;
-      }
-    },
-    { key: 'updatedAt', label: 'Last Updated', type: 'date', sortable: true },
-    { key: 'actions', label: '', type: 'actions' }
-  ];
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  if (!orgId) return null;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-6 h-full flex flex-col">
+      <div className="flex justify-between items-center mb-6 flex-shrink-0">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Pipelines</h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -71,15 +75,18 @@ export default function PipelineListPage() {
         </Button>
       </div>
 
-      <div className="min-h-[500px]">
-        <DataTable
-          data={pipelines}
-          fields={fields}
-          actions={['edit', 'delete']}
-          onAction={(action, item) => {
-            if (action === 'edit') navigate(`/pipelines/${item.id}`);
-            if (action === 'delete') handleDelete(item.id);
-          }}
+      <div className="flex-1 min-h-0 bg-card rounded-lg shadow-sm border border-border">
+        <ResourceTable
+            orgId={orgId}
+            moduleId="hire"
+            resourceType="pipelines"
+            onRowClick={(resource: any) => navigate(`/orgs/${orgId}/pipelines/${resource.id}`)}
+            onDelete={async (resource: any) => {
+                if (window.confirm('Are you sure you want to delete this pipeline?')) {
+                    await dispatch(deleteResource({ orgId, moduleId: 'hire', resourceType: 'pipelines', resourceId: resource.id })).unwrap();
+                }
+            }}
+            onCreate={() => setIsCreateDialogOpen(true)}
         />
       </div>
 
@@ -101,7 +108,9 @@ export default function PipelineListPage() {
         </DialogBody>
         <DialogActions>
           <Button plain onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleCreate} disabled={!newPipelineName.trim()}>Create</Button>
+          <Button onClick={handleCreate} disabled={!newPipelineName.trim() || isCreating}>
+             {isCreating ? 'Creating...' : 'Create'}
+          </Button>
         </DialogActions>
       </Dialog>
     </div>

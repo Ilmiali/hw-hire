@@ -19,9 +19,8 @@ import { Resource } from './resource';
 
 export interface Pipeline extends Resource {
   activeVersionId: string;
-  versions: PipelineVersion[]; // History of versions
-  organizationId: string;
-  members: { uid: string; role: string }[];
+  // versions: PipelineVersion[]; // Deprecate inline versions in favor of subcollection
+  // Members are now handled via shareSlice/resourceSlice generic access
 }
 
 export interface StageMoveEvent {
