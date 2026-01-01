@@ -1,17 +1,16 @@
 import { Button } from '../../components/button';
 import { Heading } from '../../components/heading';
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { PlusIcon } from '@heroicons/react/16/solid';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Badge } from '../../components/badge';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../store';
 import { createForm, deleteForm } from '../../store/slices/formsSlice';
 import { fetchResources } from '../../store/slices/resourceSlice';
 import NProgress from 'nprogress';
-import { DataTable, Field } from '../../data-components/dataTable';
 import { Form } from '../../types/forms';
 import { Dialog, DialogActions, DialogDescription, DialogTitle } from '../../components/dialog';
+import { ResourceTable } from '../../components/resource-table';
 
 type FormDoc = Omit<Form, 'createdAt' | 'updatedAt'> & { 
   createdAt?: Date;
@@ -19,53 +18,14 @@ type FormDoc = Omit<Form, 'createdAt' | 'updatedAt'> & {
   data: Record<string, unknown>;
 };
 
-const fields: Field<FormDoc>[] = [
-  { key: 'name', label: 'Name', sortable: true, isLink: true },
-  { 
-    key: 'status', 
-    label: 'Status',
-    render: (item: FormDoc) => (
-      <Badge color={item.status === 'active' ? 'green' : 'zinc'}>
-        {item.status}
-      </Badge>
-    )
-  },
-  { 
-    key: 'publishedVersionId', 
-    label: 'Published Version',
-    render: (item: FormDoc) => item.publishedVersionId || 'None'
-  },
-  { key: 'updatedAt', label: 'Updated At', type: 'date', sortable: true },
-  { key: 'actions', label: 'Actions', type: 'actions' },
-];
-
 export default function FormsList() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   
-  const { resources, loading: isLoadingResources, error: resourceError } = useSelector((state: RootState) => state.resource);
-  const formsRaw = resources['forms'] || [];
-
   const [isCreating, setIsCreating] = useState(false);
   const [formToDelete, setFormToDelete] = useState<FormDoc | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    console.log('[FormsList] Current state:', { orgId, formsCount: formsRaw.length, loading: isLoadingResources, error: resourceError });
-    if (orgId) {
-       dispatch(fetchResources({ orgId, moduleId: 'hire', resourceType: 'forms' }));
-    }
-  }, [orgId, dispatch]);
-
-  const formsData = useMemo(() => {
-    console.log('[FormsList] Mapping formsRaw:', formsRaw);
-    return formsRaw.map(f => ({
-        ...f,
-        createdAt: f.createdAt ? new Date(f.createdAt) : undefined,
-        updatedAt: f.updatedAt ? new Date(f.updatedAt) : undefined,
-    })) as FormDoc[];
-  }, [formsRaw]);
 
   const handleCreateForm = async () => {
     if (!orgId) return;
@@ -121,28 +81,14 @@ export default function FormsList() {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0">
-         {isLoadingResources && formsData.length === 0 ? (
-             <div className="flex items-center justify-center h-full">
-                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900 dark:border-white"></div>
-             </div>
-         ) : (
-            <DataTable<FormDoc>
-              data={formsData}
-              fields={fields}
-              selectable={false}
-              sticky
-              isLink={false}
-              actions={['edit', 'delete']}
-              onAction={async (action, item) => {
-                if (action === 'edit' || action === 'view') {
-                  navigate(`/orgs/${orgId}/forms/${item.id}`);
-                } else if (action === 'delete') {
-                  setFormToDelete(item);
-                }
-              }}
-            />
-         )}
+      <div className="flex-1 min-h-0 bg-card rounded-lg shadow-sm border border-border">
+         <ResourceTable
+            orgId={orgId}
+            moduleId="hire"
+            resourceType="forms"
+            onRowClick={(resource: any) => navigate(`/orgs/${orgId}/forms/${resource.id}`)}
+            onDelete={(resource: any) => setFormToDelete(resource as FormDoc)}
+         />
       </div>
 
       <Dialog open={!!formToDelete} onClose={() => setFormToDelete(null)}>

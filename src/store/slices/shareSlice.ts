@@ -168,6 +168,94 @@ export const revokeAccess = createAsyncThunk(
   }
 );
 
+// Fetch all users who have access (owners + values in access subcollection)
+// Smartly dedupes and checks current state to minimalize fetches
+export const fetchResourceUsers = createAsyncThunk(
+    'share/fetchResourceUsers',
+    async ({ orgId, moduleId, resourceType, resourceId }: { orgId: string; moduleId: string; resourceType: string; resourceId: string }, { rejectWithValue, getState, dispatch }) => {
+        try {
+            const db = getDatabaseService();
+            const state = getState() as any;
+            const existingUsers = state.users.users as { id: string }[];
+            
+            // 1. Get Owner IDs
+            // Optimization: check if resource is in state first
+            let ownerIds: string[] = [];
+            
+            // Try to find resource in state
+            const resourcesInState = state.resource?.resources?.[resourceType] as any[];
+            const cachedResource = resourcesInState?.find((r: any) => r.id === resourceId);
+            
+            if (cachedResource && cachedResource.ownerIds) {
+                ownerIds = cachedResource.ownerIds;
+            } else {
+                 // Fallback to fetch
+                 const resourcePath = getResourcePath(orgId, moduleId, resourceType);
+                 const doc = await db.getDocument<{ id: string; data: any }>(resourcePath, resourceId);
+                 ownerIds = (doc?.data?.ownerIds as string[]) || [];
+            }
+
+            // 2. Get Shared Access IDs
+            // We use the existing fetchAccess logic but we want just the IDs here essentially
+            // But we can just query the collection directly to save overhead of the full action if needed, 
+            // but let's just do a direct query here to be "smart"
+            const accessPath = getAccessPath(orgId, moduleId, resourceType, resourceId);
+            const accessDocs = await db.getDocuments<{ id: string }>(accessPath);
+            const accessIds = accessDocs.map(d => d.id);
+
+            // 3. Combine Unique IDs
+            const allUserIds = Array.from(new Set([...ownerIds, ...accessIds]));
+
+            // 4. Identify Missing Users
+            const missingIds = allUserIds.filter(uid => !existingUsers.find(u => u.id === uid));
+
+            // 5. Fetch Missing Users
+            if (missingIds.length > 0) {
+                 // Fetch them in parallel
+                 const fetchedUsers = await Promise.all(
+                     missingIds.map(uid => db.getDocument<any>('users', uid)) 
+                 );
+                 
+                 const validUsers = fetchedUsers
+                    .filter(doc => doc !== null)
+                    .map(doc => ({
+                        id: doc!.id,
+                        name: doc!.data.name as string,
+                        fullName: (doc!.data.fullName || doc!.data.name) as string,
+                        email: doc!.data.email as string,
+                        role: doc!.data.role as string,
+                        organizations: doc!.data.organizations as string[],
+                        createdAt: serializeDate(doc!.createdAt || new Date()) || new Date().toISOString(),
+                        updatedAt: serializeDate(doc!.updatedAt || new Date()) || new Date().toISOString()
+                    }));
+
+                 // 6. Update User Store (Upsert)
+                 // We need to dispatch to usersSlice. We assume 'upsertUsers' exists or 'fetchUsers' was sufficient.
+                 // Ideally we dispatch an action to add these users to the store so we don't fetch them again.
+                 // Since we don't have direct import of upsertUsers here (to avoid circular dep if usersSlice imports shareSlice),
+                 // we can dynamically dispatch if we imported it. 
+                 // However, shareSlice imports from usersSlice is fine if usersSlice doesn't import shareSlice.
+                 // Let's assume we can import it.
+                 /* 
+                    Note: To allow this verify usersSlice doesn't import shareSlice. 
+                    usersSlice: imports serializeDate, databaseService. OK.
+                 */
+                 const { upsertUsers } = await import('../slices/usersSlice');
+                 if (validUsers.length > 0) {
+                    dispatch(upsertUsers(validUsers));
+                 }
+                 
+                 return [...existingUsers.filter(u => allUserIds.includes(u.id)), ...validUsers];
+            }
+
+            return existingUsers.filter(u => allUserIds.includes(u.id));
+
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to fetch resource users');
+        }
+    }
+);
+
 const shareSlice = createSlice({
   name: 'share',
   initialState,

@@ -5,6 +5,7 @@ import { getDatabaseService, Document } from '../../services/databaseService';
 export interface User {
   id: string;
   name: string;
+  fullName?: string;
   email: string;
   role: string;
   organizations: string[];
@@ -45,6 +46,7 @@ export const fetchUsers = createAsyncThunk(
       return users.map(user => ({
         id: user.id,
         name: user.data.name as string,
+        fullName: (user.data.fullName || user.data.name) as string,
         email: user.data.email as string,
         role: user.data.role as string,
         organizations: user.data.organizations as string[],
@@ -75,6 +77,7 @@ export const fetchUserById = createAsyncThunk(
       const user = {
         id: document.id,
         name: document.data.name as string,
+        fullName: (document.data.fullName || document.data.name) as string,
         email: document.data.email as string,
         role: document.data.role as string,
         organizations: document.data.organizations as string[],
@@ -104,6 +107,17 @@ const usersSlice = createSlice({
     clearCurrentUser: (state) => {
       state.currentUser = null;
     },
+    upsertUsers: (state, action) => {
+        const newUsers = action.payload as User[];
+        newUsers.forEach(newUser => {
+            const index = state.users.findIndex(u => u.id === newUser.id);
+            if (index !== -1) {
+                state.users[index] = newUser;
+            } else {
+                state.users.push(newUser);
+            }
+        });
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -136,5 +150,5 @@ const usersSlice = createSlice({
   },
 });
 
-export const { clearUsers, clearCurrentUser } = usersSlice.actions;
+export const { clearUsers, clearCurrentUser, upsertUsers } = usersSlice.actions;
 export default usersSlice.reducer; 
