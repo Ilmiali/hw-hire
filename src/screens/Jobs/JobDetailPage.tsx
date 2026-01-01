@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { 
+    fetchResourceById, 
+    fetchResourceDraft, 
+    saveResourceDraft, 
+    publishResource, 
+    clearActiveResource 
+} from '../../store/slices/resourceSlice';
 import { Button } from '../../components/button';
 import { Heading } from '../../components/heading';
 import { Fieldset, Field, Label } from '../../components/fieldset';
@@ -8,49 +17,115 @@ import { Input } from '../../components/input';
 import { Select } from '../../components/select';
 import { Textarea } from '../../components/textarea';
 import { Badge } from '../../components/badge';
-import { JobService } from '../../services/JobService';
 import { Job, JobPosting, EmploymentType, PostingStatus } from '../../types/jobs';
 import { CHANNELS } from '../../config/channels';
 import { PostingEditor } from './PostingEditor';
 import { CoverPicker } from './components/CoverPicker';
+import NProgress from 'nprogress';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function JobDetailPage() {
-  const { jobId } = useParams<{ jobId: string }>();
+  const { orgId, jobId } = useParams<{ orgId: string; jobId: string }>();
   const navigate = useNavigate();
-  const [job, setJob] = useState<Job | undefined>(undefined);
+  const dispatch = useDispatch<AppDispatch>();
+  const { activeResource, activeDraft, loading } = useSelector((state: RootState) => state.resource);
+  
   const [postings, setPostings] = useState<Record<string, JobPosting>>({});
   const [editorState, setEditorState] = useState<{ isOpen: boolean; channelId?: string }>({ isOpen: false });
   const [showPicker, setShowPicker] = useState(false);
 
   // Job Form State
   const [jobForm, setJobForm] = useState<Partial<Job>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
-    if (jobId) {
-      loadData(jobId);
+    if (orgId && jobId) {
+      dispatch(fetchResourceById({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId }));
+      dispatch(fetchResourceDraft({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId }));
     }
-  }, [jobId]);
+    return () => {
+      dispatch(clearActiveResource());
+    };
+  }, [dispatch, orgId, jobId]);
 
-  const loadData = (id: string) => {
-    const loadedJob = JobService.getJob(id);
-    if (!loadedJob) {
-      navigate('/jobs');
-      return;
+  useEffect(() => {
+    if (activeDraft) {
+      const draftData = activeDraft.data as any;
+      setJobForm({
+        title: draftData.title || activeResource?.name || '',
+        location: draftData.location || '',
+        employmentType: draftData.employmentType || 'Full-time',
+        description: draftData.description || '',
+        coverImage: draftData.coverImage
+      });
+      setPostings(draftData.postings || {});
+    } else if (activeResource) {
+      setJobForm({
+        title: activeResource.name,
+        location: (activeResource as any).location || '',
+        employmentType: (activeResource as any).employmentType || 'Full-time',
+        description: (activeResource as any).description || '',
+        coverImage: (activeResource as any).coverImage
+      });
     }
-    setJob(loadedJob);
-    setJobForm(loadedJob);
-    setPostings(JobService.getPostingsForJob(id));
+  }, [activeDraft, activeResource]);
+
+  const handleJobSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!orgId || !jobId || isSaving || isPublishing) return;
+    
+    setIsSaving(true);
+    NProgress.start();
+    try {
+        await dispatch(saveResourceDraft({
+            orgId,
+            moduleId: 'hire',
+            resourceType: 'jobs',
+            resourceId: jobId,
+            data: { 
+                ...jobForm, 
+                id: jobId,
+                postings 
+            },
+            resourceUpdates: { name: jobForm.title }
+        })).unwrap();
+        toast.success('Job draft saved');
+    } catch (error) {
+        toast.error('Failed to save job');
+    } finally {
+        setIsSaving(false);
+        NProgress.done();
+    }
   };
 
-  const handleJobSave = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!job || !jobId) return;
+  const handlePublish = async () => {
+    if (!orgId || !jobId || isSaving || isPublishing) return;
     
-    const updated = JobService.updateJob(jobId, jobForm);
-    if (updated) {
-        setJob(updated);
-        // Toast success
-        toast.success('Job updated successfully');
+    setIsPublishing(true);
+    NProgress.start();
+    try {
+        // First save draft
+        await dispatch(saveResourceDraft({
+            orgId,
+            moduleId: 'hire',
+            resourceType: 'jobs',
+            resourceId: jobId,
+            data: { 
+                ...jobForm, 
+                id: jobId,
+                postings 
+            },
+            resourceUpdates: { name: jobForm.title }
+        })).unwrap();
+
+        await dispatch(publishResource({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId })).unwrap();
+        toast.success("Job published!");
+    } catch (error) {
+        toast.error("Failed to publish job");
+    } finally {
+        setIsPublishing(false);
+        NProgress.done();
     }
   };
 
@@ -60,40 +135,58 @@ export default function JobDetailPage() {
 
   const handleEditorSave = (posting: JobPosting) => {
     if (!jobId) return;
-    JobService.savePosting(jobId, posting);
-    setPostings(JobService.getPostingsForJob(jobId));
-    // Toast success
-    toast.success('Posting draft saved');
+    const newPostings = { ...postings, [posting.channelId]: posting };
+    setPostings(newPostings);
+    toast.success('Posting draft updated (save job to persist)');
   };
 
   const handleEditorPublish = (posting: JobPosting) => {
     if (!jobId) return;
     
+    let updatedPosting = { ...posting };
     if (posting.simulateFailure) {
-        const failedPosting = { ...posting, status: 'failed' as PostingStatus, error: 'Simulated failure: internal server error.' };
-        JobService.savePosting(jobId, failedPosting);
+        updatedPosting = { 
+            ...posting, 
+            status: 'failed' as PostingStatus, 
+            error: 'Simulated failure: internal server error.' 
+        };
         toast.error('Publish failed (simulated)');
     } else {
-        JobService.savePosting(jobId, posting);
-        toast.success('Published successfully');
+        toast.success('Published (save job to persist)');
     }
-    setPostings(JobService.getPostingsForJob(jobId));
+    
+    const newPostings = { ...postings, [updatedPosting.channelId]: updatedPosting };
+    setPostings(newPostings);
   };
 
   const handleUnpublish = (channelId: string) => {
      if (!jobId || !confirm('Are you sure you want to unpublish?')) return;
      
-     JobService.updatePostingStatus(jobId, channelId, 'draft');
-     setPostings(JobService.getPostingsForJob(jobId));
+     const newPostings = { ...postings };
+     if (newPostings[channelId]) {
+         newPostings[channelId] = { ...newPostings[channelId], status: 'draft' };
+     }
+     setPostings(newPostings);
      toast.success('Unpublished');
   };
 
   const handleRetry = (channelId: string) => {
-      // For MVP retry just opens editor or immediately retries. Let's open editor.
       handleOpenEditor(channelId);
   };
 
-  if (!job) return <div>Loading...</div>;
+  if (loading && !activeResource) return <div className="p-8"><Spinner /></div>;
+  if (!activeResource && !loading) return null;
+
+  const jobForEditor: Job = {
+      id: jobId!,
+      title: jobForm.title || '',
+      location: jobForm.location || '',
+      employmentType: jobForm.employmentType || 'Full-time',
+      description: jobForm.description || '',
+      status: (activeResource?.status as any) || 'draft',
+      createdAt: activeResource?.createdAt || '',
+      updatedAt: activeResource?.updatedAt || ''
+  };
 
   return (
     <div className="mx-auto max-w-5xl md:p-8 pb-32">
@@ -129,12 +222,9 @@ export default function JobDetailPage() {
                   currentCover={jobForm.coverImage}
                   onSelect={(url) => {
                     setJobForm({ ...jobForm, coverImage: url });
-                    // Auto save cover change
-                    JobService.updateJob(jobId!, { ...jobForm, coverImage: url });
                   }}
                   onRemove={() => {
                     setJobForm({ ...jobForm, coverImage: undefined });
-                    JobService.updateJob(jobId!, { ...jobForm, coverImage: undefined });
                   }}
                   onClose={() => setShowPicker(false)}
                 />
@@ -146,20 +236,38 @@ export default function JobDetailPage() {
         <div className="p-8 md:px-12 md:py-8 flex justify-between items-end">
           <div className="space-y-1">
             <div className="flex items-center gap-3 mb-2 text-zinc-500 dark:text-zinc-400">
-              <button onClick={() => navigate('/jobs')} className="hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1 text-sm font-medium transition-colors">
+              <button onClick={() => navigate(`/orgs/${orgId}/jobs`)} className="hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1 text-sm font-medium transition-colors">
                 &larr; Jobs
               </button>
               <span>/</span>
-              <span className="text-sm">{job.id}</span>
+              <span className="text-sm">{jobId}</span>
             </div>
             <div className="flex items-center gap-4">
-              <Heading>{jobForm.title || job.title}</Heading>
-              <Badge color={job.status === 'open' ? 'green' : 'zinc'}>{job.status}</Badge>
+              <Heading>{jobForm.title || activeResource?.name}</Heading>
+              <Badge color={activeResource?.status === 'active' ? 'green' : 'zinc'}>
+                {activeResource?.status}
+              </Badge>
             </div>
           </div>
           <div className="flex gap-3">
-             <Button outline onClick={() => navigate('/jobs')}>Cancel</Button>
-             <Button type="submit" form="job-form" color="indigo" className="px-6">Save Changes</Button>
+             <Button outline onClick={() => navigate(`/orgs/${orgId}/jobs`)}>Cancel</Button>
+             <Button 
+                onClick={handleJobSave} 
+                disabled={isSaving || isPublishing}
+                loading={isSaving}
+                className="px-6"
+             >
+                {isSaving ? "Saving..." : "Save Draft"}
+             </Button>
+             <Button 
+                onClick={handlePublish} 
+                disabled={isSaving || isPublishing}
+                loading={isPublishing}
+                color="indigo" 
+                className="px-6"
+             >
+                {isPublishing ? "Publishing..." : "Publish"}
+             </Button>
           </div>
         </div>
       </div>
@@ -289,11 +397,11 @@ export default function JobDetailPage() {
         </div>
       </div>
 
-      {editorState.isOpen && editorState.channelId && job && (
+      {editorState.isOpen && editorState.channelId && activeResource && (
         <PostingEditor
           isOpen={editorState.isOpen}
           onClose={() => setEditorState({ isOpen: false })}
-          job={job}
+          job={jobForEditor}
           channelId={editorState.channelId}
           existingPosting={postings[editorState.channelId]}
           onSave={handleEditorSave}

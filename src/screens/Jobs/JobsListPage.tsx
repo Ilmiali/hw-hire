@@ -1,72 +1,100 @@
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../store';
+import { createResource } from '../../store/slices/resourceSlice';
 import { Button } from '../../components/button';
-import { Heading } from '../../components/heading';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/table';
-import { JobService } from '../../services/JobService';
-import { useEffect, useState } from 'react';
-import { Job } from '../../types/jobs';
-import { PlusIcon } from '@heroicons/react/16/solid';
-import { useNavigate } from 'react-router-dom';
-import { Badge } from '../../components/badge';
+import { Dialog, DialogActions, DialogBody, DialogDescription, DialogTitle } from '../../components/dialog';
+import { Input } from '../../components/input';
+import { Field as FormField, Label } from '../../components/fieldset';
+import NProgress from 'nprogress';
+import { ResourceListView } from '../../database-components/resource-list-view';
 
 export default function JobsListPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const [isCreating, setIsCreating] = useState(false);
+  const [newJobTitle, setNewJobTitle] = useState('');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  useEffect(() => {
-    // Determine if we need to subscribe or just fetch once. 
-    // Since it's in-memory and we might come back, fetching on mount is fine.
-    setJobs(JobService.getAllJobs());
-  }, []);
+  const handleCreate = async () => {
+    if (!newJobTitle.trim() || !orgId) return;
+    
+    setIsCreating(true);
+    NProgress.start();
+
+    try {
+        const initialDraftGenerator = (id: string) => ({
+            id,
+            title: newJobTitle,
+            location: '',
+            employmentType: 'Full-time',
+            description: '',
+            postings: {}
+        });
+
+        const result = await dispatch(createResource({
+            orgId,
+            moduleId: 'hire',
+            resourceType: 'jobs',
+            data: {
+                name: newJobTitle,
+                description: 'Job posting'
+            },
+            initialDraftData: initialDraftGenerator
+        })).unwrap();
+
+        if (result.resource.id) {
+            navigate(`/orgs/${orgId}/jobs/${result.resource.id}`);
+        }
+    } catch (error) {
+        console.error("Failed to create job", error);
+    } finally {
+        setIsCreating(false);
+        setIsCreateDialogOpen(false);
+        setNewJobTitle('');
+        NProgress.done();
+    }
+  };
+
+  if (!orgId) return null;
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <Heading>Jobs</Heading>
-        <Button onClick={() => navigate('/jobs/new')}>
-          <PlusIcon />
-          Create job
-        </Button>
-      </div>
-
-      {jobs.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg">
-          <p className="text-zinc-500 dark:text-zinc-400">No jobs found. Create your first job posting.</p>
-        </div>
-      ) : (
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeader>Title</TableHeader>
-              <TableHeader>Location</TableHeader>
-              <TableHeader>Status</TableHeader>
-              <TableHeader>Updated At</TableHeader>
-              <TableHeader>Actions</TableHeader>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {jobs.map((job) => (
-              <TableRow key={job.id}>
-                <TableCell className="font-medium">{job.title}</TableCell>
-                <TableCell>{job.location}</TableCell>
-                <TableCell>
-                  <Badge color={
-                    job.status === 'open' ? 'green' : 
-                    job.status === 'closed' ? 'red' : 'zinc'
-                  }>
-                    {job.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{new Date(job.updatedAt).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <Button outline onClick={() => navigate(`/jobs/${job.id}`)}>
-                    Open
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
+    <ResourceListView
+        title="Jobs"
+        description="Manage your job postings and recruitment."
+        orgId={orgId}
+        moduleId="hire"
+        resourceType="jobs"
+        resourceName="Job"
+        onCreate={() => setIsCreateDialogOpen(true)}
+        onRowClick={(resource: any) => navigate(`/orgs/${orgId}/jobs/${resource.id}`)}
+    >
+      <Dialog open={isCreateDialogOpen} onClose={setIsCreateDialogOpen}>
+        <DialogTitle>Create New Job</DialogTitle>
+        <DialogDescription>
+          Give your new job a title. You can configure the details and postings in the next step.
+        </DialogDescription>
+        <DialogBody>
+          <FormField>
+            <Label>Job Title</Label>
+            <Input 
+              value={newJobTitle}
+              onChange={(e) => setNewJobTitle(e.target.value)}
+              placeholder="e.g. Senior Frontend Engineer"
+              autoFocus
+            />
+          </FormField>
+        </DialogBody>
+        <DialogActions>
+          <Button plain onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreate} disabled={!newJobTitle.trim() || isCreating}>
+             {isCreating ? 'Creating...' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </ResourceListView>
   );
 }

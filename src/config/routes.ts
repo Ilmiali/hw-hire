@@ -21,7 +21,6 @@ import PipelineListPage from '../screens/Pipeline/PipelineListPage';
 import PipelineEditor from '../screens/Pipeline/PipelineEditor';
 import JobPipelineBoard from '../screens/Pipeline/JobPipelineBoard';
 import JobsListPage from '../screens/Jobs/JobsListPage';
-import JobCreatePage from '../screens/Jobs/JobCreatePage';
 import JobDetailPage from '../screens/Jobs/JobDetailPage';
 import FormsList from '../screens/Forms/FormsList';
 import { RouteConfig, RouteGroup } from '../types/routes';
@@ -81,14 +80,6 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
 
-  {
-    path: '/orgs/:orgId/jobs/new',
-    name: 'Create Job',
-    icon: BriefcaseIcon,
-    component: JobCreatePage,
-    layout: 'authenticated',
-    isAuthProtected: true,
-  },
   {
     path: '/orgs/:orgId/jobs/:jobId',
     name: 'Job Details',
