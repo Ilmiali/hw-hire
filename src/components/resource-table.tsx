@@ -134,14 +134,16 @@ const AccessAvatarGroup = ({
 export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowClick }: ResourceTableProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { resources, loading: loadingResources } = useSelector((state: RootState) => state.resource);
-  const currentUser = useSelector((state: RootState) => state.auth.user);
+  const { user: currentUser, loading: authLoading } = useSelector((state: RootState) => state.auth);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'updatedAt', desc: true }]);
   
   const resourceList = resources[resourceType] || [];
 
   useEffect(() => {
-    dispatch(fetchResources({ orgId, moduleId, resourceType }));
-  }, [dispatch, orgId, moduleId, resourceType]);
+    if (currentUser) {
+      dispatch(fetchResources({ orgId, moduleId, resourceType }));
+    }
+  }, [dispatch, orgId, moduleId, resourceType, currentUser]);
 
   const columns: ColumnDef<any>[] = useMemo(() => [
       {
@@ -301,7 +303,7 @@ export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowCl
   })
 
   // Loading state
-  if (loadingResources && resourceList.length === 0) {
+  if ((loadingResources || authLoading) && resourceList.length === 0) {
      return (
          <div className="rounded-xl border border-border/40 p-12 flex justify-center items-center bg-background/20 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
