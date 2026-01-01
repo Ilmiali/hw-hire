@@ -138,22 +138,11 @@ export const createForm = createAsyncThunk(
         ownerIds: [currentUserId],
         createdBy: currentUserId,
       });
-      
       const actualFormId = typeof docId === 'string' ? docId : (docId as any).id;
 
-      // Add self as owner in access subcollection
-      await db.setDocument(getAccessPath(orgId, actualFormId), currentUserId, {
-        role: 'owner',
-        addedAt: new Date(),
-        addedBy: currentUserId
-      });
-
-      // Add to user's shares subcollection for querying
-      const userSharePath = `orgs/${orgId}/modules/hire/members/${currentUserId}/shares`;
-      await db.setDocument(userSharePath, `forms_${actualFormId}`, {
-        resourceName: name,
-        resourceUpdatedAt: new Date().toISOString()
-      });
+      // NOTE: With the new logic, owners are ONLY in ownerIds. 
+      // They are NOT in the 'access' subcollection, and they do NOT have a 'share' entry.
+      // So we skip adding to 'access' and 'shares' for the creator.
 
       // Create initial draft
       const initialData: FormSchema = {
@@ -194,12 +183,12 @@ export const saveFormDraft = createAsyncThunk(
         updatedAt: new Date() as any 
       });
 
-      // Update all member shares with the new name
+      
+      // Update resourceUpdatedAt for all shares (resourceName is no longer stored)
       const accessDocs = await db.getDocuments<any>(getAccessPath(orgId, formId));
       for (const access of accessDocs) {
         const userSharePath = `orgs/${orgId}/modules/hire/members/${access.id}/shares`;
         await db.updateDocument(userSharePath, `forms_${formId}`, {
-          resourceName: data.title,
           resourceUpdatedAt: new Date().toISOString()
         });
       }

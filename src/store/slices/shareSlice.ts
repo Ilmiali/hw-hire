@@ -74,49 +74,56 @@ export const grantAccess = createAsyncThunk(
 
       if (!currentUserId) throw new Error('User not authenticated');
 
-      // 1. Update access subcollection
-      await db.setDocument(getAccessPath(orgId, moduleId, resourceType, resourceId), userId, {
-        role,
-        addedAt: new Date(),
-        addedBy: currentUserId
-      });
-
-      // 2. Update user's shares subcollection
-      const resourceDoc = await db.getDocument<{ id: string; data: any }>(getResourcePath(orgId, moduleId, resourceType), resourceId);
+      const resourcePath = getResourcePath(orgId, moduleId, resourceType);
+      const accessPath = getAccessPath(orgId, moduleId, resourceType, resourceId);
       const userSharePath = getUserSharePath(orgId, moduleId, userId);
       const shareId = `${resourceType}_${resourceId}`;
-      
-      await db.setDocument(userSharePath, shareId, {
-        resourceName: resourceDoc?.data?.name || 'Unknown Resource',
-        resourceUpdatedAt: new Date().toISOString()
-      });
 
-      // 3. If role is editor or owner, allow update of ownerIds
+      // Fetch current resource to get ownerIds
+      const resourceDoc = await db.getDocument<{ id: string; data: any }>(resourcePath, resourceId);
       const currentOwnerIds = (resourceDoc?.data?.ownerIds as string[]) || [];
       let newOwnerIds = [...currentOwnerIds];
 
-      if (role === 'owner' || role === 'editor') {
+      if (role === 'owner') {
+        // 1. Ensure in ownerIds
         if (!newOwnerIds.includes(userId)) {
           newOwnerIds.push(userId);
         }
-      } else if (role === 'viewer') {
+        // 2. Remove from 'access' subcollection (if exists)
+        await db.deleteDocument(accessPath, userId);
+        
+        // 3. Remove from user's 'shares' subcollection (owners don't need shares)
+        await db.deleteDocument(userSharePath, shareId);
+        
+      } else {
+        // 1. Ensure NOT in ownerIds
         newOwnerIds = newOwnerIds.filter(id => id !== userId);
+        
+        // 2. Add/Update in 'access' subcollection
+        await db.setDocument(accessPath, userId, {
+          role,
+          addedAt: new Date(),
+          addedBy: currentUserId
+        });
+
+        // 3. Update user's 'shares' subcollection (ensure entry exists, no name needed)
+        await db.setDocument(userSharePath, shareId, {
+           resourceUpdatedAt: new Date().toISOString()
+        });
       }
 
+      // 4. Update ownerIds on resource if changed
       if (JSON.stringify(newOwnerIds) !== JSON.stringify(currentOwnerIds)) {
-         await db.updateDocument(getResourcePath(orgId, moduleId, resourceType), resourceId, {
+         await db.updateDocument(resourcePath, resourceId, {
             ownerIds: newOwnerIds
          });
       }
 
-      // Return the new access object + updated ownerIds + resource info
       return {
-          access: {
-            uid: userId,
-            role,
-            addedAt: new Date().toISOString(),
-            addedBy: currentUserId
-          },
+          uid: userId,
+          role,
+          addedAt: new Date().toISOString(),
+          addedBy: currentUserId,
           ownerIds: newOwnerIds,
           resourceId, 
           resourceType
@@ -133,6 +140,7 @@ export const revokeAccess = createAsyncThunk(
   async ({ orgId, moduleId, resourceType, resourceId, userId }: { orgId: string; moduleId: string; resourceType: string; resourceId: string; userId: string }, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
+      const resourcePath = getResourcePath(orgId, moduleId, resourceType);
       
       // 1. Delete from access subcollection
       await db.deleteDocument(getAccessPath(orgId, moduleId, resourceType, resourceId), userId);
@@ -142,13 +150,13 @@ export const revokeAccess = createAsyncThunk(
       const shareId = `${resourceType}_${resourceId}`;
       await db.deleteDocument(userSharePath, shareId);
 
-      // 3. Remove from ownerIds
-      const resourceDoc = await db.getDocument<{ id: string; data: any }>(getResourcePath(orgId, moduleId, resourceType), resourceId);
+      // 3. Remove from ownerIds if present
+      const resourceDoc = await db.getDocument<{ id: string; data: any }>(resourcePath, resourceId);
       const currentOwnerIds = (resourceDoc?.data?.ownerIds as string[]) || [];
       const newOwnerIds = currentOwnerIds.filter(id => id !== userId);
 
       if (newOwnerIds.length !== currentOwnerIds.length) {
-         await db.updateDocument(getResourcePath(orgId, moduleId, resourceType), resourceId, {
+         await db.updateDocument(resourcePath, resourceId, {
             ownerIds: newOwnerIds
          });
       }
@@ -184,11 +192,20 @@ const shareSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(grantAccess.fulfilled, (state, action) => {
-        const existing = state.accessList.findIndex(a => a.uid === action.payload.access.uid);
-        if (existing >= 0) {
-          state.accessList[existing] = action.payload.access;
+        const { uid, role, addedAt, addedBy } = action.payload;
+        
+        // Remove from list if they became an owner (owners are handled by resource ownerIds)
+        if (role === 'owner') {
+          state.accessList = state.accessList.filter(a => a.uid !== uid);
         } else {
-          state.accessList.push(action.payload.access);
+          // Add or update in accessList (for editors/viewers)
+          const newAccess: Access = { uid, role, addedAt, addedBy };
+          const existing = state.accessList.findIndex(a => a.uid === uid);
+          if (existing >= 0) {
+            state.accessList[existing] = newAccess;
+          } else {
+            state.accessList.push(newAccess);
+          }
         }
       })
       .addCase(revokeAccess.fulfilled, (state, action) => {

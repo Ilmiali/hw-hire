@@ -72,10 +72,23 @@ export function SharingDialog({
         }
     }, [isOpen, initialVisibility]);
 
-    // Fetch user details whenever accessList changes
+    // Fetch user details whenever accessList or ownerIds change
     useEffect(() => {
         const fetchDetails = async () => {
-            if (!accessList || accessList.length === 0) {
+            // Combine owners and accessList
+            const ownerAccessItems = ownerIds.map(uid => ({
+                uid,
+                role: 'owner' as AccessRole,
+                addedAt: new Date().toISOString(), // Mocking date for owners for now
+                addedBy: ''
+            }));
+
+            const combinedAccess = [...ownerAccessItems, ...accessList];
+            
+            // Deduplicate (unlikely but good for safety)
+            const uniqueAccess = Array.from(new Map(combinedAccess.map(a => [a.uid, a])).values());
+
+            if (uniqueAccess.length === 0) {
                  setMembers([]);
                  setIsDetailsLoading(false);
                  return;
@@ -83,7 +96,7 @@ export function SharingDialog({
 
             setIsDetailsLoading(true);
             const db = getDatabaseService();
-            const details = await Promise.all(accessList.map(async (access) => {
+            const details = await Promise.all(uniqueAccess.map(async (access) => {
                 try {
                     const userDoc = await db.getDocument<{ data: any }>('users', access.uid);
                     const userData = userDoc?.data || {};
@@ -109,7 +122,7 @@ export function SharingDialog({
             setIsDetailsLoading(false);
         };
         fetchDetails();
-    }, [accessList]);
+    }, [accessList, ownerIds]);
 
     const isLoading = isAccessLoading || isDetailsLoading;
     const isOwner = !!currentUserId && ownerIds.includes(currentUserId);
@@ -123,23 +136,22 @@ export function SharingDialog({
                 await onVisibilityChange(localVisibility);
             }
 
-            // 2. Diff members logic
-            
-            // Current members in UI (local modifications are done on 'members' state via MembersTable)
-            // But wait, MembersTable updates 'members' state directly. 
-            // We need to compare 'members' (state) vs 'accessList' (redux/db state).
-            
-            const originalUids = accessList.map(a => a.uid);
-            const newUids = members.map(m => m.id);
+            // Source of truth: combination of ownerIds (props) and accessList (redux)
+            const originalOwners = ownerIds.map(uid => ({ id: uid, role: 'owner' }));
+            const originalOthers = accessList.map(a => ({ id: a.uid, role: a.role }));
+            const originalMembers = [...originalOwners, ...originalOthers];
+
+            const currentUids = members.map(m => m.id);
+            const originalUids = originalMembers.map(m => m.id);
 
             // Added or Updated
             const toAddOrUpdate = members.filter(m => {
-                const original = accessList.find(a => a.uid === m.id);
+                const original = originalMembers.find(o => o.id === m.id);
                 return !original || original.role !== m.role;
             });
 
             // Removed
-            const removedUids = originalUids.filter(uid => !newUids.includes(uid));
+            const removedUids = originalUids.filter(uid => !currentUids.includes(uid));
 
             // Execute changes
             const promises = [];
