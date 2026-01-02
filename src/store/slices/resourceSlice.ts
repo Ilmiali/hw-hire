@@ -8,6 +8,7 @@ interface ResourceState {
   resources: Record<string, Resource[]>; // Dictionary by resourceType
   activeResource: Resource | null;
   activeDraft: ResourceVersion | null;
+  activeResourceVersions: ResourceVersion[];
   loading: boolean;
   error: string | null;
 }
@@ -16,6 +17,7 @@ const initialState: ResourceState = {
   resources: {},
   activeResource: null,
   activeDraft: null,
+  activeResourceVersions: [],
   loading: false,
   error: null,
 };
@@ -324,6 +326,44 @@ export const publishResource = createAsyncThunk(
     }
 );
 
+export const fetchResourceVersions = createAsyncThunk(
+    'resource/fetchResourceVersions',
+    async ({ orgId, moduleId, resourceType, resourceId }: { orgId: string; moduleId: string; resourceType: string; resourceId: string }, { rejectWithValue }) => {
+        try {
+            const db = getDatabaseService();
+            const versionsPath = getVersionsPath(orgId, moduleId, resourceType, resourceId);
+            const docs = await db.getDocuments<any>(versionsPath);
+            
+            const versions = docs.map(mapDocumentToVersion);
+            // Sort by publishedAt decending (most recent first)
+            versions.sort((a, b) => {
+                const dateA = new Date(a.publishedAt || a.createdAt).getTime();
+                const dateB = new Date(b.publishedAt || b.createdAt).getTime();
+                return dateB - dateA;
+            });
+            
+            return versions;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to fetch versions');
+        }
+    }
+);
+
+export const fetchResourceVersionById = createAsyncThunk(
+    'resource/fetchResourceVersionById',
+    async ({ orgId, moduleId, resourceType, resourceId, versionId }: { orgId: string; moduleId: string; resourceType: string; resourceId: string; versionId: string }, { rejectWithValue }) => {
+        try {
+            const db = getDatabaseService();
+            const versionPath = getVersionsPath(orgId, moduleId, resourceType, resourceId);
+            const doc = await db.getDocument(versionPath, versionId);
+            if (!doc) throw new Error('Version not found');
+            return mapDocumentToVersion(doc);
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to fetch version details');
+        }
+    }
+);
+
 export const updateResourceSettings = createAsyncThunk(
     'resource/updateSettings',
     async ({ orgId, moduleId, resourceType, resourceId, settings }: { orgId: string; moduleId: string; resourceType: string; resourceId: string; settings: Partial<Resource> }, { rejectWithValue }) => {
@@ -462,6 +502,32 @@ const resourceSlice = createSlice({
                   res.ownerIds = ownerIds;
               }
           }
+      })
+      
+      // Resource Versions
+      .addCase(fetchResourceVersions.pending, (state) => {
+          state.loading = true;
+      })
+      .addCase(fetchResourceVersions.fulfilled, (state, action) => {
+          state.loading = false;
+          state.activeResourceVersions = action.payload;
+      })
+      .addCase(fetchResourceVersions.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload as string;
+      })
+      .addCase(fetchResourceVersionById.pending, (state) => {
+          state.loading = true;
+      })
+      .addCase(fetchResourceVersionById.fulfilled, (state, action) => {
+          state.loading = false;
+          // You might set it as activeDraft or something if needed, 
+          // but for previews we probably just return it from the thunk 
+          // or use the list.
+      })
+      .addCase(fetchResourceVersionById.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload as string;
       });
   },
 });

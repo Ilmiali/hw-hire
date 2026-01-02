@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -9,7 +10,8 @@ import {
     saveResourceDraft, 
     publishResource, 
     clearActiveResource,
-    fetchResources 
+    fetchResources,
+    fetchResourceVersions
 } from '../../store/slices/resourceSlice';
 import { Button } from '../../components/button';
 import { Fieldset, Field, Label } from '../../components/fieldset';
@@ -21,10 +23,13 @@ import { Switch, SwitchField } from '../../components/switch';
 import { Job, JobPosting, EmploymentType } from '../../types/jobs';
 import { CHANNELS, getChannelConfig } from '../../config/channels';
 import { CoverPicker } from './components/CoverPicker';
+import { PipelinePreview } from './components/PipelinePreview';
+import { FormPreviewBox } from './components/FormPreviewBox';
 import NProgress from 'nprogress';
 import clsx from 'clsx';
 import JobEditorSkeleton from './components/JobEditorSkeleton';
 import { SharingDialog } from '../../database-components/SharingDialog';
+import { ResourceVersion } from '../../types/resource';
 import { 
     UsersIcon,
     ChevronLeftIcon,
@@ -32,7 +37,8 @@ import {
     ArrowPathIcon,
     GlobeAltIcon,
     ArrowDownOnSquareIcon,
-    RocketLaunchIcon
+    RocketLaunchIcon,
+    DocumentTextIcon
 } from '@heroicons/react/20/solid';
 
 export default function JobDetailPage() {
@@ -43,13 +49,18 @@ export default function JobDetailPage() {
   
   const [postings, setPostings] = useState<Record<string, JobPosting>>({});
   const [showPicker, setShowPicker] = useState(false);
-  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | string>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | 'form' | string>('details');
   const [isSharingOpen, setIsSharingOpen] = useState(false);
 
   // Job Form State
   const [jobForm, setJobForm] = useState<Partial<Job>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Version States
+  const [pipelineVersions, setPipelineVersions] = useState<ResourceVersion[]>([]);
+  const [formVersions, setFormVersions] = useState<ResourceVersion[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
 
   useEffect(() => {
     if (orgId && jobId) {
@@ -93,6 +104,72 @@ export default function JobDetailPage() {
       });
     }
   }, [activeDraft, activeResource]);
+
+  // Load versions for selected pipeline
+  useEffect(() => {
+      const loadVersions = async () => {
+          if (orgId && jobForm.pipelineId) {
+              setLoadingVersions(true);
+              try {
+                const versions = await dispatch(fetchResourceVersions({ 
+                    orgId, 
+                    moduleId: 'hire', 
+                    resourceType: 'pipelines', 
+                    resourceId: jobForm.pipelineId 
+                })).unwrap();
+                setPipelineVersions(versions);
+                
+                // If no version selected, default to published version
+                if (!jobForm.pipelineVersionId) {
+                    const pipeline = (resources['pipelines'] || []).find(p => p.id === jobForm.pipelineId);
+                    if (pipeline?.publishedVersionId) {
+                        setJobForm(prev => ({ ...prev, pipelineVersionId: pipeline.publishedVersionId }));
+                    }
+                }
+              } catch (err) {
+                  console.error("Failed to fetch pipeline versions", err);
+              } finally {
+                  setLoadingVersions(false);
+              }
+          } else {
+              setPipelineVersions([]);
+          }
+      };
+      loadVersions();
+  }, [orgId, jobForm.pipelineId, dispatch, resources]);
+
+  // Load versions for selected form
+  useEffect(() => {
+      const loadVersions = async () => {
+          if (orgId && jobForm.formId) {
+              setLoadingVersions(true);
+              try {
+                const versions = await dispatch(fetchResourceVersions({ 
+                    orgId, 
+                    moduleId: 'hire', 
+                    resourceType: 'forms', 
+                    resourceId: jobForm.formId 
+                })).unwrap();
+                setFormVersions(versions);
+
+                // If no version selected, default to published version
+                if (!jobForm.formVersionId) {
+                    const form = (resources['forms'] || []).find(f => f.id === jobForm.formId);
+                    if (form?.publishedVersionId) {
+                        setJobForm(prev => ({ ...prev, formVersionId: form.publishedVersionId }));
+                    }
+                }
+              } catch (err) {
+                  console.error("Failed to fetch form versions", err);
+              } finally {
+                  setLoadingVersions(false);
+              }
+          } else {
+              setFormVersions([]);
+          }
+      };
+      loadVersions();
+  }, [orgId, jobForm.formId, dispatch, resources]);
 
   const handleJobSave = async () => {
     if (!orgId || !jobId || isSaving || isPublishing) return;
@@ -178,9 +255,6 @@ export default function JobDetailPage() {
   if (loading && !activeResource) return <JobEditorSkeleton />;
   if (!activeResource && !loading) return null;
 
-  const availableForms = (resources['forms'] || []).filter(r => !!r.publishedVersionId);
-  const availablePipelines = (resources['pipelines'] || []).filter(r => !!r.publishedVersionId);
-
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 overflow-hidden">
       {/* Header */}
@@ -258,9 +332,15 @@ export default function JobDetailPage() {
                         />
                         <SidebarItem 
                             icon={ArrowPathIcon} 
-                            label="Workflow & Form" 
+                            label="Workflow" 
                             active={activeTab === 'workflow'} 
                             onClick={() => setActiveTab('workflow')} 
+                        />
+                         <SidebarItem 
+                            icon={DocumentTextIcon} 
+                            label="Application Form" 
+                            active={activeTab === 'form'} 
+                            onClick={() => setActiveTab('form')} 
                         />
                     </nav>
                 </div>
@@ -373,10 +453,10 @@ export default function JobDetailPage() {
                              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
                              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
                                 <ArrowPathIcon className="w-5 h-5 text-purple-500" />
-                                Workflow & Application
+                                Recruitment Workflow
                             </h3>
                              <Fieldset>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <Field>
                                         <Label>Recruitment Pipeline</Label>
                                         <p className="text-xs text-zinc-500 mb-2">The hiring stages candidates will move through.</p>
@@ -384,7 +464,7 @@ export default function JobDetailPage() {
                                             value={jobForm.pipelineId || ''}
                                             onChange={e => {
                                                 const id = e.target.value;
-                                                const pipeline = availablePipelines.find(p => p.id === id);
+                                                const pipeline = (resources['pipelines'] || []).find(p => p.id === id);
                                                 setJobForm({
                                                     ...jobForm,
                                                     pipelineId: id || undefined,
@@ -393,11 +473,56 @@ export default function JobDetailPage() {
                                             }}
                                         >
                                             <option value="">Select Pipeline</option>
-                                            {availablePipelines.map(p => (
+                                            {(resources['pipelines'] || []).map(p => (
                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
                                         </Select>
                                     </Field>
+
+                                    {jobForm.pipelineId && (
+                                        <Field className="animate-in fade-in slide-in-from-left-2 duration-300">
+                                            <Label>Pipeline Version</Label>
+                                            <p className="text-xs text-zinc-500 mb-2">Select a snapshot to use.</p>
+                                            <Select 
+                                                value={jobForm.pipelineVersionId || ''}
+                                                disabled={loadingVersions}
+                                                onChange={e => setJobForm({ ...jobForm, pipelineVersionId: e.target.value })}
+                                            >
+                                                <option value="">Latest Published</option>
+                                                {pipelineVersions.map(v => (
+                                                    <option key={v.id} value={v.id}>
+                                                        {new Date(v.publishedAt || v.createdAt).toLocaleDateString()} ({v.id})
+                                                    </option>
+                                                ))}
+                                            </Select>
+                                        </Field>
+                                    )}
+                                </div>
+                             </Fieldset>
+                        </section>
+
+                        {jobForm.pipelineId && (
+                             <section className="animate-in fade-in slide-in-from-top-4 duration-500">
+                                <PipelinePreview 
+                                    orgId={orgId!} 
+                                    pipelineId={jobForm.pipelineId} 
+                                    versionId={jobForm.pipelineVersionId}
+                                />
+                             </section>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'form' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <section className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+                             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                                <DocumentTextIcon className="w-5 h-5 text-emerald-500" />
+                                Application Form
+                            </h3>
+                             <Fieldset>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <Field>
                                         <Label>Application Form</Label>
                                         <p className="text-xs text-zinc-500 mb-2">The form candidates will fill out when applying.</p>
@@ -405,7 +530,7 @@ export default function JobDetailPage() {
                                             value={jobForm.formId || ''}
                                             onChange={e => {
                                                 const id = e.target.value;
-                                                const form = availableForms.find(f => f.id === id);
+                                                const form = (resources['forms'] || []).find(f => f.id === id);
                                                 setJobForm({
                                                     ...jobForm,
                                                     formId: id || undefined,
@@ -414,14 +539,43 @@ export default function JobDetailPage() {
                                             }}
                                         >
                                             <option value="">Select Form</option>
-                                            {availableForms.map(f => (
+                                            {(resources['forms'] || []).map(f => (
                                                 <option key={f.id} value={f.id}>{f.name}</option>
                                             ))}
                                         </Select>
                                     </Field>
+
+                                    {jobForm.formId && (
+                                        <Field className="animate-in fade-in slide-in-from-left-2 duration-300">
+                                            <Label>Form Version</Label>
+                                            <p className="text-xs text-zinc-500 mb-2">Select a snapshot to use.</p>
+                                            <Select 
+                                                value={jobForm.formVersionId || ''}
+                                                disabled={loadingVersions}
+                                                onChange={e => setJobForm({ ...jobForm, formVersionId: e.target.value })}
+                                            >
+                                                <option value="">Latest Published</option>
+                                                {formVersions.map(v => (
+                                                    <option key={v.id} value={v.id}>
+                                                        {new Date(v.publishedAt || v.createdAt).toLocaleDateString()} ({v.id})
+                                                    </option>
+                                                ))}
+                                            </Select>
+                                        </Field>
+                                    )}
                                 </div>
                              </Fieldset>
                         </section>
+
+                        {jobForm.formId && (
+                             <section className="animate-in fade-in slide-in-from-top-4 duration-500">
+                                <FormPreviewBox 
+                                    orgId={orgId!} 
+                                    formId={jobForm.formId} 
+                                    versionId={jobForm.formVersionId}
+                                />
+                             </section>
+                        )}
                     </div>
                 )}
 
