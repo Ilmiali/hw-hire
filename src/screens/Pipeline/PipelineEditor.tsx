@@ -20,8 +20,9 @@ import NProgress from 'nprogress';
 import { SharingDialog } from '../../database-components/SharingDialog';
 import PipelineEditorSkeleton from './components/PipelineEditorSkeleton';
 import { Spinner } from '@/components/ui/spinner';
+import PipelineBoard from './components/PipelineBoard';
 
-type Tab = 'stages' | 'transitions';
+type Tab = 'stages' | 'transitions' | 'preview';
 
 export default function PipelineEditor() {
   const { orgId, id } = useParams<{ orgId: string; id: string }>();
@@ -138,7 +139,7 @@ export default function PipelineEditor() {
           return;
       }
       if (!confirm("Are you sure you want to delete this stage?")) return;
-      
+
       setStages(prev => {
           const filtered = prev.filter(s => s.id !== stageId);
           return filtered.map((s, idx) => ({ ...s, order: idx }));
@@ -231,6 +232,11 @@ export default function PipelineEditor() {
                 )}
                 {activeTab === 'transitions' && (
                     <TransitionEditor stages={stages} onChange={setStages} />
+                )}
+                {activeTab === 'preview' && (
+                    <div className="h-full -m-8">
+                        <PipelineBoard stages={stages} />
+                    </div>
                 )}
             </div>
         </div>

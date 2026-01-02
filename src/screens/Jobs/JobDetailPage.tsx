@@ -12,20 +12,21 @@ import {
     fetchResources 
 } from '../../store/slices/resourceSlice';
 import { Button } from '../../components/button';
-import { Heading } from '../../components/heading';
 import { Fieldset, Field, Label } from '../../components/fieldset';
 import { Input } from '../../components/input';
 import { Select } from '../../components/select';
 import { Textarea } from '../../components/textarea';
 import { Badge } from '../../components/badge';
 import { Switch, SwitchField } from '../../components/switch';
-import { Job, JobPosting, EmploymentType, PostingStatus } from '../../types/jobs';
+import { Job, JobPosting, EmploymentType } from '../../types/jobs';
 import { CHANNELS, getChannelConfig } from '../../config/channels';
 import { CoverPicker } from './components/CoverPicker';
 import NProgress from 'nprogress';
-import { Spinner } from '@/components/ui/spinner';
-import { Resource } from '../../types/resource';
+import clsx from 'clsx';
+import JobEditorSkeleton from './components/JobEditorSkeleton';
+import { SharingDialog } from '../../database-components/SharingDialog';
 import { 
+    UsersIcon,
     ChevronLeftIcon,
     BriefcaseIcon,
     ArrowPathIcon,
@@ -33,7 +34,6 @@ import {
     ArrowDownOnSquareIcon,
     RocketLaunchIcon
 } from '@heroicons/react/20/solid';
-import clsx from 'clsx';
 
 export default function JobDetailPage() {
   const { orgId, jobId } = useParams<{ orgId: string; jobId: string }>();
@@ -44,6 +44,7 @@ export default function JobDetailPage() {
   const [postings, setPostings] = useState<Record<string, JobPosting>>({});
   const [showPicker, setShowPicker] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'workflow' | string>('details');
+  const [isSharingOpen, setIsSharingOpen] = useState(false);
 
   // Job Form State
   const [jobForm, setJobForm] = useState<Partial<Job>>({});
@@ -115,7 +116,7 @@ export default function JobDetailPage() {
                 formVersionId: jobForm.formVersionId,
                 pipelineId: jobForm.pipelineId,
                 pipelineVersionId: jobForm.pipelineVersionId,
-            }
+            } as any
         })).unwrap();
         toast.success('Job saved');
     } catch (error) {
@@ -148,7 +149,7 @@ export default function JobDetailPage() {
                 formVersionId: jobForm.formVersionId,
                 pipelineId: jobForm.pipelineId,
                 pipelineVersionId: jobForm.pipelineVersionId,
-            }
+            } as any
         })).unwrap();
 
         await dispatch(publishResource({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId })).unwrap();
@@ -174,7 +175,7 @@ export default function JobDetailPage() {
     setPostings(prev => ({ ...prev, [channelId]: updated }));
   };
 
-  if (loading && !activeResource) return <div className="h-screen flex items-center justify-center"><Spinner /></div>;
+  if (loading && !activeResource) return <JobEditorSkeleton />;
   if (!activeResource && !loading) return null;
 
   const availableForms = (resources['forms'] || []).filter(r => !!r.publishedVersionId);
@@ -206,6 +207,14 @@ export default function JobDetailPage() {
         
         <div className="flex gap-2">
             <Button 
+                plain
+                 onClick={() => setIsSharingOpen(true)}
+                 className="h-9 w-9 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10 transition-all"
+                 title="Sharing"
+             >
+                 <UsersIcon className="w-4 h-4" />
+             </Button>
+            <Button 
                 outline
                 onClick={() => navigate(`/orgs/${orgId}/jobs`)}
                 className="h-9 px-4 text-sm font-medium border border-zinc-200 dark:border-white/10 rounded-lg"
@@ -213,7 +222,6 @@ export default function JobDetailPage() {
                 Cancel
             </Button>
             <Button 
-                variant="secondary"
                 onClick={handleJobSave}
                 disabled={isSaving || isPublishing}
                 loading={isSaving}
@@ -439,6 +447,21 @@ export default function JobDetailPage() {
             </div>
         </main>
       </div>
+
+      <SharingDialog 
+          isOpen={isSharingOpen} 
+          onClose={() => setIsSharingOpen(false)} 
+          title="Sharing"
+          description="Manage who can view and edit this job posting."
+          visibility={(activeResource as any)?.visibility || 'private'}
+          ownerIds={(activeResource as any)?.ownerIds || []}
+          availableRoles={['viewer', 'editor', 'owner']}
+          orgId={orgId!}
+          moduleId="hire"
+          resourceType="jobs"
+          resourceId={jobId!}
+          currentUserId={(activeResource as any)?.ownerIds?.[0]} // Fallback or use auth state if available
+      />
     </div>
   );
 }

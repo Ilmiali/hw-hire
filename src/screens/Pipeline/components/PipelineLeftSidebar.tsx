@@ -3,13 +3,14 @@ import { cn } from '@/lib/utils';
 import { 
     QueueListIcon, 
     ArrowsRightLeftIcon,
-    PlusIcon
+    PlusIcon,
+    EyeIcon
 } from '@heroicons/react/20/solid';
 
 interface Props {
     stages: PipelineStage[];
-    activeTab: 'stages' | 'transitions';
-    onTabChange: (tab: 'stages' | 'transitions') => void;
+    activeTab: 'stages' | 'transitions' | 'preview';
+    onTabChange: (tab: 'stages' | 'transitions' | 'preview') => void;
     onSelectStage: (id: string) => void;
     selectedStageId: string | null;
     onAddStage: () => void;
@@ -50,6 +51,18 @@ export function PipelineLeftSidebar({
                 >
                     <ArrowsRightLeftIcon className="w-4 h-4" />
                     Transitions
+                </button>
+                <button
+                    onClick={() => onTabChange('preview')}
+                    className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                        activeTab === 'preview' 
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" 
+                            : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                    )}
+                >
+                    <EyeIcon className="w-4 h-4" />
+                    Preview
                 </button>
             </div>
 
