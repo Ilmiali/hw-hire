@@ -9,6 +9,10 @@ export type Job = {
   description: string;
   status: JobStatus;
   coverImage?: string;
+  pipelineId?: string;
+  pipelineVersionId?: string;
+  formId?: string;
+  formVersionId?: string;
   createdAt: string;
   updatedAt: string;
 };

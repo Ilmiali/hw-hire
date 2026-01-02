@@ -8,7 +8,8 @@ import {
     fetchResourceDraft, 
     saveResourceDraft, 
     publishResource, 
-    clearActiveResource 
+    clearActiveResource,
+    fetchResources 
 } from '../../store/slices/resourceSlice';
 import { Button } from '../../components/button';
 import { Heading } from '../../components/heading';
@@ -23,12 +24,13 @@ import { PostingEditor } from './PostingEditor';
 import { CoverPicker } from './components/CoverPicker';
 import NProgress from 'nprogress';
 import { Spinner } from '@/components/ui/spinner';
+import { Resource } from '../../types/resource';
 
 export default function JobDetailPage() {
   const { orgId, jobId } = useParams<{ orgId: string; jobId: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { activeResource, activeDraft, loading } = useSelector((state: RootState) => state.resource);
+  const { activeResource, activeDraft, loading, resources } = useSelector((state: RootState) => state.resource);
   
   const [postings, setPostings] = useState<Record<string, JobPosting>>({});
   const [editorState, setEditorState] = useState<{ isOpen: boolean; channelId?: string }>({ isOpen: false });
@@ -43,6 +45,10 @@ export default function JobDetailPage() {
     if (orgId && jobId) {
       dispatch(fetchResourceById({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId }));
       dispatch(fetchResourceDraft({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId }));
+      
+      // Fetch available forms and pipelines for selection
+      dispatch(fetchResources({ orgId, moduleId: 'hire', resourceType: 'forms' }));
+      dispatch(fetchResources({ orgId, moduleId: 'hire', resourceType: 'pipelines' }));
     }
     return () => {
       dispatch(clearActiveResource());
@@ -57,7 +63,11 @@ export default function JobDetailPage() {
         location: draftData.location || '',
         employmentType: draftData.employmentType || 'Full-time',
         description: draftData.description || '',
-        coverImage: draftData.coverImage
+        coverImage: draftData.coverImage,
+        formId: draftData.formId,
+        formVersionId: draftData.formVersionId,
+        pipelineId: draftData.pipelineId,
+        pipelineVersionId: draftData.pipelineVersionId,
       });
       setPostings(draftData.postings || {});
     } else if (activeResource) {
@@ -66,10 +76,17 @@ export default function JobDetailPage() {
         location: (activeResource as any).location || '',
         employmentType: (activeResource as any).employmentType || 'Full-time',
         description: (activeResource as any).description || '',
-        coverImage: (activeResource as any).coverImage
+        coverImage: (activeResource as any).coverImage,
+        formId: (activeResource as any).formId,
+        formVersionId: (activeResource as any).formVersionId,
+        pipelineId: (activeResource as any).pipelineId,
+        pipelineVersionId: (activeResource as any).pipelineVersionId,
       });
     }
   }, [activeDraft, activeResource]);
+
+  const availableForms = (resources['forms'] || []).filter(r => !!r.publishedVersionId);
+  const availablePipelines = (resources['pipelines'] || []).filter(r => !!r.publishedVersionId);
 
   const handleJobSave = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -88,7 +105,14 @@ export default function JobDetailPage() {
                 id: jobId,
                 postings 
             },
-            resourceUpdates: { name: jobForm.title }
+            resourceUpdates: { 
+                name: jobForm.title,
+                // These are also stored in parent resource for quick access/listing
+                formId: jobForm.formId,
+                formVersionId: jobForm.formVersionId,
+                pipelineId: jobForm.pipelineId,
+                pipelineVersionId: jobForm.pipelineVersionId,
+            }
         })).unwrap();
         toast.success('Job draft saved');
     } catch (error) {
@@ -116,7 +140,13 @@ export default function JobDetailPage() {
                 id: jobId,
                 postings 
             },
-            resourceUpdates: { name: jobForm.title }
+            resourceUpdates: { 
+                name: jobForm.title,
+                formId: jobForm.formId,
+                formVersionId: jobForm.formVersionId,
+                pipelineId: jobForm.pipelineId,
+                pipelineVersionId: jobForm.pipelineVersionId,
+            }
         })).unwrap();
 
         await dispatch(publishResource({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId })).unwrap();
@@ -184,6 +214,11 @@ export default function JobDetailPage() {
       employmentType: jobForm.employmentType || 'Full-time',
       description: jobForm.description || '',
       status: (activeResource?.status as any) || 'draft',
+      coverImage: jobForm.coverImage,
+      pipelineId: jobForm.pipelineId,
+      pipelineVersionId: jobForm.pipelineVersionId,
+      formId: jobForm.formId,
+      formVersionId: jobForm.formVersionId,
       createdAt: activeResource?.createdAt || '',
       updatedAt: activeResource?.updatedAt || ''
   };
@@ -275,8 +310,8 @@ export default function JobDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-4 md:px-0">
         {/* Main Job Details */}
         <div className="lg:col-span-2 space-y-8">
-            <form id="job-form" onSubmit={handleJobSave} className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-8">
-                <div>
+            <form id="job-form" onSubmit={handleJobSave} className="space-y-8">
+                <div className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-8">
                   <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-900">Job Details</h3>
                   <Fieldset>
                       <Field>
@@ -318,6 +353,57 @@ export default function JobDetailPage() {
                               onChange={e => setJobForm({...jobForm, description: e.target.value})} 
                           />
                       </Field>
+                  </Fieldset>
+                </div>
+
+                {/* Workflow & Application Section */}
+                <div className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-8">
+                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-900">Workflow & Application</h3>
+                  <Fieldset>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <Field>
+                              <Label>Recruitment Pipeline</Label>
+                              <p className="text-xs text-zinc-500 mb-2">Select the workflow stages for this job.</p>
+                              <Select 
+                                  value={jobForm.pipelineId || ''}
+                                  onChange={e => {
+                                      const id = e.target.value;
+                                      const pipeline = availablePipelines.find(p => p.id === id);
+                                      setJobForm({
+                                          ...jobForm,
+                                          pipelineId: id || undefined,
+                                          pipelineVersionId: pipeline?.publishedVersionId
+                                      });
+                                  }}
+                              >
+                                  <option value="">Select Pipeline</option>
+                                  {availablePipelines.map(p => (
+                                      <option key={p.id} value={p.id}>{p.name}</option>
+                                  ))}
+                              </Select>
+                          </Field>
+                          <Field>
+                              <Label>Application Form</Label>
+                              <p className="text-xs text-zinc-500 mb-2">Select the form candidates will fill out.</p>
+                              <Select 
+                                  value={jobForm.formId || ''}
+                                  onChange={e => {
+                                      const id = e.target.value;
+                                      const form = availableForms.find(f => f.id === id);
+                                      setJobForm({
+                                          ...jobForm,
+                                          formId: id || undefined,
+                                          formVersionId: form?.publishedVersionId
+                                      });
+                                  }}
+                              >
+                                  <option value="">Select Form</option>
+                                  {availableForms.map(f => (
+                                      <option key={f.id} value={f.id}>{f.name}</option>
+                                  ))}
+                              </Select>
+                          </Field>
+                      </div>
                   </Fieldset>
                 </div>
             </form>
