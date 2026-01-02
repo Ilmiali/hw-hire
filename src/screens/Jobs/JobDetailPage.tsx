@@ -18,13 +18,22 @@ import { Input } from '../../components/input';
 import { Select } from '../../components/select';
 import { Textarea } from '../../components/textarea';
 import { Badge } from '../../components/badge';
+import { Switch, SwitchField } from '../../components/switch';
 import { Job, JobPosting, EmploymentType, PostingStatus } from '../../types/jobs';
-import { CHANNELS } from '../../config/channels';
-import { PostingEditor } from './PostingEditor';
+import { CHANNELS, getChannelConfig } from '../../config/channels';
 import { CoverPicker } from './components/CoverPicker';
 import NProgress from 'nprogress';
 import { Spinner } from '@/components/ui/spinner';
 import { Resource } from '../../types/resource';
+import { 
+    ChevronLeftIcon,
+    BriefcaseIcon,
+    ArrowPathIcon,
+    GlobeAltIcon,
+    ArrowDownOnSquareIcon,
+    RocketLaunchIcon
+} from '@heroicons/react/20/solid';
+import clsx from 'clsx';
 
 export default function JobDetailPage() {
   const { orgId, jobId } = useParams<{ orgId: string; jobId: string }>();
@@ -33,8 +42,8 @@ export default function JobDetailPage() {
   const { activeResource, activeDraft, loading, resources } = useSelector((state: RootState) => state.resource);
   
   const [postings, setPostings] = useState<Record<string, JobPosting>>({});
-  const [editorState, setEditorState] = useState<{ isOpen: boolean; channelId?: string }>({ isOpen: false });
   const [showPicker, setShowPicker] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | string>('details');
 
   // Job Form State
   const [jobForm, setJobForm] = useState<Partial<Job>>({});
@@ -46,7 +55,6 @@ export default function JobDetailPage() {
       dispatch(fetchResourceById({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId }));
       dispatch(fetchResourceDraft({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId }));
       
-      // Fetch available forms and pipelines for selection
       dispatch(fetchResources({ orgId, moduleId: 'hire', resourceType: 'forms' }));
       dispatch(fetchResources({ orgId, moduleId: 'hire', resourceType: 'pipelines' }));
     }
@@ -85,11 +93,7 @@ export default function JobDetailPage() {
     }
   }, [activeDraft, activeResource]);
 
-  const availableForms = (resources['forms'] || []).filter(r => !!r.publishedVersionId);
-  const availablePipelines = (resources['pipelines'] || []).filter(r => !!r.publishedVersionId);
-
-  const handleJobSave = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const handleJobSave = async () => {
     if (!orgId || !jobId || isSaving || isPublishing) return;
     
     setIsSaving(true);
@@ -107,14 +111,13 @@ export default function JobDetailPage() {
             },
             resourceUpdates: { 
                 name: jobForm.title,
-                // These are also stored in parent resource for quick access/listing
                 formId: jobForm.formId,
                 formVersionId: jobForm.formVersionId,
                 pipelineId: jobForm.pipelineId,
                 pipelineVersionId: jobForm.pipelineVersionId,
             }
         })).unwrap();
-        toast.success('Job draft saved');
+        toast.success('Job saved');
     } catch (error) {
         toast.error('Failed to save job');
     } finally {
@@ -129,7 +132,6 @@ export default function JobDetailPage() {
     setIsPublishing(true);
     NProgress.start();
     try {
-        // First save draft
         await dispatch(saveResourceDraft({
             orgId,
             moduleId: 'hire',
@@ -159,341 +161,424 @@ export default function JobDetailPage() {
     }
   };
 
-  const handleOpenEditor = (channelId: string) => {
-    setEditorState({ isOpen: true, channelId });
-  };
-
-  const handleEditorSave = (posting: JobPosting) => {
-    if (!jobId) return;
-    const newPostings = { ...postings, [posting.channelId]: posting };
-    setPostings(newPostings);
-    toast.success('Posting draft updated (save job to persist)');
-  };
-
-  const handleEditorPublish = (posting: JobPosting) => {
-    if (!jobId) return;
+  const updatePosting = (channelId: string, updates: Partial<JobPosting>) => {
+    const existing = postings[channelId] || {
+        channelId,
+        status: 'not_configured',
+        content: { title: jobForm.title || '', description: jobForm.description || '', location: jobForm.location || '', applyUrl: '' },
+        overrides: {},
+        lastUpdatedAt: new Date().toISOString()
+    };
     
-    let updatedPosting = { ...posting };
-    if (posting.simulateFailure) {
-        updatedPosting = { 
-            ...posting, 
-            status: 'failed' as PostingStatus, 
-            error: 'Simulated failure: internal server error.' 
-        };
-        toast.error('Publish failed (simulated)');
-    } else {
-        toast.success('Published (save job to persist)');
-    }
-    
-    const newPostings = { ...postings, [updatedPosting.channelId]: updatedPosting };
-    setPostings(newPostings);
+    const updated = { ...existing, ...updates, lastUpdatedAt: new Date().toISOString() };
+    setPostings(prev => ({ ...prev, [channelId]: updated }));
   };
 
-  const handleUnpublish = (channelId: string) => {
-     if (!jobId || !confirm('Are you sure you want to unpublish?')) return;
-     
-     const newPostings = { ...postings };
-     if (newPostings[channelId]) {
-         newPostings[channelId] = { ...newPostings[channelId], status: 'draft' };
-     }
-     setPostings(newPostings);
-     toast.success('Unpublished');
-  };
-
-  const handleRetry = (channelId: string) => {
-      handleOpenEditor(channelId);
-  };
-
-  if (loading && !activeResource) return <div className="p-8"><Spinner /></div>;
+  if (loading && !activeResource) return <div className="h-screen flex items-center justify-center"><Spinner /></div>;
   if (!activeResource && !loading) return null;
 
-  const jobForEditor: Job = {
-      id: jobId!,
-      title: jobForm.title || '',
-      location: jobForm.location || '',
-      employmentType: jobForm.employmentType || 'Full-time',
-      description: jobForm.description || '',
-      status: (activeResource?.status as any) || 'draft',
-      coverImage: jobForm.coverImage,
-      pipelineId: jobForm.pipelineId,
-      pipelineVersionId: jobForm.pipelineVersionId,
-      formId: jobForm.formId,
-      formVersionId: jobForm.formVersionId,
-      createdAt: activeResource?.createdAt || '',
-      updatedAt: activeResource?.updatedAt || ''
-  };
+  const availableForms = (resources['forms'] || []).filter(r => !!r.publishedVersionId);
+  const availablePipelines = (resources['pipelines'] || []).filter(r => !!r.publishedVersionId);
 
   return (
-    <div className="mx-auto max-w-5xl md:p-8 pb-32">
-      {/* Header section with cover */}
-      <div className="bg-white dark:bg-zinc-950 md:rounded-xl border md:border-zinc-200 md:dark:border-zinc-800 shadow-sm overflow-hidden mb-8">
-        <div className="relative group h-48 md:h-64 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
-          {jobForm.coverImage ? (
-            <img 
-              src={jobForm.coverImage} 
-              alt="Cover" 
-              className="w-full h-full object-cover"
+    <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 overflow-hidden">
+      {/* Header */}
+      <header className="flex justify-between items-center px-4 py-2 border-b border-zinc-200 dark:border-white/10 shrink-0 bg-white dark:bg-zinc-950 z-10">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate(`/orgs/${orgId}/jobs`)}
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
+          >
+            <ChevronLeftIcon className="w-5 h-5" />
+          </button>
+          <div className="flex flex-col">
+            <span className="text-xs text-zinc-500 font-medium">Job Editor</span>
+            <input 
+                value={jobForm.title || ''} 
+                onChange={(e) => setJobForm({ ...jobForm, title: e.target.value })}
+                className="text-sm font-semibold bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-white p-0 "
             />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600">
-              <svg className="w-12 h-12 mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-sm font-medium">No cover image</span>
-            </div>
-          )}
-          
-          <div className="absolute bottom-4 left-8 md:bottom-6 md:left-12 flex items-center gap-2">
-            <div className="relative">
-              <Button 
-                plain 
-                className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 shadow-sm"
-                onClick={() => setShowPicker(!showPicker)}
-              >
-                {jobForm.coverImage ? 'Change cover' : 'Add cover'}
-              </Button>
-              {showPicker && (
-                <CoverPicker
-                  currentCover={jobForm.coverImage}
-                  onSelect={(url) => {
-                    setJobForm({ ...jobForm, coverImage: url });
-                  }}
-                  onRemove={() => {
-                    setJobForm({ ...jobForm, coverImage: undefined });
-                  }}
-                  onClose={() => setShowPicker(false)}
-                />
-              )}
-            </div>
           </div>
+          <Badge color={activeResource?.status === 'active' ? 'green' : 'zinc'}>
+            {activeResource?.status}
+          </Badge>
         </div>
-
-        <div className="p-8 md:px-12 md:py-8 flex justify-between items-end">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3 mb-2 text-zinc-500 dark:text-zinc-400">
-              <button onClick={() => navigate(`/orgs/${orgId}/jobs`)} className="hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1 text-sm font-medium transition-colors">
-                &larr; Jobs
-              </button>
-              <span>/</span>
-              <span className="text-sm">{jobId}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Heading>{jobForm.title || activeResource?.name}</Heading>
-              <Badge color={activeResource?.status === 'active' ? 'green' : 'zinc'}>
-                {activeResource?.status}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex gap-3">
-             <Button outline onClick={() => navigate(`/orgs/${orgId}/jobs`)}>Cancel</Button>
-             <Button 
-                onClick={handleJobSave} 
+        
+        <div className="flex gap-2">
+            <Button 
+                outline
+                onClick={() => navigate(`/orgs/${orgId}/jobs`)}
+                className="h-9 px-4 text-sm font-medium border border-zinc-200 dark:border-white/10 rounded-lg"
+            >
+                Cancel
+            </Button>
+            <Button 
+                variant="secondary"
+                onClick={handleJobSave}
                 disabled={isSaving || isPublishing}
                 loading={isSaving}
-                className="px-6"
-             >
-                {isSaving ? "Saving..." : "Save Draft"}
-             </Button>
-             <Button 
-                onClick={handlePublish} 
+                className="h-9 px-4 text-sm font-medium bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg hover:bg-zinc-200 dark:hover:bg-white/10 transition-all"
+            >
+                {!isSaving && <ArrowDownOnSquareIcon className="mr-2 h-4 w-4 opacity-70" />}
+                {isSaving ? 'Saving...' : 'Save Draft'}
+            </Button>
+            <Button 
+                onClick={handlePublish}
                 disabled={isSaving || isPublishing}
                 loading={isPublishing}
-                color="indigo" 
-                className="px-6"
-             >
-                {isPublishing ? "Publishing..." : "Publish"}
-             </Button>
-          </div>
+                color="indigo"
+                className="h-9 px-4 text-sm font-semibold rounded-lg shadow-sm transition-all"
+            >
+                {!isPublishing && <RocketLaunchIcon className="mr-2 h-4 w-4" />}
+                {isPublishing ? 'Publishing...' : 'Publish'}
+            </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-4 md:px-0">
-        {/* Main Job Details */}
-        <div className="lg:col-span-2 space-y-8">
-            <form id="job-form" onSubmit={handleJobSave} className="space-y-8">
-                <div className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-8">
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-900">Job Details</h3>
-                  <Fieldset>
-                      <Field>
-                          <Label>Job Title</Label>
-                          <Input 
-                              placeholder="e.g. Senior Product Designer"
-                              value={jobForm.title || ''} 
-                              onChange={e => setJobForm({...jobForm, title: e.target.value})} 
-                          />
-                      </Field>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <Field>
-                              <Label>Location</Label>
-                              <Input 
-                                  placeholder="e.g. Helsinki (Hybrid)"
-                                  value={jobForm.location || ''} 
-                                  onChange={e => setJobForm({...jobForm, location: e.target.value})} 
-                              />
-                          </Field>
-                          <Field>
-                              <Label>Employment Type</Label>
-                              <Select 
-                                  value={jobForm.employmentType}
-                                  onChange={e => setJobForm({...jobForm, employmentType: e.target.value as EmploymentType})}
-                              >
-                                  <option value="Full-time">Full-time</option>
-                                  <option value="Part-time">Part-time</option>
-                                  <option value="Contract">Contract</option>
-                                  <option value="Temporary">Temporary</option>
-                              </Select>
-                          </Field>
-                      </div>
-                      <Field>
-                          <Label>Description</Label>
-                          <Textarea 
-                              rows={12}
-                              placeholder="Describe the role..."
-                              value={jobForm.description || ''} 
-                              onChange={e => setJobForm({...jobForm, description: e.target.value})} 
-                          />
-                      </Field>
-                  </Fieldset>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-64 border-r border-zinc-200 dark:border-white/10 flex flex-col bg-zinc-50/50 dark:bg-black/20 shrink-0">
+            <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+                <div>
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2 px-2">Config</h4>
+                    <nav className="space-y-1">
+                        <SidebarItem 
+                            icon={BriefcaseIcon} 
+                            label="Job Details" 
+                            active={activeTab === 'details'} 
+                            onClick={() => setActiveTab('details')} 
+                        />
+                        <SidebarItem 
+                            icon={ArrowPathIcon} 
+                            label="Workflow & Form" 
+                            active={activeTab === 'workflow'} 
+                            onClick={() => setActiveTab('workflow')} 
+                        />
+                    </nav>
                 </div>
-
-                {/* Workflow & Application Section */}
-                <div className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-8">
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-900">Workflow & Application</h3>
-                  <Fieldset>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <Field>
-                              <Label>Recruitment Pipeline</Label>
-                              <p className="text-xs text-zinc-500 mb-2">Select the workflow stages for this job.</p>
-                              <Select 
-                                  value={jobForm.pipelineId || ''}
-                                  onChange={e => {
-                                      const id = e.target.value;
-                                      const pipeline = availablePipelines.find(p => p.id === id);
-                                      setJobForm({
-                                          ...jobForm,
-                                          pipelineId: id || undefined,
-                                          pipelineVersionId: pipeline?.publishedVersionId
-                                      });
-                                  }}
-                              >
-                                  <option value="">Select Pipeline</option>
-                                  {availablePipelines.map(p => (
-                                      <option key={p.id} value={p.id}>{p.name}</option>
-                                  ))}
-                              </Select>
-                          </Field>
-                          <Field>
-                              <Label>Application Form</Label>
-                              <p className="text-xs text-zinc-500 mb-2">Select the form candidates will fill out.</p>
-                              <Select 
-                                  value={jobForm.formId || ''}
-                                  onChange={e => {
-                                      const id = e.target.value;
-                                      const form = availableForms.find(f => f.id === id);
-                                      setJobForm({
-                                          ...jobForm,
-                                          formId: id || undefined,
-                                          formVersionId: form?.publishedVersionId
-                                      });
-                                  }}
-                              >
-                                  <option value="">Select Form</option>
-                                  {availableForms.map(f => (
-                                      <option key={f.id} value={f.id}>{f.name}</option>
-                                  ))}
-                              </Select>
-                          </Field>
-                      </div>
-                  </Fieldset>
-                </div>
-            </form>
-        </div>
-
-        {/* Distribution / Postings */}
-        <div className="space-y-6">
-            <div className="bg-white dark:bg-zinc-950 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Distribution</h3>
-                  <Badge>{CHANNELS.length} Channels</Badge>
-                </div>
-                <div className="space-y-4">
-                    {CHANNELS.map(channel => {
-                        const posting = postings[channel.id];
-                        const status = posting?.status || 'not_configured';
-
-                        return (
-                            <div key={channel.id} className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{channel.name}</h3>
-                                    <Badge color={
-                                        (status === 'published' ? 'green' :
-                                        status === 'failed' ? 'red' :
-                                        status === 'draft' ? 'yellow' : 'zinc') as any
-                                    }>
-                                        {status.replace('_', ' ')}
-                                    </Badge>
-                                </div>
-                                {posting?.lastUpdatedAt && (
-                                    <div className="text-xs text-zinc-500 mb-3 flex items-center gap-1">
-                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Updated: {new Date(posting.lastUpdatedAt).toLocaleDateString()}
-                                    </div>
-                                )}
-                                {status === 'failed' && posting.error && (
-                                     <div className="text-xs text-red-600 mb-3 bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
-                                        {posting.error}
-                                     </div>
-                                )}
-
-                                <div className="flex gap-2 mt-4">
-                                    {status === 'not_configured' && (
-                                        <Button className="w-full" onClick={() => handleOpenEditor(channel.id)}>
-                                            Create Posting
-                                        </Button>
-                                    )}
-                                    {status === 'draft' && (
-                                        <>
-                                            <Button outline className="flex-1" onClick={() => handleOpenEditor(channel.id)}>Edit</Button>
-                                            <Button className="flex-1" onClick={() => handleOpenEditor(channel.id)}>Publish</Button>
-                                        </>
-                                    )}
-                                    {status === 'published' && (
-                                        <>
-                                            <Button outline className="flex-1" onClick={() => handleOpenEditor(channel.id)}>View</Button>
-                                            <Button color="red" className="flex-1" onClick={() => handleUnpublish(channel.id)}>Unpublish</Button>
-                                        </>
-                                    )}
-                                    {status === 'failed' && (
-                                        <>
-                                            <Button outline className="flex-1" onClick={() => handleOpenEditor(channel.id)}>Edit</Button>
-                                            <Button className="flex-1" onClick={() => handleRetry(channel.id)}>Retry</Button>
-                                        </>
-                                    )}
-                                    {status === 'paused' && (
-                                         <Button className="w-full" onClick={() => handleOpenEditor(channel.id)}>Resume</Button>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
+                
+                <div>
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2 px-2">Distribution</h4>
+                    <nav className="space-y-1">
+                        {CHANNELS.map(channel => (
+                            <SidebarItem 
+                                key={channel.id}
+                                icon={GlobeAltIcon} 
+                                label={channel.name} 
+                                active={activeTab === channel.id} 
+                                onClick={() => setActiveTab(channel.id)}
+                                badge={postings[channel.id]?.status}
+                            />
+                        ))}
+                    </nav>
                 </div>
             </div>
-        </div>
-      </div>
+        </aside>
 
-      {editorState.isOpen && editorState.channelId && activeResource && (
-        <PostingEditor
-          isOpen={editorState.isOpen}
-          onClose={() => setEditorState({ isOpen: false })}
-          job={jobForEditor}
-          channelId={editorState.channelId}
-          existingPosting={postings[editorState.channelId]}
-          onSave={handleEditorSave}
-          onPublish={handleEditorPublish}
-        />
-      )}
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto bg-zinc-50/30 dark:bg-zinc-900/10">
+            <div className="max-w-4xl mx-auto p-8">
+                {activeTab === 'details' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <section className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
+                            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                                <BriefcaseIcon className="w-5 h-5 text-blue-500" />
+                                Basic Information
+                            </h3>
+                            <div className="relative group h-48 bg-zinc-100 dark:bg-zinc-900 rounded-lg mb-8 overflow-hidden border border-zinc-200 dark:border-zinc-800">
+                                {jobForm.coverImage ? (
+                                    <img src={jobForm.coverImage} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400">
+                                        <GlobeAltIcon className="w-8 h-8 opacity-20 mb-1" />
+                                        <span className="text-xs">No cover image</span>
+                                    </div>
+                                )}
+                                <div className="absolute bottom-4 left-4">
+                                     <Button 
+                                        plain 
+                                        className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 shadow-sm text-xs"
+                                        onClick={() => setShowPicker(!showPicker)}
+                                     >
+                                        {jobForm.coverImage ? 'Change cover' : 'Add cover'}
+                                     </Button>
+                                     {showPicker && (
+                                        <CoverPicker
+                                            currentCover={jobForm.coverImage}
+                                            onSelect={(url) => { setJobForm({ ...jobForm, coverImage: url }); setShowPicker(false); }}
+                                            onRemove={() => { setJobForm({ ...jobForm, coverImage: undefined }); setShowPicker(false); }}
+                                            onClose={() => setShowPicker(false)}
+                                        />
+                                     )}
+                                </div>
+                            </div>
+
+                            <Fieldset>
+                                <Field>
+                                    <Label>Job Title</Label>
+                                    <Input 
+                                        placeholder="e.g. Senior Product Designer"
+                                        value={jobForm.title || ''} 
+                                        onChange={e => setJobForm({...jobForm, title: e.target.value})} 
+                                    />
+                                </Field>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Field>
+                                        <Label>Location</Label>
+                                        <Input 
+                                            placeholder="e.g. Helsinki (Hybrid)"
+                                            value={jobForm.location || ''} 
+                                            onChange={e => setJobForm({...jobForm, location: e.target.value})} 
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <Label>Employment Type</Label>
+                                        <Select 
+                                            value={jobForm.employmentType}
+                                            onChange={e => setJobForm({...jobForm, employmentType: e.target.value as EmploymentType})}
+                                        >
+                                            <option value="Full-time">Full-time</option>
+                                            <option value="Part-time">Part-time</option>
+                                            <option value="Contract">Contract</option>
+                                            <option value="Temporary">Temporary</option>
+                                        </Select>
+                                    </Field>
+                                </div>
+                                <Field>
+                                    <Label>Description</Label>
+                                    <Textarea 
+                                        rows={12}
+                                        placeholder="Describe the role..."
+                                        value={jobForm.description || ''} 
+                                        onChange={e => setJobForm({...jobForm, description: e.target.value})} 
+                                    />
+                                </Field>
+                            </Fieldset>
+                        </section>
+                    </div>
+                )}
+
+                {activeTab === 'workflow' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <section className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
+                             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                                <ArrowPathIcon className="w-5 h-5 text-purple-500" />
+                                Workflow & Application
+                            </h3>
+                             <Fieldset>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <Field>
+                                        <Label>Recruitment Pipeline</Label>
+                                        <p className="text-xs text-zinc-500 mb-2">The hiring stages candidates will move through.</p>
+                                        <Select 
+                                            value={jobForm.pipelineId || ''}
+                                            onChange={e => {
+                                                const id = e.target.value;
+                                                const pipeline = availablePipelines.find(p => p.id === id);
+                                                setJobForm({
+                                                    ...jobForm,
+                                                    pipelineId: id || undefined,
+                                                    pipelineVersionId: pipeline?.publishedVersionId
+                                                });
+                                            }}
+                                        >
+                                            <option value="">Select Pipeline</option>
+                                            {availablePipelines.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </Select>
+                                    </Field>
+                                    <Field>
+                                        <Label>Application Form</Label>
+                                        <p className="text-xs text-zinc-500 mb-2">The form candidates will fill out when applying.</p>
+                                        <Select 
+                                            value={jobForm.formId || ''}
+                                            onChange={e => {
+                                                const id = e.target.value;
+                                                const form = availableForms.find(f => f.id === id);
+                                                setJobForm({
+                                                    ...jobForm,
+                                                    formId: id || undefined,
+                                                    formVersionId: form?.publishedVersionId
+                                                });
+                                            }}
+                                        >
+                                            <option value="">Select Form</option>
+                                            {availableForms.map(f => (
+                                                <option key={f.id} value={f.id}>{f.name}</option>
+                                            ))}
+                                        </Select>
+                                    </Field>
+                                </div>
+                             </Fieldset>
+                        </section>
+                    </div>
+                )}
+
+                {getChannelConfig(activeTab) && (
+                    <ChannelPanel 
+                        channelId={activeTab} 
+                        posting={postings[activeTab] || { 
+                            channelId: activeTab, 
+                            status: 'not_configured', 
+                            content: { title: jobForm.title || '', description: jobForm.description || '', location: jobForm.location || '', applyUrl: '' },
+                            overrides: {},
+                            lastUpdatedAt: new Date().toISOString()
+                        }} 
+                        job={{
+                            title: jobForm.title || '',
+                            description: jobForm.description || '',
+                            location: jobForm.location || '',
+                            id: jobId || ''
+                        }}
+                        onUpdate={(updates) => updatePosting(activeTab, updates)}
+                    />
+                )}
+            </div>
+        </main>
+      </div>
     </div>
   );
+}
+
+function SidebarItem({ icon: Icon, label, active, onClick, badge }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: string }) {
+    return (
+        <button 
+            onClick={onClick}
+            className={clsx(
+                "w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-all",
+                active 
+                    ? "bg-white dark:bg-zinc-800 text-blue-600 shadow-sm border border-zinc-200 dark:border-white/10" 
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5"
+            )}
+        >
+            <div className="flex items-center gap-2 overflow-hidden">
+                <Icon className={clsx("w-4 h-4 shrink-0", active ? "text-blue-500" : "text-zinc-400")} />
+                <span className="truncate">{label}</span>
+            </div>
+            {badge && badge !== 'not_configured' && (
+                <div className={clsx(
+                    "w-2 h-2 rounded-full",
+                    badge === 'published' ? 'bg-green-500' :
+                    badge === 'draft' ? 'bg-yellow-500' :
+                    badge === 'failed' ? 'bg-red-500' : 'bg-zinc-300'
+                )} />
+            )}
+        </button>
+    );
+}
+
+function ChannelPanel({ channelId, posting, job, onUpdate }: { channelId: string, posting: JobPosting, job: any, onUpdate: (updates: Partial<JobPosting>) => void }) {
+    const config = getChannelConfig(channelId);
+    if (!config) return null;
+
+    const useOverrides = {
+        title: !!posting.overrides.title,
+        description: !!posting.overrides.description,
+        location: !!posting.overrides.location,
+        applyUrl: !!posting.overrides.applyUrl,
+    };
+
+    const getEffectiveValue = (field: 'title' | 'description' | 'location' | 'applyUrl') => {
+        if (field === 'applyUrl') return posting.overrides.applyUrl || `https://example.com/apply/${job.id}?source=${channelId}`;
+        return posting.overrides[field] || job[field];
+    };
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-300 items-start">
+            <div className="space-y-6">
+                <section className="bg-white dark:bg-zinc-950 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-6">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-lg font-semibold">{config.name} Overrides</h3>
+                        <Badge color={
+                            posting.status === 'published' ? 'green' : 
+                            posting.status === 'failed' ? 'red' : 
+                            posting.status === 'draft' ? 'yellow' : 'zinc'
+                        }>
+                            {posting.status.replace('_', ' ')}
+                        </Badge>
+                    </div>
+
+                    <Fieldset className="space-y-4">
+                        {['title', 'location', 'applyUrl', 'description'].map((field) => (
+                            <Field key={field}>
+                                <div className="flex justify-between items-center mb-1">
+                                    <Label className="capitalize">{field.replace('applyUrl', 'Apply URL')}</Label>
+                                    <SwitchField>
+                                        <Label className="text-[10px] text-zinc-500 mr-2">Override</Label>
+                                        <Switch 
+                                            checked={useOverrides[field as keyof typeof useOverrides]} 
+                                            onChange={(checked) => {
+                                                const newOverrides = { ...posting.overrides };
+                                                if (checked) {
+                                                    newOverrides[field as keyof typeof useOverrides] = getEffectiveValue(field as any);
+                                                } else {
+                                                    delete newOverrides[field as keyof typeof useOverrides];
+                                                }
+                                                onUpdate({ overrides: newOverrides });
+                                            }} 
+                                        />
+                                    </SwitchField>
+                                </div>
+                                {field === 'description' ? (
+                                    <Textarea 
+                                        rows={8}
+                                        value={getEffectiveValue(field)}
+                                        readOnly={!useOverrides[field as keyof typeof useOverrides]}
+                                        onChange={e => onUpdate({ overrides: { ...posting.overrides, [field]: e.target.value } })}
+                                        className={!useOverrides[field] ? "bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-500" : ""}
+                                    />
+                                ) : (
+                                    <Input 
+                                        value={getEffectiveValue(field as any)}
+                                        readOnly={!useOverrides[field as keyof typeof useOverrides]}
+                                        onChange={e => onUpdate({ overrides: { ...posting.overrides, [field]: e.target.value } })}
+                                        className={!useOverrides[field as keyof typeof useOverrides] ? "bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-500" : ""}
+                                    />
+                                )}
+                            </Field>
+                        ))}
+                    </Fieldset>
+                    
+                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                        <div className="flex gap-2">
+                            <Button 
+                                className="w-full"
+                                onClick={() => onUpdate({ status: posting.status === 'published' ? 'draft' : 'published' })}
+                                color={posting.status === 'published' ? 'zinc' : 'indigo'}
+                            >
+                                {posting.status === 'published' ? 'Unpublish' : 'Set to Published'}
+                            </Button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div className="sticky top-8 space-y-6">
+                 <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                    <div className="flex items-center gap-2 mb-6">
+                        <Badge color="blue">Live Preview</Badge>
+                        <span className="text-xs text-zinc-500 italic">Simulated look on {config.name}</span>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-bold text-zinc-900 dark:text-white leading-tight">{getEffectiveValue('title')}</h2>
+                        <div className="flex flex-wrap gap-4 text-[13px] text-zinc-500 font-medium">
+                            <span className="flex items-center gap-1.5">
+                                <span className="opacity-70">📍</span> {getEffectiveValue('location')}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <span className="opacity-70">🔗</span> <a href="#" className="text-blue-500 hover:underline">Apply Here</a>
+                            </span>
+                        </div>
+                        <div className="prose dark:prose-invert max-w-none text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap leading-relaxed py-4 border-t border-zinc-100 dark:border-zinc-900">
+                            {getEffectiveValue('description')}
+                        </div>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    );
 }
