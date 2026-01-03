@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDatabaseService } from '../../services/databaseService';
-import { PublicPosting } from '../../types/posting'; // You might need to export this if not already
+import { PublicPosting } from '../../types/posting';
 import { Button } from '../../components/button';
-import { Input } from '../../components/input';
-import { Textarea } from '../../components/textarea';
-import { Fieldset, Field, Label } from '../../components/fieldset';
 import { BriefcaseIcon, MapPinIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 import { toast } from 'react-toastify';
-// Import a form renderer or build a simple one. 
-// For now, we'll assume a simple dynamic form renderer based on schemaSnapshot.
-// Since we don't have the full form renderer code in context, I'll build a simple map.
+import { FormRenderer } from '../FormBuilder/components/FormRenderer';
 
-type FormData = Record<string, any>;
 
 export default function PublicApplyPage() {
     const { publicPostingId } = useParams<{ publicPostingId: string }>();
@@ -22,9 +16,7 @@ export default function PublicApplyPage() {
     const [submitted, setSubmitted] = useState(false);
     
     // Application Form State
-    const [answers, setAnswers] = useState<FormData>({});
-    const [applicantName, setApplicantName] = useState('');
-    const [applicantEmail, setApplicantEmail] = useState('');
+    // We'll extract name and email from form values if they exist
 
     useEffect(() => {
         const loadPosting = async () => {
@@ -59,10 +51,8 @@ export default function PublicApplyPage() {
         loadPosting();
     }, [publicPostingId]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleFormSuccess = async (values: any) => {
         if (!posting || !publicPostingId) return;
-
         setSubmitting(true);
         try {
             const db = getDatabaseService();
@@ -86,18 +76,17 @@ export default function PublicApplyPage() {
                 currentStageId: posting.pipeline.firstStageId,
                 stageUpdatedAt: new Date().toISOString(),
                 
-                applicantName,
-                applicantEmail,
-                answers,
+                // Try to find name and email in the values
+                applicantName: values.name || values.fullName || values.applicantName || '',
+                applicantEmail: values.email || values.emailAddress || values.applicantEmail || '',
+                answers: values,
                 
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
 
-            // We write to specific org collection structure
-            // orgs/{orgId}/modules/{moduleId}/applications
             await db.addDocument(
-                `orgs/${posting.orgId}/modules/hire/applications`, // Assuming 'hire' is the module for applications
+                `orgs/${posting.orgId}/modules/hire/applications`,
                 application
             );
 
@@ -114,10 +103,10 @@ export default function PublicApplyPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
                 <div className="animate-pulse flex flex-col items-center gap-4">
-                    <div className="h-8 w-64 bg-zinc-200 rounded"></div>
-                    <div className="h-4 w-48 bg-zinc-200 rounded"></div>
+                    <div className="h-8 w-64 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+                    <div className="h-4 w-48 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
                 </div>
             </div>
         );
@@ -125,7 +114,7 @@ export default function PublicApplyPage() {
 
     if (!posting) {
         return (
-            <div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-500">
+            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-500 dark:text-zinc-400">
                 Job posting not found or unavailable.
             </div>
         );
@@ -133,126 +122,58 @@ export default function PublicApplyPage() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-zinc-200 max-w-md text-center">
+            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-zinc-900 p-8 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 max-w-md text-center">
                     <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                    <h2 className="text-2xl font-bold text-zinc-900 mb-2">Application Received!</h2>
-                    <p className="text-zinc-600 mb-6">
+                    <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Application Received!</h2>
+                    <p className="text-zinc-600 dark:text-zinc-400 mb-6">
                         Thanks for applying to <strong>{posting.jobPublic.title}</strong>. We've received your details and will be in touch soon.
                     </p>
-                    <Button href="/" outline>Back to Home</Button>
+                    <Button href="/" outline className="dark:border-zinc-700 dark:text-zinc-300">Back to Home</Button>
                 </div>
             </div>
         );
     }
 
-    // Render Form Fields based on schemaSnapshot
-    // This is a simplified renderer. In a real app, you'd reuse the FormRenderer component used in preview.
-    const renderFormFields = () => {
-        const schema = posting.form.schemaSnapshot;
-        if (!schema || !schema.pages) return null;
-
-        return (
-            <div className="space-y-8">
-                {schema.pages.map((page: any) => (
-                    <div key={page.id} className="space-y-6">
-                        {page.sections?.map((section: any) => (
-                            <div key={section.id} className="space-y-4">
-                                <h4 className="text-sm font-semibold text-zinc-900 border-b border-zinc-100 pb-2 mb-4">{section.title}</h4>
-                                <div className="space-y-4">
-                                    {section.fields?.map((field: any) => (
-                                        <Field key={field.id}>
-                                            <Label>{field.label} {field.required && <span className="text-red-500">*</span>}</Label>
-                                            {field.type === 'textarea' ? (
-                                                <Textarea 
-                                                    value={answers[field.id] || ''} 
-                                                    onChange={e => setAnswers({ ...answers, [field.id]: e.target.value })}
-                                                    required={field.required}
-                                                />
-                                            ) : (
-                                                <Input 
-                                                    type={field.type === 'email' ? 'email' : 'text'}
-                                                    value={answers[field.id] || ''} 
-                                                    onChange={e => setAnswers({ ...answers, [field.id]: e.target.value })}
-                                                    required={field.required}
-                                                />
-                                            )}
-                                        </Field>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ))}
-            </div>
-        );
-    };
 
     return (
-        <div className="min-h-screen bg-zinc-50 font-sans">
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans">
             <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
                 
                 {/* Header */}
-                <div className="bg-white rounded-t-2xl border border-zinc-200 p-8 pb-12 shadow-sm relative overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-t-2xl border border-zinc-200 dark:border-zinc-800 p-8 pb-12 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                    <h1 className="text-3xl font-bold text-zinc-900 tracking-tight mb-4">{posting.jobPublic.title}</h1>
-                    <div className="flex flex-wrap gap-4 text-sm text-zinc-500 font-medium">
-                        <span className="flex items-center gap-1.5 bg-zinc-50 px-3 py-1 rounded-full border border-zinc-100">
-                            <MapPinIcon className="w-4 h-4 text-zinc-400" />
+                    <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight mb-4">{posting.jobPublic.title}</h1>
+                    <div className="flex flex-wrap gap-4 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                        <span className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-100 dark:border-zinc-700">
+                            <MapPinIcon className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
                             {posting.jobPublic.location}
                         </span>
-                        <span className="flex items-center gap-1.5 bg-zinc-50 px-3 py-1 rounded-full border border-zinc-100">
-                            <BriefcaseIcon className="w-4 h-4 text-zinc-400" />
+                        <span className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-100 dark:border-zinc-700">
+                            <BriefcaseIcon className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
                             {posting.jobPublic.employmentType}
                         </span>
                     </div>
                     
-                    <div className="mt-8 prose prose-zinc max-w-none">
-                         <h3 className="text-lg font-semibold text-zinc-900">About the Role</h3>
-                         <p className="whitespace-pre-wrap text-zinc-600 leading-relaxed">{posting.jobPublic.description}</p>
+                    <div className="mt-8 prose prose-zinc dark:prose-invert max-w-none">
+                         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">About the Role</h3>
+                         <p className="whitespace-pre-wrap text-zinc-600 dark:text-zinc-400 leading-relaxed">{posting.jobPublic.description}</p>
                     </div>
                 </div>
 
                 {/* Application Form */}
-                <form onSubmit={handleSubmit} className="bg-white rounded-b-2xl border-x border-b border-zinc-200 p-8 shadow-sm">
-                    <h2 className="text-xl font-bold text-zinc-900 mb-6">Apply for this position</h2>
-                    
-                    <Fieldset className="space-y-6">
-                        {/* Standard Fields */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Field>
-                                <Label>Full Name <span className="text-red-500">*</span></Label>
-                                <Input 
-                                    value={applicantName} 
-                                    onChange={e => setApplicantName(e.target.value)} 
-                                    required 
-                                    placeholder="Jane Doe"
-                                />
-                            </Field>
-                            <Field>
-                                <Label>Email Address <span className="text-red-500">*</span></Label>
-                                <Input 
-                                    type="email"
-                                    value={applicantEmail} 
-                                    onChange={e => setApplicantEmail(e.target.value)} 
-                                    required 
-                                    placeholder="jane@example.com"
-                                />
-                            </Field>
-                        </div>
-                        
-                        {/* Dynamic Fields from Schema */}
-                        {renderFormFields()}
-
-                    </Fieldset>
-
-                    <div className="mt-10 pt-6 border-t border-zinc-100 flex justify-end">
-                        <Button type="submit" color="indigo" loading={submitting} className="w-full sm:w-auto min-w-[140px]">
-                            Submit Application
-                        </Button>
+                <div className="bg-white dark:bg-zinc-900 rounded-b-2xl border-x border-b border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    <div className="p-8 pb-0">
+                        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Apply for this position</h2>
                     </div>
-
-                </form>
+                    
+                    <FormRenderer 
+                        schema={posting.form.schemaSnapshot} 
+                        onSuccess={handleFormSuccess}
+                        submitting={submitting}
+                        embedded
+                    />
+                </div>
 
                 <div className="mt-8 text-center text-xs text-zinc-400">
                     <p>Powered by HW Hire</p>

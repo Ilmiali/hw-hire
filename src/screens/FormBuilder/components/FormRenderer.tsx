@@ -23,14 +23,17 @@ import {
     CheckIcon,
     PlusIcon
 } from '@heroicons/react/20/solid';
+import { Spinner } from '../../../components/ui/spinner';
 
 interface FormRendererProps {
     schema: FormSchema;
     onSuccess?: (values: any) => void;
     readOnly?: boolean;
+    submitting?: boolean;
+    embedded?: boolean;
 }
 
-export const FormRenderer = ({ schema, onSuccess, readOnly = false }: FormRendererProps) => {
+export const FormRenderer = ({ schema, onSuccess, readOnly = false, submitting = false, embedded = false }: FormRendererProps) => {
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [formValues, setFormValues] = useState<Record<string, any>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -417,16 +420,8 @@ export const FormRenderer = ({ schema, onSuccess, readOnly = false }: FormRender
         return fields;
     };
 
-    return (
-        <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-white/5 shadow-2xl overflow-hidden mb-20 h-fit flex flex-col mx-auto">
-            <PageHeader 
-                title={currentPage.title}
-                description={currentPage.description}
-                cover={currentPage.cover}
-                readOnly={true}
-            />
-
-            <div className="p-8 md:p-12">
+    const content = (
+        <div className="p-8 md:p-12">
                 {schema.pages.length > 1 && (
                     <div className="mb-14 relative px-2">
                         <div className="absolute top-[11px] left-2 right-2 h-[2px] bg-zinc-200 dark:bg-zinc-800 rounded-full" />
@@ -521,9 +516,10 @@ export const FormRenderer = ({ schema, onSuccess, readOnly = false }: FormRender
                                 !readOnly && (
                                     <Button 
                                         type="submit" 
+                                        disabled={submitting}
                                         className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-tight shadow-lg shadow-primary/20 rounded-xl px-8 py-6 transition-all duration-200"
                                     >
-                                        <CheckIcon className="mr-2 h-5 w-5" />
+                                        {submitting ? <Spinner size={20} className="mr-2" /> : <CheckIcon className="mr-2 h-5 w-5" />}
                                         Submit
                                     </Button>
                                 )
@@ -541,6 +537,21 @@ export const FormRenderer = ({ schema, onSuccess, readOnly = false }: FormRender
                     </div>
                 </form>
             </div>
+    );
+    
+    if (embedded) {
+        return content;
+    }
+
+    return (
+        <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-white/5 shadow-2xl overflow-hidden mb-20 h-fit flex flex-col mx-auto">
+            <PageHeader 
+                title={currentPage.title}
+                description={currentPage.description}
+                cover={currentPage.cover}
+                readOnly={true}
+            />
+            {content}
         </div>
     );
 };
