@@ -19,10 +19,11 @@ import { Input } from '../../components/input';
 import { Select } from '../../components/select';
 import { Textarea } from '../../components/textarea';
 import { Badge } from '../../components/badge';
-import { Switch, SwitchField } from '../../components/switch';
-import { Job, JobPosting, EmploymentType } from '../../types/jobs';
-import { CHANNELS, getChannelConfig } from '../../config/channels';
+import { JobDraft, EmploymentType } from '../../types/jobs';
+
 import { CoverPicker } from './components/CoverPicker';
+
+
 import { PipelinePreview } from './components/PipelinePreview';
 import { FormPreviewBox } from './components/FormPreviewBox';
 import NProgress from 'nprogress';
@@ -30,6 +31,8 @@ import clsx from 'clsx';
 import JobEditorSkeleton from './components/JobEditorSkeleton';
 import { SharingDialog } from '../../database-components/SharingDialog';
 import { ResourceVersion } from '../../types/resource';
+import { PostingPanel } from './components/PostingPanel';
+
 import { 
     UsersIcon,
     ChevronLeftIcon,
@@ -47,15 +50,17 @@ export default function JobDetailPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { activeResource, activeDraft, loading, resources } = useSelector((state: RootState) => state.resource);
   
-  const [postings, setPostings] = useState<Record<string, JobPosting>>({});
+  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | 'form' | 'postings'>('details');
   const [showPicker, setShowPicker] = useState(false);
-  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | 'form' | string>('details');
   const [isSharingOpen, setIsSharingOpen] = useState(false);
 
   // Job Form State
-  const [jobForm, setJobForm] = useState<Partial<Job>>({});
+
+  const [jobForm, setJobForm] = useState<Partial<JobDraft>>({});
+
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
 
   // Version States
   const [pipelineVersions, setPipelineVersions] = useState<ResourceVersion[]>([]);
@@ -89,14 +94,16 @@ export default function JobDetailPage() {
         pipelineId: draftData.pipelineId,
         pipelineVersionId: draftData.pipelineVersionId,
       });
-      setPostings(draftData.postings || {});
     } else if (activeResource) {
+
+
       setJobForm({
         title: activeResource.name,
         location: (activeResource as any).location || '',
         employmentType: (activeResource as any).employmentType || 'Full-time',
         description: (activeResource as any).description || '',
         coverImage: (activeResource as any).coverImage,
+
         formId: (activeResource as any).formId,
         formVersionId: (activeResource as any).formVersionId,
         pipelineId: (activeResource as any).pipelineId,
@@ -184,9 +191,9 @@ export default function JobDetailPage() {
             resourceId: jobId,
             data: { 
                 ...jobForm, 
-                id: jobId,
-                postings 
+                id: jobId
             },
+
             resourceUpdates: { 
                 name: jobForm.title,
                 formId: jobForm.formId,
@@ -217,9 +224,9 @@ export default function JobDetailPage() {
             resourceId: jobId,
             data: { 
                 ...jobForm, 
-                id: jobId,
-                postings 
+                id: jobId
             },
+
             resourceUpdates: { 
                 name: jobForm.title,
                 formId: jobForm.formId,
@@ -232,6 +239,7 @@ export default function JobDetailPage() {
         await dispatch(publishResource({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId })).unwrap();
         toast.success("Job published!");
     } catch (error) {
+
         toast.error("Failed to publish job");
     } finally {
         setIsPublishing(false);
@@ -239,18 +247,8 @@ export default function JobDetailPage() {
     }
   };
 
-  const updatePosting = (channelId: string, updates: Partial<JobPosting>) => {
-    const existing = postings[channelId] || {
-        channelId,
-        status: 'not_configured',
-        content: { title: jobForm.title || '', description: jobForm.description || '', location: jobForm.location || '', applyUrl: '' },
-        overrides: {},
-        lastUpdatedAt: new Date().toISOString()
-    };
-    
-    const updated = { ...existing, ...updates, lastUpdatedAt: new Date().toISOString() };
-    setPostings(prev => ({ ...prev, [channelId]: updated }));
-  };
+
+
 
   if (loading && !activeResource) return <JobEditorSkeleton />;
   if (!activeResource && !loading) return null;
@@ -348,18 +346,15 @@ export default function JobDetailPage() {
                 <div>
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2 px-2">Distribution</h4>
                     <nav className="space-y-1">
-                        {CHANNELS.map(channel => (
-                            <SidebarItem 
-                                key={channel.id}
-                                icon={GlobeAltIcon} 
-                                label={channel.name} 
-                                active={activeTab === channel.id} 
-                                onClick={() => setActiveTab(channel.id)}
-                                badge={postings[channel.id]?.status}
-                            />
-                        ))}
+                        <SidebarItem 
+                            icon={GlobeAltIcon} 
+                            label="Postings" 
+                            active={activeTab === 'postings'} 
+                            onClick={() => setActiveTab('postings')} 
+                        />
                     </nav>
                 </div>
+
             </div>
         </aside>
 
@@ -579,25 +574,18 @@ export default function JobDetailPage() {
                     </div>
                 )}
 
-                {getChannelConfig(activeTab) && (
-                    <ChannelPanel 
-                        channelId={activeTab} 
-                        posting={postings[activeTab] || { 
-                            channelId: activeTab, 
-                            status: 'not_configured', 
-                            content: { title: jobForm.title || '', description: jobForm.description || '', location: jobForm.location || '', applyUrl: '' },
-                            overrides: {},
-                            lastUpdatedAt: new Date().toISOString()
-                        }} 
-                        job={{
-                            title: jobForm.title || '',
-                            description: jobForm.description || '',
-                            location: jobForm.location || '',
-                            id: jobId || ''
-                        }}
-                        onUpdate={(updates) => updatePosting(activeTab, updates)}
+                {activeTab === 'postings' && (
+                    <PostingPanel 
+                        orgId={orgId!} 
+                        jobId={jobId!} 
+                        jobTitle={jobForm.title || ''}
+                        jobLocation={jobForm.location || ''}
+                        jobDescription={jobForm.description || ''}
+                        formId={jobForm.formId}
+                        pipelineId={jobForm.pipelineId}
                     />
                 )}
+
             </div>
         </main>
       </div>
@@ -647,115 +635,4 @@ function SidebarItem({ icon: Icon, label, active, onClick, badge }: { icon: any,
     );
 }
 
-function ChannelPanel({ channelId, posting, job, onUpdate }: { channelId: string, posting: JobPosting, job: any, onUpdate: (updates: Partial<JobPosting>) => void }) {
-    const config = getChannelConfig(channelId);
-    if (!config) return null;
 
-    const useOverrides = {
-        title: !!posting.overrides.title,
-        description: !!posting.overrides.description,
-        location: !!posting.overrides.location,
-        applyUrl: !!posting.overrides.applyUrl,
-    };
-
-    const getEffectiveValue = (field: 'title' | 'description' | 'location' | 'applyUrl') => {
-        if (field === 'applyUrl') return posting.overrides.applyUrl || `https://example.com/apply/${job.id}?source=${channelId}`;
-        return posting.overrides[field] || job[field];
-    };
-
-    return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-300 items-start">
-            <div className="space-y-6">
-                <section className="bg-white dark:bg-zinc-950 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-6">
-                    <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-semibold">{config.name} Overrides</h3>
-                        <Badge color={
-                            posting.status === 'published' ? 'green' : 
-                            posting.status === 'failed' ? 'red' : 
-                            posting.status === 'draft' ? 'yellow' : 'zinc'
-                        }>
-                            {posting.status.replace('_', ' ')}
-                        </Badge>
-                    </div>
-
-                    <Fieldset className="space-y-4">
-                        {['title', 'location', 'applyUrl', 'description'].map((field) => (
-                            <Field key={field}>
-                                <div className="flex justify-between items-center mb-1">
-                                    <Label className="capitalize">{field.replace('applyUrl', 'Apply URL')}</Label>
-                                    <SwitchField>
-                                        <Label className="text-[10px] text-zinc-500 mr-2">Override</Label>
-                                        <Switch 
-                                            checked={useOverrides[field as keyof typeof useOverrides]} 
-                                            onChange={(checked) => {
-                                                const newOverrides = { ...posting.overrides };
-                                                if (checked) {
-                                                    newOverrides[field as keyof typeof useOverrides] = getEffectiveValue(field as any);
-                                                } else {
-                                                    delete newOverrides[field as keyof typeof useOverrides];
-                                                }
-                                                onUpdate({ overrides: newOverrides });
-                                            }} 
-                                        />
-                                    </SwitchField>
-                                </div>
-                                {field === 'description' ? (
-                                    <Textarea 
-                                        rows={8}
-                                        value={getEffectiveValue(field)}
-                                        readOnly={!useOverrides[field as keyof typeof useOverrides]}
-                                        onChange={e => onUpdate({ overrides: { ...posting.overrides, [field]: e.target.value } })}
-                                        className={!useOverrides[field] ? "bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-500" : ""}
-                                    />
-                                ) : (
-                                    <Input 
-                                        value={getEffectiveValue(field as any)}
-                                        readOnly={!useOverrides[field as keyof typeof useOverrides]}
-                                        onChange={e => onUpdate({ overrides: { ...posting.overrides, [field]: e.target.value } })}
-                                        className={!useOverrides[field as keyof typeof useOverrides] ? "bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-500" : ""}
-                                    />
-                                )}
-                            </Field>
-                        ))}
-                    </Fieldset>
-                    
-                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                        <div className="flex gap-2">
-                            <Button 
-                                className="w-full"
-                                onClick={() => onUpdate({ status: posting.status === 'published' ? 'draft' : 'published' })}
-                                color={posting.status === 'published' ? 'zinc' : 'indigo'}
-                            >
-                                {posting.status === 'published' ? 'Unpublish' : 'Set to Published'}
-                            </Button>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <div className="sticky top-8 space-y-6">
-                 <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
-                    <div className="flex items-center gap-2 mb-6">
-                        <Badge color="blue">Live Preview</Badge>
-                        <span className="text-xs text-zinc-500 italic">Simulated look on {config.name}</span>
-                    </div>
-                    
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-zinc-900 dark:text-white leading-tight">{getEffectiveValue('title')}</h2>
-                        <div className="flex flex-wrap gap-4 text-[13px] text-zinc-500 font-medium">
-                            <span className="flex items-center gap-1.5">
-                                <span className="opacity-70">📍</span> {getEffectiveValue('location')}
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <span className="opacity-70">🔗</span> <a href="#" className="text-blue-500 hover:underline">Apply Here</a>
-                            </span>
-                        </div>
-                        <div className="prose dark:prose-invert max-w-none text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap leading-relaxed py-4 border-t border-zinc-100 dark:border-zinc-900">
-                            {getEffectiveValue('description')}
-                        </div>
-                    </div>
-                 </div>
-            </div>
-        </div>
-    );
-}

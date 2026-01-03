@@ -3,18 +3,52 @@ export type EmploymentType = "Full-time" | "Part-time" | "Contract" | "Temporary
 
 export type Job = {
   id: string;
+  name?: string; // Internal name
+  status: JobStatus;
+  
+  // Metadata for listing
+  createdAt: string;
+  updatedAt: string;
+  publishedVersionId?: string; // Last published version
+};
+
+export type JobDraft = {
   title: string;
   location: string;
   employmentType: EmploymentType;
   description: string;
-  status: JobStatus;
   coverImage?: string;
-  pipelineId?: string;
-  pipelineVersionId?: string;
+  
   formId?: string;
   formVersionId?: string;
-  createdAt: string;
+  
+  pipelineId?: string;
+  pipelineVersionId?: string;
+  
   updatedAt: string;
+  updatedBy?: string;
+};
+
+export type JobVersion = {
+  id: string; // v_timestamp
+  versionNumber?: number;
+  
+  jobSnapshot: {
+    title: string;
+    location: string;
+    employmentType: EmploymentType;
+    description: string;
+    coverImage?: string;
+  };
+  
+  formId?: string;
+  formVersionId?: string;
+  
+  pipelineId?: string;
+  pipelineVersionId?: string;
+  
+  createdAt: string;
+  createdBy?: string;
 };
 
 export type PostingStatus = "not_configured" | "draft" | "published" | "failed" | "paused";

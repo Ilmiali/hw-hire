@@ -24,6 +24,8 @@ import JobsListPage from '../screens/Jobs/JobsListPage';
 import JobDetailPage from '../screens/Jobs/JobDetailPage';
 import FormsList from '../screens/Forms/FormsList';
 import { RouteConfig, RouteGroup } from '../types/routes';
+import PublicApplyPage from '../screens/Public/PublicApplyPage';
+
 
 // Public routes (no authentication required)
 export const publicRoutes: RouteConfig[] = [
@@ -32,6 +34,14 @@ export const publicRoutes: RouteConfig[] = [
     name: 'Login',
     icon: ArrowRightStartOnRectangleIcon,
     component: Login,
+    layout: 'public',
+    isAuthProtected: false,
+  },
+  {
+    path: '/apply/:publicPostingId',
+    name: 'Apply',
+    icon: DocumentIcon,
+    component: PublicApplyPage,
     layout: 'public',
     isAuthProtected: false,
   },
