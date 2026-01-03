@@ -106,8 +106,7 @@ export function DatabaseAutosuggest<T extends BaseItem>({
       const documents = await database.getDocuments(collectionName, options);
       const mappedItems = documents
         .map(doc => ({
-          id: doc.id,
-          ...doc.data,
+          ...doc,
         })) as T[];
       
       const selectedIds = new Set(selectedItems.map(item => item.id));

@@ -45,11 +45,11 @@ export const fetchUsers = createAsyncThunk(
       });
       return users.map(user => ({
         id: user.id,
-        name: user.data.name as string,
-        fullName: (user.data.fullName || user.data.name) as string,
-        email: user.data.email as string,
-        role: user.data.role as string,
-        organizations: user.data.organizations as string[],
+        name: user.name as string,
+        fullName: (user.fullName || user.name) as string,
+        email: user.email as string,
+        role: user.role as string,
+        organizations: user.organizations as string[],
         createdAt: serializeDate(user.createdAt || new Date()) || new Date().toISOString(),
         updatedAt: serializeDate(user.updatedAt || new Date()) || new Date().toISOString()
       })) as User[];
@@ -76,11 +76,11 @@ export const fetchUserById = createAsyncThunk(
 
       const user = {
         id: document.id,
-        name: document.data.name as string,
-        fullName: (document.data.fullName || document.data.name) as string,
-        email: document.data.email as string,
-        role: document.data.role as string,
-        organizations: document.data.organizations as string[],
+        name: document.name as string,
+        fullName: (document.fullName || document.name) as string,
+        email: document.email as string,
+        role: document.role as string,
+        organizations: document.organizations as string[],
         createdAt: serializeDate(document.createdAt || new Date()) || new Date().toISOString(),
         updatedAt: serializeDate(document.updatedAt || new Date()) || new Date().toISOString()
       } as User;

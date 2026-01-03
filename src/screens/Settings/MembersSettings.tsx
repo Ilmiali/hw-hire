@@ -41,9 +41,9 @@ export function MembersSettings() {
         // 2. Populate member info from users/{uid}
         const populatedMembers = await Promise.all(
           membersDocs.map(async (mDoc) => {
-            const mData = mDoc.data as OrgMember || {};
+            const mData = mDoc as OrgMember || {};
             const userDoc = await db.getDocument<any>('users', mDoc.id);
-            const userData = userDoc?.data as UserProfile || {};
+            const userData = userDoc as UserProfile || {};
             
             return {
               id: mDoc.id,

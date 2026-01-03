@@ -86,11 +86,11 @@ export const fetchGroups = createAsyncThunk(
       
       return groups.map(group => ({
         id: group.id,
-        name: group.data.name as string,
-        organizationId: group.data.organizationId as string,
-        totalNumApplications: (group.data.totalNumApplications || group.data.totalNumTickets) as number,
-        description: group.data.description as string,
-        members: (group.data.members as string[]).filter((member: string) => member !== group.data.owner),
+        name: group.name as string,
+        organizationId: group.organizationId as string,
+        totalNumApplications: (group.totalNumApplications || group.totalNumTickets) as number,
+        description: group.description as string,
+        members: (group.members as string[]).filter((member: string) => member !== group.owner),
         createdAt: serializeDate(group.createdAt || new Date()) || new Date().toISOString(),
         updatedAt: serializeDate(group.updatedAt || new Date()) || new Date().toISOString()
       })) as Group[];
@@ -116,10 +116,10 @@ export const fetchGroupById = createAsyncThunk(
 
       const group = {
         id: document.id,
-        name: document.data.name as string,
-        organizationId: document.data.organizationId as string,
-        totalNumApplications: (document.data.totalNumApplications || document.data.totalNumTickets) as number,
-        members: document.data.members as string[],
+        name: document.name as string,
+        organizationId: document.organizationId as string,
+        totalNumApplications: (document.totalNumApplications || document.totalNumTickets) as number,
+        members: document.members as string[],
         createdAt: serializeDate(document.createdAt || new Date()) || new Date().toISOString(),
         updatedAt: serializeDate(document.updatedAt || new Date()) || new Date().toISOString()
       } as Group;

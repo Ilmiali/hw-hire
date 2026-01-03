@@ -56,18 +56,18 @@ export const fetchApplicationById = createAsyncThunk(
       const application: Application = {
         id: document.id,
         updatedAt: serializeDate(document.updatedAt) || new Date().toISOString(),
-        subject: (document.data as any).subject,
-        status: (document.data as any).status,
-        priority: (document.data as any).priority,
-        assignedTo: (document.data as any).assignedTo,
-        snippet: (document.data as any).snippet,
-        channel: (document.data as any).channel,
-        groupId: (document.data as any).groupId,
-        tags: (document.data as any).tags,
-        // type: (document.data as any).type, // Not in interface
-        // source: (document.data as any).source, // Not in interface
+        subject: (document as any).subject,
+        status: (document as any).status,
+        priority: (document as any).priority,
+        assignedTo: (document as any).assignedTo,
+        snippet: (document as any).snippet,
+        channel: (document as any).channel,
+        groupId: (document as any).groupId,
+        tags: (document as any).tags,
+        // type: (document as any).type, // Not in interface
+        // source: (document as any).source, // Not in interface
         appliedAt: serializeDate(document.createdAt) || new Date().toISOString(),
-        candidate: (document.data as any).candidate || (document.data as any).from, // Fallback for transition
+        candidate: (document as any).candidate || (document as any).from, // Fallback for transition
       } as unknown as Application;
       
       if (!application) {
@@ -162,18 +162,18 @@ export const listenToApplicationChanges = createAsyncThunk(
           const application: Application = {
             id: doc.id,
             updatedAt: serializeDate(doc.updatedAt) || new Date().toISOString(),
-            subject: doc.data.subject,
-            status: doc.data.status,
-            priority: doc.data.priority,
-            assignedTo: doc.data.assignedTo,
-            snippet: doc.data.snippet,
-            channel: doc.data.channel,
-            groupId: doc.data.groupId,
-            tags: doc.data.tags,
-            // type: doc.data.type,
-            // source: doc.data.source,
+            subject: doc.subject,
+            status: doc.status,
+            priority: doc.priority,
+            assignedTo: doc.assignedTo,
+            snippet: doc.snippet,
+            channel: doc.channel,
+            groupId: doc.groupId,
+            tags: doc.tags,
+            // type: doc.type,
+            // source: doc.source,
             appliedAt: serializeDate(doc.createdAt) || new Date().toISOString(),
-            candidate: doc.data.candidate || doc.data.from,
+            candidate: doc.candidate || doc.from,
           } as unknown as Application;
           
           // Update current application if it's the one being listened to

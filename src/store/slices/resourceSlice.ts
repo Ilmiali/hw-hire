@@ -38,25 +38,24 @@ const getUserSharePath = (orgId: string, moduleId: string, userId: string) =>
 
 // Generic mapper (assumes document data matches Resource interface mostly)
 const mapDocumentToResource = (doc: any): Resource => ({
+    ...doc,
     id: doc.id,
-    name: doc.data?.name || '',
-    description: doc.data?.description || '',
-    status: doc.data?.status || 'active',
-    visibility: doc.data?.visibility || 'private',
-    ownerIds: doc.data?.ownerIds || [],
-    createdBy: doc.data?.createdBy || '',
-    publishedVersionId: doc.data?.publishedVersionId,
-    createdAt: serializeDate(doc.createdAt) || (serializeDate(doc.data?.createdAt) as string) || new Date().toISOString(),
-    updatedAt: serializeDate(doc.updatedAt) || (serializeDate(doc.data?.updatedAt) as string) || new Date().toISOString(),
-    // Allow extra fields
-    ...doc.data
+    name: doc.name || '',
+    description: doc.description || '',
+    status: doc.status || 'active',
+    visibility: doc.visibility || 'private',
+    ownerIds: doc.ownerIds || [],
+    createdBy: doc.createdBy || '',
+    publishedVersionId: doc.publishedVersionId,
+    createdAt: serializeDate(doc.createdAt) || new Date().toISOString(),
+    updatedAt: serializeDate(doc.updatedAt) || new Date().toISOString(),
 });
 
 const mapDocumentToVersion = (doc: any): ResourceVersion => ({
     id: doc.id,
-    data: doc.data?.data || doc.data || {}, 
-    createdAt: serializeDate(doc.createdAt) || (serializeDate(doc.data?.createdAt) as string) || new Date().toISOString(),
-    publishedAt: doc.data?.publishedAt ? (serializeDate(doc.data.publishedAt) as string) : undefined
+    data: doc.data || {}, 
+    createdAt: serializeDate(doc.createdAt) || new Date().toISOString(),
+    publishedAt: doc.publishedAt ? (serializeDate(doc.publishedAt) as string) : undefined
 });
 
 // Helper to sanitize data (remove undefined)
@@ -309,7 +308,7 @@ export const publishResource = createAsyncThunk(
             // 2. Create immutable version
             const versionId = `v_${Date.now()}`;
             await db.setDocument(getVersionsPath(orgId, moduleId, resourceType, resourceId), versionId, {
-                data: (draft.data as any).data || draft.data, 
+                data: draft.data, 
                 publishedAt: new Date()
             });
 

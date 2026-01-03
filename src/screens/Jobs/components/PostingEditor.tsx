@@ -242,9 +242,11 @@ export function PostingEditor({ orgId, jobId, posting, defaults, onUpdate }: Pos
                 </div>
 
                  <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <Button outline onClick={handleSave} loading={isSaving}>
-                        Save Changes
-                    </Button>
+                    {!isPublished && (
+                        <Button outline onClick={handleSave} loading={isSaving}>
+                            Save Changes
+                        </Button>
+                    )}
                     <Button color="indigo" onClick={handlePublish} loading={isSubmitting}>
                         {isPublished ? 'Update & Republish' : 'Publish Live'}
                     </Button>

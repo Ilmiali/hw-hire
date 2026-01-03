@@ -62,13 +62,13 @@ export function AddEntitiesDialog<T extends Entity & BaseItem>({
         const populated = await Promise.all(
           membersDocs.map(async (mDoc) => {
             const userDoc = await db.getDocument<any>('users', mDoc.id);
-            const userData = userDoc?.data || {};
+            const userData = userDoc || {};
             return {
               id: mDoc.id,
               name: userData.fullName || userData.name || 'Unknown User',
               email: userData.email || '',
               avatarUrl: userData.avatarUrl || userData.photoURL,
-              role: mDoc.data?.role || 'Member',
+              role: mDoc.role || 'Member',
             } as unknown as T;
           })
         );

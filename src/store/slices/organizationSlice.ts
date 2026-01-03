@@ -42,9 +42,9 @@ export const fetchUserOrganizations = createAsyncThunk(
 
       return filteredOrgs.map(org => ({
         id: org.id,
-        name: org.data.name as string,
+        name: org.name as string,
         members: [], // Members are now in a subcollection, providing empty array for now to match type
-        owner: org.data.owner as string,
+        owner: org.owner as string,
         createdAt: serializeDate(org.createdAt || new Date()) || new Date().toISOString(),
         updatedAt: serializeDate(org.updatedAt || new Date()) || new Date().toISOString()
       }));

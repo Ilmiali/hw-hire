@@ -18,8 +18,7 @@ class PostingService {
   private mapDoc<T>(doc: any): T {
     if (!doc) return null as any;
     return {
-      id: doc.id,
-      ...doc.data
+      ...doc
     } as T;
   }
 

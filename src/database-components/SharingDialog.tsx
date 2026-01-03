@@ -97,8 +97,8 @@ export function SharingDialog({
             const db = getDatabaseService();
             const details = await Promise.all(uniqueAccess.map(async (access) => {
                 try {
-                    const userDoc = await db.getDocument<{ data: any }>('users', access.uid);
-                    const userData = userDoc?.data || {};
+                    const userDoc = await db.getDocument<any>('users', access.uid);
+                    const userData = userDoc || {};
                     return {
                         id: access.uid,
                         name: userData.fullName || userData.name || 'Unknown User',

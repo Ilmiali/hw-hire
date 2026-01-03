@@ -44,7 +44,7 @@ export class FirestoreDatabase implements Database {
     
     return {
       id: docSnap.id,
-      data: rest,
+      ...rest,
       createdAt: createdAt?.toDate(),
       updatedAt: updatedAt?.toDate()
     };
@@ -60,7 +60,7 @@ export class FirestoreDatabase implements Database {
       
       return {
         id: doc.id,
-        data: rest,
+        ...rest,
         createdAt: createdAt?.toDate(),
         updatedAt: updatedAt?.toDate()
       };
@@ -77,7 +77,7 @@ export class FirestoreDatabase implements Database {
     
     return {
       id: docRef.id,
-      data,
+      ...data,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -94,7 +94,7 @@ export class FirestoreDatabase implements Database {
     // For set, we usually want to return what we wrote.
     return {
       id,
-      data,
+      ...data,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -172,7 +172,7 @@ export class FirestoreDatabase implements Database {
       
       const document: Document = {
         id: docSnap.id,
-        data: rest,
+        ...rest,
         createdAt: createdAt?.toDate(),
         updatedAt: updatedAt?.toDate()
       };

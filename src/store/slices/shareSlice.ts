@@ -38,12 +38,12 @@ export const fetchAccess = createAsyncThunk(
   async ({ orgId, moduleId, resourceType, resourceId }: { orgId: string; moduleId: string; resourceType: string; resourceId: string }, { rejectWithValue }) => {
     try {
       const db = getDatabaseService();
-      const docs = await db.getDocuments<{ id: string; data: any }>(getAccessPath(orgId, moduleId, resourceType, resourceId));
+      const docs = await db.getDocuments<any>(getAccessPath(orgId, moduleId, resourceType, resourceId));
       return docs.map(doc => ({
         uid: doc.id,
-        role: doc.data.role as AccessRole,
-        addedAt: serializeDate(doc.data.addedAt) || new Date().toISOString(),
-        addedBy: doc.data.addedBy as string
+        role: doc.role as AccessRole,
+        addedAt: serializeDate(doc.addedAt) || new Date().toISOString(),
+        addedBy: doc.addedBy as string
       }));
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch access list');
@@ -81,8 +81,8 @@ export const grantAccess = createAsyncThunk(
       const shareId = `${resourceType}_${resourceId}`;
 
       // Fetch current resource to get ownerIds
-      const resourceDoc = await db.getDocument<{ id: string; data: any }>(resourcePath, resourceId);
-      const currentOwnerIds = (resourceDoc?.data?.ownerIds as string[]) || [];
+      const resourceDoc = await db.getDocument<any>(resourcePath, resourceId);
+      const currentOwnerIds = (resourceDoc?.ownerIds as string[]) || [];
       let newOwnerIds = [...currentOwnerIds];
 
       if (role === 'owner') {
@@ -152,8 +152,8 @@ export const revokeAccess = createAsyncThunk(
       await db.deleteDocument(userSharePath, shareId);
 
       // 3. Remove from ownerIds if present
-      const resourceDoc = await db.getDocument<{ id: string; data: any }>(resourcePath, resourceId);
-      const currentOwnerIds = (resourceDoc?.data?.ownerIds as string[]) || [];
+      const resourceDoc = await db.getDocument<any>(resourcePath, resourceId);
+      const currentOwnerIds = (resourceDoc?.ownerIds as string[]) || [];
       const newOwnerIds = currentOwnerIds.filter(id => id !== userId);
 
       if (newOwnerIds.length !== currentOwnerIds.length) {
@@ -171,12 +171,6 @@ export const revokeAccess = createAsyncThunk(
 
 // Fetch all users who have access (owners + values in access subcollection)
 // Smartly dedupes and checks current state to minimalize fetches
-import { upsertUsers, User } from './usersSlice';
-
-// ... (imports remain the same)
-
-// ...
-
 export const fetchResourceUsers = createAsyncThunk(
     'share/fetchResourceUsers',
     async ({ orgId, moduleId, resourceType, resourceId }: { orgId: string; moduleId: string; resourceType: string; resourceId: string }, { rejectWithValue, getState, dispatch }) => {
@@ -194,20 +188,20 @@ export const fetchResourceUsers = createAsyncThunk(
                 ownerIds = cachedResource.ownerIds;
             } else {
                  const resourcePath = getResourcePath(orgId, moduleId, resourceType);
-                 const doc = await db.getDocument<{ id: string; data: any }>(resourcePath, resourceId);
-                 ownerIds = (doc?.data?.ownerIds as string[]) || [];
+                 const doc = await db.getDocument<any>(resourcePath, resourceId);
+                 ownerIds = (doc?.ownerIds as string[]) || [];
             }
 
             // 2. Get Shared Access Roles
             const accessPath = getAccessPath(orgId, moduleId, resourceType, resourceId);
-            const accessDocs = await db.getDocuments<{ id: string; data: { role: string } }>(accessPath);
+            const accessDocs = await db.getDocuments<any>(accessPath);
             
             // 3. Create ID -> Role Map
             const roleMap: Record<string, string> = {};
             ownerIds.forEach(uid => { roleMap[uid] = 'owner'; });
             accessDocs.forEach(doc => {
                 if (!roleMap[doc.id]) {
-                    roleMap[doc.id] = doc.data.role;
+                    roleMap[doc.id] = doc.role;
                 }
             });
 
@@ -230,11 +224,11 @@ export const fetchResourceUsers = createAsyncThunk(
                     .filter(doc => doc !== null)
                     .map(doc => ({
                         id: doc!.id,
-                        name: doc!.data.name as string,
-                        fullName: (doc!.data.fullName || doc!.data.name) as string,
-                        email: doc!.data.email as string,
-                        role: doc!.data.role as string,
-                        organizations: doc!.data.organizations as string[],
+                        name: doc!.name as string,
+                        fullName: (doc!.fullName || doc!.name) as string,
+                        email: doc!.email as string,
+                        role: doc!.role as string,
+                        organizations: doc!.organizations as string[],
                         createdAt: serializeDate(doc!.createdAt || new Date()) || new Date().toISOString(),
                         updatedAt: serializeDate(doc!.updatedAt || new Date()) || new Date().toISOString()
                     })) as User[];

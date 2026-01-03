@@ -25,9 +25,9 @@ export type QueryConstraint = {
 // Document interface
 export interface Document {
   id: string;
-  data: Record<string, unknown>;
   createdAt?: Date;
   updatedAt?: Date;
+  [key: string]: unknown;
 }
 
 // Database interface
