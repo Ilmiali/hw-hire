@@ -45,9 +45,26 @@ class PostingService {
   }
 
 
-  public async publishJob(
+  public async createDraftPosting(orgId: string, jobId: string, channel: ChannelType): Promise<JobPosting> {
+    const db = getDatabaseService();
+    const jobPostingsPath = this.getJobPostingsPath(orgId);
+    
+    const newPosting: Omit<JobPosting, 'id'> = {
+        jobId,
+        channel,
+        status: 'draft',
+        contentOverrides: {},
+        createdAt: new Date().toISOString(),
+    };
+
+    const doc = await db.addDocument<JobPosting>(jobPostingsPath, newPosting);
+    return doc;
+  }
+
+  public async publishDraft(
     orgId: string, 
     jobId: string, 
+    postingId: string,
     channel: ChannelType, 
     overrides: { title?: string; description?: string; location?: string }
   ): Promise<string> {
@@ -117,17 +134,13 @@ class PostingService {
     if (!firstStage) throw new Error("Pipeline has no stages");
 
     // 4. Create Public Posting
-    // We generate ID first
-    // In firestore client SDK we can usually get ID from ref, but here `addDocument` returns doc.
-    // We'll trust `addDocument` for PublicPosting and then update JobPosting.
     
     const publicPostingData: Omit<PublicPosting, 'id'> = {
         orgId,
         moduleId: 'hire',
         jobId,
-
+        jobPostingId: postingId, // Link to the existing posting ID
         jobVersionId: newVersionId,
-        jobPostingId: "PENDING", // Will update after creating jobPosting
         status: 'open',
         source: { channel },
         jobPublic: {
@@ -155,30 +168,20 @@ class PostingService {
     const publicPostingId = publicPostingDoc.id;
     const applyUrl = `${window.location.origin}/apply/${publicPostingId}`;
 
-    // Update Public Posting with its ID and proper Link (if we missed it)
-    // and backlink to JobPosting (which we haven't created yet... circular dependency of IDs)
-    // Let's create JobPosting next.
-    
-    // 5. Create Job Posting (Internal)
-    const jobPostingData: Omit<JobPosting, 'id'> = {
-        jobId,
+    // 5. Update Public Posting
+    await db.updateDocument(publicPostingsPath, publicPostingId, {
+        applyUrl: applyUrl
+    });
+
+    // 6. Update Existing Job Posting (Internal)
+    const jobPostingsPath = this.getJobPostingsPath(orgId);
+    await db.updateDocument(jobPostingsPath, postingId, {
         jobVersionId: newVersionId,
         channel,
         status: 'published',
         contentOverrides: overrides,
         publicPostingId: publicPostingId,
-        createdAt: new Date().toISOString(),
         publishedAt: new Date().toISOString(),
-    };
-
-    const jobPostingsPath = this.getJobPostingsPath(orgId);
-    const jobPostingDoc = await db.addDocument(jobPostingsPath, jobPostingData);
-    const jobPostingId = jobPostingDoc.id;
-
-    // 6. Cross-link IDs
-    await db.updateDocument(publicPostingsPath, publicPostingId, {
-        jobPostingId: jobPostingId,
-        applyUrl: applyUrl
     });
 
     // 7. Update Job Metadata (last published version)

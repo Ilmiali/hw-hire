@@ -8,7 +8,6 @@ import {
     fetchResourceById, 
     fetchResourceDraft, 
     saveResourceDraft, 
-    publishResource, 
     clearActiveResource,
     fetchResources,
     fetchResourceVersions
@@ -20,6 +19,10 @@ import { Select } from '../../components/select';
 import { Textarea } from '../../components/textarea';
 import { Badge } from '../../components/badge';
 import { JobDraft, EmploymentType } from '../../types/jobs';
+import { JobPosting, ChannelType } from '../../types/posting';
+import { postingService } from '../../services/postingService';
+import { CHANNELS } from '../../config/channels';
+import { Dialog, DialogTitle, DialogDescription, DialogActions } from '../../components/dialog';
 
 import { CoverPicker } from './components/CoverPicker';
 
@@ -31,7 +34,7 @@ import clsx from 'clsx';
 import JobEditorSkeleton from './components/JobEditorSkeleton';
 import { SharingDialog } from '../../database-components/SharingDialog';
 import { ResourceVersion } from '../../types/resource';
-import { PostingPanel } from './components/PostingPanel';
+import { PostingEditor } from './components/PostingEditor';
 
 import { 
     UsersIcon,
@@ -40,8 +43,8 @@ import {
     ArrowPathIcon,
     GlobeAltIcon,
     ArrowDownOnSquareIcon,
-    RocketLaunchIcon,
-    DocumentTextIcon
+    DocumentTextIcon,
+    PlusIcon
 } from '@heroicons/react/20/solid';
 
 export default function JobDetailPage() {
@@ -50,17 +53,21 @@ export default function JobDetailPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { activeResource, activeDraft, loading, resources } = useSelector((state: RootState) => state.resource);
   
-  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | 'form' | 'postings'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | 'form' | 'posting'>('details');
+  const [selectedPostingId, setSelectedPostingId] = useState<string | null>(null);
+  const [isChannelPickerOpen, setIsChannelPickerOpen] = useState(false);
+
   const [showPicker, setShowPicker] = useState(false);
   const [isSharingOpen, setIsSharingOpen] = useState(false);
 
   // Job Form State
-
   const [jobForm, setJobForm] = useState<Partial<JobDraft>>({});
 
   const [isSaving, setIsSaving] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
 
+  // Postings State
+  const [postings, setPostings] = useState<JobPosting[]>([]);
+  const [loadingPostings, setLoadingPostings] = useState(false);
 
   // Version States
   const [pipelineVersions, setPipelineVersions] = useState<ResourceVersion[]>([]);
@@ -74,11 +81,27 @@ export default function JobDetailPage() {
       
       dispatch(fetchResources({ orgId, moduleId: 'hire', resourceType: 'forms' }));
       dispatch(fetchResources({ orgId, moduleId: 'hire', resourceType: 'pipelines' }));
+      
+      loadPostings();
     }
     return () => {
       dispatch(clearActiveResource());
     };
   }, [dispatch, orgId, jobId]);
+
+  const loadPostings = async () => {
+    if (!orgId || !jobId) return;
+    setLoadingPostings(true);
+    try {
+        const data = await postingService.getPostingsForJob(orgId, jobId);
+        setPostings(data);
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to load postings");
+    } finally {
+        setLoadingPostings(false);
+    }
+  };
 
   useEffect(() => {
     if (activeDraft) {
@@ -95,8 +118,6 @@ export default function JobDetailPage() {
         pipelineVersionId: draftData.pipelineVersionId,
       });
     } else if (activeResource) {
-
-
       setJobForm({
         title: activeResource.name,
         location: (activeResource as any).location || '',
@@ -179,7 +200,7 @@ export default function JobDetailPage() {
   }, [orgId, jobForm.formId, dispatch, resources]);
 
   const handleJobSave = async () => {
-    if (!orgId || !jobId || isSaving || isPublishing) return;
+    if (!orgId || !jobId || isSaving) return;
     
     setIsSaving(true);
     NProgress.start();
@@ -211,44 +232,29 @@ export default function JobDetailPage() {
     }
   };
 
-  const handlePublish = async () => {
-    if (!orgId || !jobId || isSaving || isPublishing) return;
-    
-    setIsPublishing(true);
-    NProgress.start();
-    try {
-        await dispatch(saveResourceDraft({
-            orgId,
-            moduleId: 'hire',
-            resourceType: 'jobs',
-            resourceId: jobId,
-            data: { 
-                ...jobForm, 
-                id: jobId
-            },
 
-            resourceUpdates: { 
-                name: jobForm.title,
-                formId: jobForm.formId,
-                formVersionId: jobForm.formVersionId,
-                pipelineId: jobForm.pipelineId,
-                pipelineVersionId: jobForm.pipelineVersionId,
-            } as any
-        })).unwrap();
+  const handleCreatePosting = async (channel: ChannelType) => {
+      if (!orgId || !jobId) return;
+      if (!jobForm.formId || !jobForm.pipelineId) {
+          toast.warning("Please select a Form and Workflow first.");
+          return;
+      }
 
-        await dispatch(publishResource({ orgId, moduleId: 'hire', resourceType: 'jobs', resourceId: jobId })).unwrap();
-        toast.success("Job published!");
-    } catch (error) {
+      setIsChannelPickerOpen(false);
 
-        toast.error("Failed to publish job");
-    } finally {
-        setIsPublishing(false);
-        NProgress.done();
-    }
+      try {
+          const newPosting = await postingService.createDraftPosting(orgId, jobId, channel);
+          await loadPostings();
+          setActiveTab('posting');
+          setSelectedPostingId(newPosting.id);
+          toast.success("Draft posting created");
+      } catch (error) {
+          console.error(error);
+          toast.error("Failed to create posting");
+      }
   };
 
-
-
+  const selectedPosting = postings.find(p => p.id === selectedPostingId);
 
   if (loading && !activeResource) return <JobEditorSkeleton />;
   if (!activeResource && !loading) return null;
@@ -295,22 +301,12 @@ export default function JobDetailPage() {
             </Button>
             <Button 
                 onClick={handleJobSave}
-                disabled={isSaving || isPublishing}
+                disabled={isSaving}
                 loading={isSaving}
                 className="h-9 px-4 text-sm font-medium bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg hover:bg-zinc-200 dark:hover:bg-white/10 transition-all"
             >
                 {!isSaving && <ArrowDownOnSquareIcon className="mr-2 h-4 w-4 opacity-70" />}
                 {isSaving ? 'Saving...' : 'Save Draft'}
-            </Button>
-            <Button 
-                onClick={handlePublish}
-                disabled={isSaving || isPublishing}
-                loading={isPublishing}
-                color="indigo"
-                className="h-9 px-4 text-sm font-semibold rounded-lg shadow-sm transition-all"
-            >
-                {!isPublishing && <RocketLaunchIcon className="mr-2 h-4 w-4" />}
-                {isPublishing ? 'Publishing...' : 'Publish'}
             </Button>
         </div>
       </header>
@@ -318,7 +314,7 @@ export default function JobDetailPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside className="w-64 border-r border-zinc-200 dark:border-white/10 flex flex-col bg-zinc-50/50 dark:bg-black/20 shrink-0">
-            <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+            <div className="p-4 space-y-6 flex-1 overflow-y-auto">
                 <div>
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2 px-2">Config</h4>
                     <nav className="space-y-1">
@@ -343,15 +339,38 @@ export default function JobDetailPage() {
                     </nav>
                 </div>
                 
-                <div>
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2 px-2">Distribution</h4>
+                <div className="group">
+                    <div className="flex justify-between items-center mb-2 px-2">
+                         <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Distribution</h4>
+                        <button 
+                            onClick={() => setIsChannelPickerOpen(true)}
+                            className="bg-zinc-200 dark:bg-zinc-800 p-1 rounded hover:bg-indigo-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                            title="Create new posting"
+                        >
+                            <PlusIcon className="w-3 h-3" />
+                        </button>
+                    </div>
+                    
                     <nav className="space-y-1">
-                        <SidebarItem 
-                            icon={GlobeAltIcon} 
-                            label="Postings" 
-                            active={activeTab === 'postings'} 
-                            onClick={() => setActiveTab('postings')} 
-                        />
+                        {loadingPostings && postings.length === 0 && (
+                            <div className="px-3 py-2 text-xs text-zinc-500 italic">Loading...</div>
+                        )}
+                        {!loadingPostings && postings.length === 0 && (
+                             <div className="px-3 py-2 text-xs text-zinc-500 italic">No postings yet</div>
+                        )}
+                        {postings.map(p => (
+                            <SidebarItem 
+                                key={p.id}
+                                icon={GlobeAltIcon} 
+                                label={p.contentOverrides?.title || "New Posting"} 
+                                active={activeTab === 'posting' && selectedPostingId === p.id} 
+                                onClick={() => {
+                                    setActiveTab('posting');
+                                    setSelectedPostingId(p.id);
+                                }} 
+                                badge={p.status}
+                            />
+                        ))}
                     </nav>
                 </div>
 
@@ -574,16 +593,24 @@ export default function JobDetailPage() {
                     </div>
                 )}
 
-                {activeTab === 'postings' && (
-                    <PostingPanel 
+                {activeTab === 'posting' && selectedPosting && (
+                    <PostingEditor 
                         orgId={orgId!} 
                         jobId={jobId!} 
-                        jobTitle={jobForm.title || ''}
-                        jobLocation={jobForm.location || ''}
-                        jobDescription={jobForm.description || ''}
-                        formId={jobForm.formId}
-                        pipelineId={jobForm.pipelineId}
+                        posting={selectedPosting}
+                        defaults={{
+                            title: jobForm.title || '',
+                            location: jobForm.location || '',
+                            description: jobForm.description || ''
+                        }}
+                        onUpdate={loadPostings}
                     />
+                )}
+                {activeTab === 'posting' && !selectedPosting && (
+                     <div className="text-center py-12 text-zinc-500">
+                        <GlobeAltIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p>Select a posting to edit or create a new one.</p>
+                     </div>
                 )}
 
             </div>
@@ -604,8 +631,57 @@ export default function JobDetailPage() {
           resourceId={jobId!}
           currentUserId={(activeResource as any)?.ownerIds?.[0]} // Fallback or use auth state if available
       />
+
+      <ChannelPickerModal 
+        isOpen={isChannelPickerOpen}
+        onClose={() => setIsChannelPickerOpen(false)}
+        onSelect={handleCreatePosting}
+      />
     </div>
   );
+}
+
+function ChannelPickerModal({ isOpen, onClose, onSelect }: { isOpen: boolean, onClose: () => void, onSelect: (type: ChannelType) => void }) {
+    return (
+        <Dialog open={isOpen} onClose={onClose}>
+            <DialogTitle>Choose Distribution Channel</DialogTitle>
+            <DialogDescription>
+                Select where you want to publish this job posting. Content requirements may vary by channel.
+            </DialogDescription>
+            <div className="mt-6 grid grid-cols-1 gap-4">
+                <button 
+                    onClick={() => onSelect('direct')}
+                    className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all text-left group"
+                >
+                    <div className="w-12 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30">
+                        <GlobeAltIcon className="w-6 h-6 text-zinc-500 group-hover:text-indigo-600" />
+                    </div>
+                    <div>
+                        <div className="font-semibold text-zinc-900 dark:text-white">Direct Link</div>
+                        <div className="text-xs text-zinc-500">Get a public URL to share anywhere.</div>
+                    </div>
+                </button>
+                {CHANNELS.map(channel => (
+                    <button 
+                        key={channel.id}
+                        onClick={() => onSelect(channel.id as ChannelType)}
+                        className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all text-left group"
+                    >
+                        <div className="w-12 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 font-bold text-lg text-zinc-400 group-hover:text-indigo-600">
+                            {channel.name[0]}
+                        </div>
+                        <div>
+                            <div className="font-semibold text-zinc-900 dark:text-white">{channel.name}</div>
+                            <div className="text-xs text-zinc-500">Post to {channel.name} job board.</div>
+                        </div>
+                    </button>
+                ))}
+            </div>
+            <DialogActions>
+                <Button plain onClick={onClose}>Cancel</Button>
+            </DialogActions>
+        </Dialog>
+    );
 }
 
 function SidebarItem({ icon: Icon, label, active, onClick, badge }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: string }) {

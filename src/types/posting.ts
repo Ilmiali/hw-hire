@@ -4,7 +4,7 @@ export type PostingStatus = "draft" | "published" | "closed";
 export interface JobPosting {
   id: string; // The ID of this distribution record
   jobId: string;
-  jobVersionId: string; // The specific immutable version being posted
+  jobVersionId?: string; // The specific immutable version being posted. Optional for drafts.
   
   channel: ChannelType;
   status: PostingStatus;
