@@ -15,6 +15,14 @@ class PostingService {
     return PostingService.instance;
   }
 
+  private mapDoc<T>(doc: any): T {
+    if (!doc) return null as any;
+    return {
+      id: doc.id,
+      ...doc.data
+    } as T;
+  }
+
 
   private getJobDraftPath(orgId: string, jobId: string) {
     return `orgs/${orgId}/modules/hire/jobs/${jobId}/draft`;
@@ -58,7 +66,7 @@ class PostingService {
     };
 
     const doc = await db.addDocument<JobPosting>(jobPostingsPath, newPosting);
-    return doc;
+    return this.mapDoc<JobPosting>(doc);
   }
 
   public async publishDraft(
@@ -197,11 +205,10 @@ class PostingService {
   public async getPostingsForJob(orgId: string, jobId: string): Promise<JobPosting[]> {
     const db = getDatabaseService();
     const path = this.getJobPostingsPath(orgId);
-    console.log(`[PostingService] Fetching postings from path: ${path} for jobId: ${jobId}`);
     const postings = await db.getDocuments<JobPosting>(path, {
       constraints: [{ field: 'jobId', operator: '==', value: jobId }]
     });
-    return postings;
+    return postings.map(p => this.mapDoc<JobPosting>(p));
   }
   async closePosting(orgId: string, posting: JobPosting): Promise<void> {
     const db = getDatabaseService();
@@ -222,6 +229,25 @@ class PostingService {
         { status: 'closed', publishedAt: null } // Optional: clear publishedAt or keep it as history
     );
 
+  }
+
+  public async updatePosting(orgId: string, postingId: string, updates: Partial<JobPosting>): Promise<void> {
+    const db = getDatabaseService();
+    const path = this.getJobPostingsPath(orgId);
+    await db.updateDocument(path, postingId, updates);
+  }
+
+  public async deletePosting(orgId: string, posting: JobPosting): Promise<void> {
+    const db = getDatabaseService();
+    
+    // 1. Delete Public Posting if exists
+    if (posting.publicPostingId) {
+        await db.deleteDocument('public_postings', posting.publicPostingId);
+    }
+
+    // 2. Delete Job Posting
+    const path = this.getJobPostingsPath(orgId);
+    await db.deleteDocument(path, posting.id);
   }
 }
 

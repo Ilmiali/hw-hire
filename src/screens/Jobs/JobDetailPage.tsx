@@ -44,7 +44,9 @@ import {
     GlobeAltIcon,
     ArrowDownOnSquareIcon,
     DocumentTextIcon,
-    PlusIcon
+    PlusIcon,
+    LinkIcon,
+    BuildingOffice2Icon
 } from '@heroicons/react/20/solid';
 
 export default function JobDetailPage() {
@@ -68,6 +70,7 @@ export default function JobDetailPage() {
   // Postings State
   const [postings, setPostings] = useState<JobPosting[]>([]);
   const [loadingPostings, setLoadingPostings] = useState(false);
+  const [pendingPostingChannel, setPendingPostingChannel] = useState<ChannelType | null>(null);
 
   // Version States
   const [pipelineVersions, setPipelineVersions] = useState<ResourceVersion[]>([]);
@@ -95,6 +98,14 @@ export default function JobDetailPage() {
     try {
         const data = await postingService.getPostingsForJob(orgId, jobId);
         setPostings(data);
+        
+        // If the selected posting is gone, clear selection
+        if (selectedPostingId && !data.find(p => p.id === selectedPostingId)) {
+            setSelectedPostingId(null);
+            if (activeTab === 'posting') {
+                setActiveTab('details'); // Fallback to details if we were looking at the deleted posting
+            }
+        }
     } catch (error) {
         console.error(error);
         toast.error("Failed to load postings");
@@ -240,17 +251,31 @@ export default function JobDetailPage() {
           return;
       }
 
+      setPendingPostingChannel(channel);
       setIsChannelPickerOpen(false);
+      const toastId = toast.loading(`Creating ${channel === 'direct' ? 'direct link' : channel} posting...`);
 
       try {
           const newPosting = await postingService.createDraftPosting(orgId, jobId, channel);
           await loadPostings();
           setActiveTab('posting');
           setSelectedPostingId(newPosting.id);
-          toast.success("Draft posting created");
+          toast.update(toastId, { 
+              render: "Draft posting created", 
+              type: "success", 
+              isLoading: false,
+              autoClose: 3000 
+          });
       } catch (error) {
           console.error(error);
-          toast.error("Failed to create posting");
+          toast.update(toastId, { 
+              render: "Failed to create posting", 
+              type: "error", 
+              isLoading: false,
+              autoClose: 5000 
+          });
+      } finally {
+          setPendingPostingChannel(null);
       }
   };
 
@@ -358,19 +383,41 @@ export default function JobDetailPage() {
                         {!loadingPostings && postings.length === 0 && (
                              <div className="px-3 py-2 text-xs text-zinc-500 italic">No postings yet</div>
                         )}
-                        {postings.map(p => (
+                        {postings.map(p => {
+                            const channelName = p.channel === 'direct' ? 'Direct' : CHANNELS.find(c => c.id === p.channel)?.name || p.channel;
+                            const Icon = p.channel === 'direct' ? LinkIcon : 
+                                       p.channel === 'tyomarkkinatori' ? BuildingOffice2Icon : 
+                                       p.channel === 'duunitori' ? BriefcaseIcon : GlobeAltIcon;
+                            
+                            return (
+                                <SidebarItem 
+                                    key={p.id}
+                                    icon={Icon} 
+                                    label={p.contentOverrides?.title || `${jobForm.title} (${channelName})`} 
+                                    active={activeTab === 'posting' && selectedPostingId === p.id} 
+                                    onClick={() => {
+                                        setActiveTab('posting');
+                                        setSelectedPostingId(p.id);
+                                    }} 
+                                    badge={p.status}
+                                />
+                            );
+                        })}
+
+                        {pendingPostingChannel && (
                             <SidebarItem 
-                                key={p.id}
-                                icon={GlobeAltIcon} 
-                                label={p.contentOverrides?.title || "New Posting"} 
-                                active={activeTab === 'posting' && selectedPostingId === p.id} 
-                                onClick={() => {
-                                    setActiveTab('posting');
-                                    setSelectedPostingId(p.id);
-                                }} 
-                                badge={p.status}
+                                icon={
+                                    pendingPostingChannel === 'direct' ? LinkIcon : 
+                                    pendingPostingChannel === 'tyomarkkinatori' ? BuildingOffice2Icon : 
+                                    pendingPostingChannel === 'duunitori' ? BriefcaseIcon : GlobeAltIcon
+                                } 
+                                label={`${jobForm.title} (${pendingPostingChannel === 'direct' ? 'Direct' : CHANNELS.find(c => c.id === pendingPostingChannel)?.name || pendingPostingChannel})`} 
+                                active={false}
+                                onClick={() => {}}
+                                loading={true}
+                                className="opacity-50 pointer-events-none"
                             />
-                        ))}
+                        )}
                     </nav>
                 </div>
 
@@ -654,28 +701,32 @@ function ChannelPickerModal({ isOpen, onClose, onSelect }: { isOpen: boolean, on
                     className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all text-left group"
                 >
                     <div className="w-12 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30">
-                        <GlobeAltIcon className="w-6 h-6 text-zinc-500 group-hover:text-indigo-600" />
+                        <LinkIcon className="w-6 h-6 text-zinc-500 group-hover:text-indigo-600" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                         <div className="font-semibold text-zinc-900 dark:text-white">Direct Link</div>
                         <div className="text-xs text-zinc-500">Get a public URL to share anywhere.</div>
                     </div>
                 </button>
-                {CHANNELS.map(channel => (
-                    <button 
-                        key={channel.id}
-                        onClick={() => onSelect(channel.id as ChannelType)}
-                        className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all text-left group"
-                    >
-                        <div className="w-12 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 font-bold text-lg text-zinc-400 group-hover:text-indigo-600">
-                            {channel.name[0]}
-                        </div>
-                        <div>
-                            <div className="font-semibold text-zinc-900 dark:text-white">{channel.name}</div>
-                            <div className="text-xs text-zinc-500">Post to {channel.name} job board.</div>
-                        </div>
-                    </button>
-                ))}
+                {CHANNELS.map(channel => {
+                    const Icon = channel.id === 'tyomarkkinatori' ? BuildingOffice2Icon : 
+                               channel.id === 'duunitori' ? BriefcaseIcon : GlobeAltIcon;
+                    return (
+                        <button 
+                            key={channel.id}
+                            onClick={() => onSelect(channel.id as ChannelType)}
+                            className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all text-left group"
+                        >
+                            <div className="w-12 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 font-bold text-lg text-zinc-400 group-hover:text-indigo-600">
+                                <Icon className="w-6 h-6 text-zinc-500 group-hover:text-indigo-600" />
+                            </div>
+                            <div className="flex-1">
+                                <div className="font-semibold text-zinc-900 dark:text-white">{channel.name}</div>
+                                <div className="text-xs text-zinc-500">Post to {channel.name} job board.</div>
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
             <DialogActions>
                 <Button plain onClick={onClose}>Cancel</Button>
@@ -684,7 +735,7 @@ function ChannelPickerModal({ isOpen, onClose, onSelect }: { isOpen: boolean, on
     );
 }
 
-function SidebarItem({ icon: Icon, label, active, onClick, badge }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: string }) {
+function SidebarItem({ icon: Icon, label, active, onClick, badge, loading, className }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: string, loading?: boolean, className?: string }) {
     return (
         <button 
             onClick={onClick}
@@ -692,16 +743,19 @@ function SidebarItem({ icon: Icon, label, active, onClick, badge }: { icon: any,
                 "w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-all",
                 active 
                     ? "bg-white dark:bg-zinc-800 text-blue-600 shadow-sm border border-zinc-200 dark:border-white/10" 
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5",
+                className
             )}
         >
-            <div className="flex items-center gap-2 overflow-hidden">
+            <div className="flex items-center gap-2 overflow-hidden flex-1">
                 <Icon className={clsx("w-4 h-4 shrink-0", active ? "text-blue-500" : "text-zinc-400")} />
                 <span className="truncate">{label}</span>
             </div>
-            {badge && badge !== 'not_configured' && (
+            {loading ? (
+                <ArrowPathIcon className="w-3 h-3 animate-spin text-zinc-400 shrink-0" />
+            ) : badge && badge !== 'not_configured' && (
                 <div className={clsx(
-                    "w-2 h-2 rounded-full",
+                    "w-2 h-2 rounded-full shrink-0",
                     badge === 'published' ? 'bg-green-500' :
                     badge === 'draft' ? 'bg-yellow-500' :
                     badge === 'failed' ? 'bg-red-500' : 'bg-zinc-300'
