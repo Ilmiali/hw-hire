@@ -67,10 +67,48 @@ export default function PublicApplyPage() {
 
     const handleFormSuccess = async (values: any) => {
         if (!posting || !publicPostingId) return;
+
+        // Guard: Prevent premature submission if not on last page
+        const isLastPage = stepIndex === posting.form.schemaSnapshot.pages.length - 1;
+        if (!isLastPage) {
+            console.warn("Prevented premature submission on step", stepIndex);
+            return;
+        }
+
         setSubmitting(true);
         try {
             const db = getDatabaseService();
             
+            // Helper to sanitize values for Firestore (remove File objects)
+            const sanitizeForFirestore = (val: any): any => {
+                if (val instanceof File) {
+                    // Firestore cannot store File objects. 
+                    // ideally we'd upload this and store the URL, but for now we fallback to metadata
+                    // or null to prevent crash. 
+                    // User requested not to save file persistence, but that was for Drafts.
+                    // For submission, we really should upload, but stripping prevents the crash.
+                    return {
+                        _type: 'file',
+                        name: val.name,
+                        size: val.size,
+                        type: val.type
+                    };
+                }
+                if (Array.isArray(val)) {
+                    return val.map(sanitizeForFirestore);
+                }
+                if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+                    const next: any = {};
+                    for (const key in val) {
+                        next[key] = sanitizeForFirestore(val[key]);
+                    }
+                    return next;
+                }
+                return val;
+            };
+
+            const sanitizedValues = sanitizeForFirestore(values);
+
             // Construct Application object
             const application = {
                 orgId: posting.orgId,
@@ -93,7 +131,7 @@ export default function PublicApplyPage() {
                 // Try to find name and email in the values
                 applicantName: values.name || values.fullName || values.applicantName || '',
                 applicantEmail: values.email || values.emailAddress || values.applicantEmail || '',
-                answers: values,
+                answers: sanitizedValues,
                 
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()

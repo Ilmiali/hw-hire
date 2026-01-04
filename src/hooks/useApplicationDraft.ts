@@ -100,8 +100,31 @@ export function useApplicationDraft(publicPostingId: string | undefined): UseApp
         if (!publicPostingId || !draftRef.current) return;
         
         setIsSaving(true);
+
+        // Sanitize answers to remove non-serializable values (like File objects)
+        const sanitize = (val: any): any => {
+            if (val instanceof File) {
+                return undefined; // Do not persist files
+            }
+            if (Array.isArray(val)) {
+                return val.map(sanitize).filter(v => v !== undefined);
+            }
+            if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+                const next: any = {};
+                for (const key in val) {
+                    const sanitized = sanitize(val[key]);
+                    if (sanitized !== undefined) {
+                        next[key] = sanitized;
+                    }
+                }
+                return next;
+            }
+            return val;
+        };
+
         const toSave = {
             ...draftRef.current,
+            answers: sanitize(draftRef.current.answers),
             updatedAt: new Date().toISOString()
         };
         
@@ -111,10 +134,12 @@ export function useApplicationDraft(publicPostingId: string | undefined): UseApp
              dispatch(setDraft(toSave));
         }
         
-        draftRef.current = toSave;
+        // Update draftRef with the LATEST data (but keep original for local state)
+        // Note: draftRef.current still has the Files because we didn't sanitize it in-place.
         
         setTimeout(() => setIsSaving(false), 300); 
     }, [publicPostingId, dispatch, reduxDraft]);
+
 
 
     const scheduleSave = useCallback(() => {

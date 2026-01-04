@@ -199,10 +199,30 @@ export const FormRenderer = ({
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (readOnly) return;
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            // Check if we're in a textarea, if so let it handle itself
+            if ((e.target as HTMLElement).tagName === 'TEXTAREA') return;
+            
+            e.preventDefault();
+            if (isLastPage) {
+                handleSubmit();
+            } else {
+                handleNext();
+            }
+        }
+    };
+
+    const handleSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (readOnly || submitting) return;
         
+        // Final verification that we are on the last page
+        if (!isLastPage) {
+            handleNext();
+            return;
+        }
+
         const result = zodSchema.safeParse(formValues);
         
         if (!result.success) {
@@ -219,7 +239,6 @@ export const FormRenderer = ({
         }
 
         if (onSuccess) onSuccess(formValues);
-        toast.success('Form submitted! value logged to console.');
     };
 
     const renderFieldItem = (field: FormField, value: any, onChange: (val: any) => void) => {
@@ -504,7 +523,7 @@ export const FormRenderer = ({
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <div onKeyDown={handleKeyDown} className="space-y-8">
                     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {currentPage.sections.map(section => (
                             <div key={section.id} className="space-y-6">
@@ -536,7 +555,7 @@ export const FormRenderer = ({
                             </div>
                         ))}
                     </div>
-
+ 
                     <div className="flex justify-between pt-8 border-t border-zinc-100 dark:border-white/5 mt-12 pb-4">
                         <div>
                             {!isFirstPage && (
@@ -555,7 +574,8 @@ export const FormRenderer = ({
                             {isLastPage ? (
                                 !readOnly && (
                                     <Button 
-                                        type="submit" 
+                                        type="button" 
+                                        onClick={() => handleSubmit()}
                                         disabled={submitting}
                                         className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-tight shadow-lg shadow-primary/20 rounded-xl px-8 py-6 transition-all duration-200"
                                     >
@@ -575,7 +595,7 @@ export const FormRenderer = ({
                             )}
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
     );
     
