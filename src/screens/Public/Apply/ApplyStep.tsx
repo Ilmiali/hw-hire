@@ -9,6 +9,7 @@ interface ApplyStepProps {
     errors: Record<string, string>;
     visibleFieldIds: Set<string>;
     requiredFieldIds: Set<string>;
+    disabled?: boolean;
 }
 
 export function ApplyStep({
@@ -17,7 +18,8 @@ export function ApplyStep({
     onChange,
     errors,
     visibleFieldIds,
-    requiredFieldIds
+    requiredFieldIds,
+    disabled = false
 }: ApplyStepProps) {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -52,7 +54,7 @@ export function ApplyStep({
                         
                         <div className="grid grid-cols-1 gap-6">
                             {section.rows.map(row => (
-                                <div key={row.id} className="grid grid-cols-1 gap-6">
+                                <div key={row.id} className="flex flex-col md:flex-row gap-6">
                                     {row.fields.map(field => {
                                         if (!visibleFieldIds.has(field.id)) return null;
                                         
@@ -67,6 +69,7 @@ export function ApplyStep({
                                                 value={values[field.id]}
                                                 onChange={(val) => onChange(field.id, val)}
                                                 error={errors[field.id]}
+                                                disabled={disabled}
                                             />
                                         );
                                     })}

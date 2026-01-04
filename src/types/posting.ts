@@ -1,3 +1,5 @@
+import { FormSchema } from "./form-builder";
+
 export type ChannelType = "direct" | "tyomarkkinatori" | "duunitori";
 export type PostingStatus = "draft" | "published" | "closed";
 
@@ -25,6 +27,7 @@ export interface JobPosting {
 export interface PublicPosting {
   id: string; // UUID (public facing ID)
   orgId: string;
+  orgName?: string;
   moduleId: string; // "hire"
   
   jobId: string;
@@ -47,7 +50,7 @@ export interface PublicPosting {
   form: {
     formId: string;
     formVersionId: string;
-    schemaSnapshot: any; // Full JSON schema of the form at publish time
+    schemaSnapshot: FormSchema; // Full JSON schema of the form at publish time
   };
   
   pipeline: {

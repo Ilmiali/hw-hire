@@ -176,6 +176,21 @@ export default function PublicApplyPage() {
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            // Check if we're in a textarea, if so let it handle itself
+            if ((e.target as HTMLElement).tagName === 'TEXTAREA') return;
+            
+            e.preventDefault();
+            const isLast = stepIndex === schema!.pages.length - 1;
+            if (isLast) {
+                handleFormSuccess();
+            } else {
+                handleNext();
+            }
+        }
+    };
+
     const handleFormSuccess = async () => {
         // Final full validation
         if (!validateStep(stepIndex)) return;
@@ -302,7 +317,10 @@ export default function PublicApplyPage() {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 p-6 sm:p-8 md:p-10 mb-8 transition-colors">
+            <div 
+                className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 p-6 sm:p-8 md:p-10 mb-8 transition-colors"
+                onKeyDown={handleKeyDown}
+            >
                 <div className="mb-8">
                     <ApplyProgress currentStep={stepIndex} totalSteps={schema.pages.length} />
                 </div>

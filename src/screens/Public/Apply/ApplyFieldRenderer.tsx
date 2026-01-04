@@ -1,6 +1,6 @@
 
 import { FormField } from '@/types/form-builder';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/input';
 import { Textarea } from '@/components/textarea';
 import { Label } from '@/components/ui/label';
 import { 
@@ -41,9 +41,9 @@ export function ApplyFieldRenderer({
                         type={field.type}
                         value={value || ''}
                         onChange={(e) => onChange(e.target.value)}
-                        placeholder={field.placeholder}
+                        placeholder={field.type === 'date' ? undefined : field.placeholder}
                         disabled={disabled}
-                        className={`bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 ${error ? 'border-red-500 focus-visible:ring-red-500' : 'focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-100'}`}
+                        className={error ? 'border-red-500' : ''}
                     />
                 );
 
@@ -54,7 +54,7 @@ export function ApplyFieldRenderer({
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={field.placeholder}
                         disabled={disabled}
-                        className={`bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 min-h-[120px] ${error ? 'border-red-500' : 'focus:ring-zinc-900 dark:focus:ring-zinc-100'}`}
+                        className={`min-h-[120px] ${error ? 'border-red-500' : ''}`}
                     />
                 );
 
@@ -65,7 +65,7 @@ export function ApplyFieldRenderer({
                         onValueChange={onChange}
                         disabled={disabled}
                     >
-                        <SelectTrigger className={`bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 w-full ${error ? 'border-red-500 ring-red-500' : 'focus:ring-zinc-900 dark:focus:ring-zinc-100'}`}>
+                        <SelectTrigger className={`w-full ${error ? 'border-red-500' : ''}`}>
                             <SelectValue placeholder="Select an option" />
                         </SelectTrigger>
                         <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
@@ -157,17 +157,71 @@ export function ApplyFieldRenderer({
                     <img src={field.imageUrl} alt={field.altText || ''} className="rounded-xl w-full h-auto" />
                 ) : null;
             
+            case 'repeat':
+                 const items = (Array.isArray(value) ? value : []) as Record<string, any>[];
+                 return (
+                     <div className="space-y-4">
+                         {items.map((itemValue, index) => (
+                             <div key={index} className="relative p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                 {!disabled && (
+                                     <div className="absolute right-4 top-4">
+                                          <button 
+                                             type="button"
+                                             onClick={() => {
+                                                 const newItems = [...items];
+                                                 newItems.splice(index, 1);
+                                                 onChange(newItems);
+                                             }}
+                                             className="text-zinc-400 hover:text-red-500 transition-colors p-1"
+                                             title="Remove item"
+                                         >
+                                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                         </button>
+                                     </div>
+                                 )}
+                                 <div className="flex flex-col gap-4">
+                                      {field.fields?.map(child => (
+                                          <ApplyFieldRenderer
+                                              key={child.id}
+                                              field={{...child, required: child.required}} // effective field logic could be passed down if needed
+                                              value={itemValue[child.id]}
+                                              onChange={(childVal) => {
+                                                  // if (disabled) return; // parent handles disabled
+                                                  const newItems = [...items];
+                                                  newItems[index] = { ...newItems[index], [child.id]: childVal };
+                                                  onChange(newItems);
+                                              }}
+                                              disabled={disabled}
+                                              // We might need to handle errors for nested fields specifically if we want deep validation reporting
+                                          />
+                                      ))}
+                                 </div>
+                             </div>
+                         ))}
+                         {!disabled && (
+                             <button
+                                 type="button" 
+                                 onClick={() => onChange([...items, {}])}
+                                 className="w-full border-dashed border-2 border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-zinc-100 bg-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-all duration-200 rounded-xl py-4 flex items-center justify-center gap-2 font-medium"
+                             >
+                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+                                 Add {field.label || 'Item'}
+                             </button>
+                         )}
+                     </div>
+                 );
+
             default:
                 return null;
         }
     };
 
     if (['paragraph', 'divider', 'spacer', 'image'].includes(field.type)) {
-        return <div className="py-2">{renderContent()}</div>;
+        return <div className="py-2 flex-1 min-w-0">{renderContent()}</div>;
     }
 
     return (
-        <div className="group animate-in fade-in duration-500 slide-in-from-bottom-2">
+        <div className="group animate-in fade-in duration-500 slide-in-from-bottom-2 flex-1 min-w-0">
             <Label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2 ml-1">
                 {field.label} {field.required && <span className="text-red-500 text-xs ml-0.5">*</span>}
             </Label>

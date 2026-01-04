@@ -12,7 +12,7 @@ export function ApplyLayout({ children, className = '' }: ApplyLayoutProps) {
              {/* Subtle top gradient line */}
              <div className="h-1 w-full bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20" />
              
-            <main className="max-w-[640px] mx-auto px-4 py-8 sm:py-12 md:py-16 min-h-[calc(100vh-4px)] flex flex-col">
+            <main className="max-w-3xl mx-auto px-4 py-8 sm:py-12 md:py-16 min-h-[calc(100vh-4px)] flex flex-col">
                  <div className="flex-1 flex flex-col">
                     {children}
                  </div>
