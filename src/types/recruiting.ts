@@ -40,6 +40,17 @@ export interface RecruitingJob {
 
   formId?: string;
   applicationCardConfig?: ApplicationCardConfig;
+  layout?: {
+    cover: {
+      id: string;
+      type: string;
+      value: string;
+    };
+    icon: {
+      type: string;
+      value: string;
+    };
+  };
 }
 
 export interface JobStats {

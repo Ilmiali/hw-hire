@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 import { getDatabaseService } from '../../services/databaseService';
 import { RecruitingJob, RecruitingApplication } from '../../types/recruiting';
 import PipelineBoard from '../Pipeline/components/PipelineBoard';
@@ -7,6 +8,7 @@ import { PipelineStage } from '../../types/pipeline';
 import { DEFAULT_STAGES } from '../../types/pipeline';
 import { toast } from 'react-toastify';
 import { Badge } from '../../components/badge';
+import { Avatar } from '../../components/avatar';
 import { Button } from '../../components/button';
 import { SplitTwoLayout } from '../../components/split-two-layout';
 import { Heading } from '../../components/heading';
@@ -14,7 +16,7 @@ import { Text } from '../../components/text';
 import { RecruitingApplicationWorkspace } from './components/RecruitingApplicationWorkspace';
 // Table removed
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { ArrowLeftIcon } from '@heroicons/react/16/solid';
+import { ArrowLeftIcon, UsersIcon, BriefcaseIcon } from '@heroicons/react/16/solid';
 
 export default function RecruitingJobDetail() {
   const { orgId, jobId, applicationId } = useParams<{ orgId: string; jobId: string; applicationId?: string }>();
@@ -49,7 +51,8 @@ export default function RecruitingJobDetail() {
                 postingsCount: jobDoc.postingsCount, // Assuming these might exist now or later
                 applicantsCount: jobDoc.applicantsCount,
                 formId: jobDoc.data?.formId || jobDoc.formId, // Capture formId
-                applicationCardConfig: jobDoc.data?.applicationCardConfig || jobDoc.applicationCardConfig // Capture config
+                applicationCardConfig: jobDoc.data?.applicationCardConfig || jobDoc.applicationCardConfig, // Capture config
+                layout: jobDoc.data?.layout || jobDoc.layout // Capture layout
              };
              setJob(jobData);
 
@@ -208,116 +211,152 @@ export default function RecruitingJobDetail() {
   }
 
   const MainContent = (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button plain onClick={() => navigate(`/orgs/${orgId}/recruiting`)}>
-            <ArrowLeftIcon className="size-4 mr-2" />
-            Back to Jobs
-        </Button>
-      </div>
+    <div className="flex flex-col min-h-full">
+      {/* Full-width Header */}
+      <div 
+        className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800"
+        style={{ 
+          background: job.layout?.cover ? job.layout.cover.value : 'transparent',
+          backgroundImage: job.layout?.cover?.type === 'gradient' 
+            ? `linear-gradient(${job.layout.cover.value})` 
+            : undefined
+        }}
+      >
+        <div className={clsx(
+          "px-8 py-8 flex flex-col gap-4 max-w-7xl mx-auto w-full",
+          job.layout?.cover ? "text-white" : "text-zinc-900 dark:text-zinc-100"
+        )}>
+           <div className="flex items-center gap-4 mb-2">
+            <Button plain onClick={() => navigate(`/orgs/${orgId}/recruiting`)} className={job.layout?.cover ? "!text-white/80 hover:!text-white" : ""}>
+                <ArrowLeftIcon className="size-4 mr-2" />
+                Back to Jobs
+            </Button>
+          </div>
 
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-        <div className="flex justify-between items-start">
-            <div>
-                <Heading>{job.title}</Heading>
-                <div className="mt-1 flex gap-2 text-zinc-500 text-sm">
-                    <Text>{job.location}</Text>
-                    <span>•</span>
-                    <Text>Updated {new Date(job.updatedAt).toLocaleDateString()}</Text>
-                </div>
-            </div>
-            <Badge color={job.status === 'open' ? 'green' : job.status === 'closed' ? 'red' : 'zinc'}>
-                {job.status}
-            </Badge>
-        </div>
-        
-        <div className="mt-6 flex gap-8 border-t border-zinc-100 dark:border-zinc-800 pt-4">
-             <div>
-                <Text className="text-zinc-500 text-xs uppercase tracking-wider font-semibold">Postings</Text>
-                <Text className="text-2xl font-bold mt-1">--</Text> 
-                {/* Note: We could fetch counts again or pass them via location state, but keeping it simple */}
-             </div>
-             <div>
-                <Text className="text-zinc-500 text-xs uppercase tracking-wider font-semibold">Applicants</Text>
-                <Text className="text-2xl font-bold mt-1">{applications.length}</Text>
-             </div>
-        </div>
-      </div>
-
-      <Tabs defaultValue="applicants" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-           <TabsTrigger value="applicants">Applicants</TabsTrigger>
-           <TabsTrigger value="postings">Postings</TabsTrigger>
-           <TabsTrigger value="info">Job Info</TabsTrigger>
-        </TabsList>
-        <TabsContent value="applicants" className="mt-6 h-[calc(100vh-300px)] min-h-[500px]">
-            <PipelineBoard 
-                stages={stages}
-                applications={applications.map(app => {
-                    const config = (job as any).applicationCardConfig;
-                    
-                    // Construct candidateSummary if not present (legacy support)
-                    const candidateSummary = app.candidateSummary || {
-                        fullname: getCandidateName(app),
-                        email: app.answers?.email || app.answers?.Email || '',
-                    };
-
-                    // Additional Fields - still using config but now we have labels in answers
-                    const additionalFields = (config?.additionalFields || []).map((fid: string) => {
-                        const answer = app.answers?.[fid];
-                        if (!answer || !answer.label || !answer.value) return null;
-                        return { 
-                            id: fid, 
-                            label: answer.label, 
-                            value: getFormattedFieldValue(answer.value) 
-                        };
-                    }).filter(Boolean) as any[];
-
-                    return {
-                        id: app.id,
-                        headline: candidateSummary.fullname,
-                        subtitle: candidateSummary.email,
-                        stageId: app.currentStageId || stages[0].id,
-                        source: app.source,
-                        createdAt: app.createdAt,
-                        candidateSummary,
-                        additionalFields
-                    };
-                })}
-                onApplicationMove={async (appId, newStageId) => {
-                    // Optimistic update
-                    const prevApps = [...applications];
-                    setApplications(prev => prev.map(a => 
-                        a.id === appId ? { ...a, currentStageId: newStageId } : a
-                    ));
-
-                    try {
-                        await db.updateDocument(`orgs/${orgId}/modules/hire/applications`, appId, {
-                            currentStageId: newStageId,
-                            updatedAt: new Date().toISOString()
-                        });
-                    } catch (err) {
-                        console.error("Failed to move application", err);
-                        toast.error("Failed to update application stage");
-                        setApplications(prevApps); // Revert
-                    }
-                }}
-                onApplicationClick={handleApplicationClick}
+          <div className="flex items-center gap-4">
+            <Avatar
+              initials={job.layout?.icon?.type === 'emoji' ? job.layout.icon.value : (job.title?.substring(0, 2).toUpperCase() || 'JB')}
+              src={job.layout?.icon?.type === 'image' ? job.layout.icon.value : undefined}
+              className={clsx(
+                "size-12 shadow-sm text-xl",
+                job.layout?.cover ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800"
+              )}
+              variant="square"
             />
-        </TabsContent>
-        <TabsContent value="postings">
-            <div className="p-12 text-center text-zinc-500 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg dashed border border-zinc-200 dark:border-zinc-800">
-                Postings management coming soon.
+            <div className="flex flex-col">
+              <Heading className={job.layout?.cover ? "text-white" : ""}>{job.title}</Heading>
+              <div className={clsx(
+                "mt-0.5 flex gap-2 text-sm items-center",
+                job.layout?.cover ? "text-white/80" : "text-zinc-500"
+              )}>
+                <Text className={job.layout?.cover ? "text-white/80" : ""}>{job.location}</Text>
+                <span>•</span>
+                <Text className={job.layout?.cover ? "text-white/80" : ""}>Updated {new Date(job.updatedAt).toLocaleDateString()}</Text>
+                <span>•</span>
+                <Badge color={job.status === 'open' ? 'green' : job.status === 'closed' ? 'red' : 'zinc'}>
+                    {job.status}
+                </Badge>
+              </div>
+
+              {/* Stats Row */}
+              <div className="flex gap-2 mt-4">
+                <div className={clsx(
+                  "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium shadow-sm",
+                  job.layout?.cover ? "bg-white/20 text-white backdrop-blur-sm" : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                )}>
+                  <BriefcaseIcon className="size-3.5" />
+                  <span>0 Postings</span>
+                </div>
+                <div className={clsx(
+                  "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium shadow-sm",
+                  job.layout?.cover ? "bg-white/20 text-white backdrop-blur-sm" : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                )}>
+                  <UsersIcon className="size-3.5" />
+                  <span>{applications.length} Applicants</span>
+                </div>
+              </div>
             </div>
-        </TabsContent>
-        <TabsContent value="info">
-            <div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
-                <Heading level={3}>Internal Job Description</Heading>
-                {/* Render description if available */}
-                <Text className="mt-4 text-zinc-600">No description available.</Text>
-            </div>
-        </TabsContent>
-      </Tabs>
+          </div>
+        </div>
+      </div>
+
+      {/* Padded Body Content */}
+      <div className="p-8 max-w-7xl mx-auto w-full space-y-6 flex-1">
+        <Tabs defaultValue="applicants" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+             <TabsTrigger value="applicants">Applicants</TabsTrigger>
+             <TabsTrigger value="postings">Postings</TabsTrigger>
+             <TabsTrigger value="info">Job Info</TabsTrigger>
+          </TabsList>
+          <TabsContent value="applicants" className="mt-6 h-[calc(100vh-300px)] min-h-[500px]">
+              <PipelineBoard 
+                  stages={stages}
+                  applications={applications.map(app => {
+                      const config = (job as any).applicationCardConfig;
+                      
+                      // Construct candidateSummary if not present (legacy support)
+                      const candidateSummary = app.candidateSummary || {
+                          fullname: getCandidateName(app),
+                          email: app.answers?.email || app.answers?.Email || '',
+                      };
+  
+                      // Additional Fields - still using config but now we have labels in answers
+                      const additionalFields = (config?.additionalFields || []).map((fid: string) => {
+                          const answer = app.answers?.[fid];
+                          if (!answer || !answer.label || !answer.value) return null;
+                          return { 
+                              id: fid, 
+                              label: answer.label, 
+                              value: getFormattedFieldValue(answer.value) 
+                          };
+                      }).filter(Boolean) as any[];
+  
+                      return {
+                          id: app.id,
+                          headline: candidateSummary.fullname,
+                          subtitle: candidateSummary.email,
+                          stageId: app.currentStageId || stages[0].id,
+                          source: app.source,
+                          createdAt: app.createdAt,
+                          candidateSummary,
+                          additionalFields
+                      };
+                  })}
+                  onApplicationMove={async (appId, newStageId) => {
+                      // Optimistic update
+                      const prevApps = [...applications];
+                      setApplications(prev => prev.map(a => 
+                          a.id === appId ? { ...a, currentStageId: newStageId } : a
+                      ));
+  
+                      try {
+                          await db.updateDocument(`orgs/${orgId}/modules/hire/applications`, appId, {
+                              currentStageId: newStageId,
+                              updatedAt: new Date().toISOString()
+                          });
+                      } catch (err) {
+                          console.error("Failed to move application", err);
+                          toast.error("Failed to update application stage");
+                          setApplications(prevApps); // Revert
+                      }
+                  }}
+                  onApplicationClick={handleApplicationClick}
+              />
+          </TabsContent>
+          <TabsContent value="postings">
+              <div className="p-12 text-center text-zinc-500 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg dashed border border-zinc-200 dark:border-zinc-800">
+                  Postings management coming soon.
+              </div>
+          </TabsContent>
+          <TabsContent value="info">
+              <div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                  <Heading level={3}>Internal Job Description</Heading>
+                  {/* Render description if available */}
+                  <Text className="mt-4 text-zinc-600">No description available.</Text>
+              </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 
