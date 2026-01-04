@@ -22,6 +22,7 @@ import formsReducer from './slices/formsSlice';
 import shareReducer from './slices/shareSlice';
 import resourceReducer from './slices/resourceSlice';
 import usersReducer from './slices/usersSlice';
+import applicationDraftsReducer from './slices/applicationDraftsSlice';
 
 const rootReducer = combineReducers({
   auth: authReducer,
@@ -34,12 +35,13 @@ const rootReducer = combineReducers({
   share: shareReducer,
   resource: resourceReducer,
   users: usersReducer,
+  applicationDrafts: applicationDraftsReducer,
 });
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth', 'organization'],
+  whitelist: ['auth', 'organization', 'applicationDrafts'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

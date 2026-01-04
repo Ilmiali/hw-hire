@@ -31,14 +31,36 @@ interface FormRendererProps {
     readOnly?: boolean;
     submitting?: boolean;
     embedded?: boolean;
+    // Controlled props
+    values?: Record<string, any>;
+    onValuesChange?: (values: Record<string, any>) => void;
+    pageIndex?: number;
+    onPageChange?: (pageIndex: number) => void;
 }
 
-export const FormRenderer = ({ schema, onSuccess, readOnly = false, submitting = false, embedded = false }: FormRendererProps) => {
-    const [currentPageIndex, setCurrentPageIndex] = useState(0);
-    const [formValues, setFormValues] = useState<Record<string, any>>({});
+export const FormRenderer = ({ 
+    schema, 
+    onSuccess, 
+    readOnly = false, 
+    submitting = false, 
+    embedded = false,
+    values,
+    onValuesChange,
+    pageIndex,
+    onPageChange
+}: FormRendererProps) => {
+    const [internalPageIndex, setInternalPageIndex] = useState(0);
+    const [internalFormValues, setInternalFormValues] = useState<Record<string, any>>({});
+    
+    // Determine controlled vs uncontrolled
+    const isControlledValues = values !== undefined;
+    const isControlledPage = pageIndex !== undefined;
+
+    const formValues = isControlledValues ? values! : internalFormValues;
+    const currentPageIndex = isControlledPage ? pageIndex! : internalPageIndex;
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const currentPage = schema.pages[currentPageIndex];
+    const currentPage = schema.pages[currentPageIndex] || schema.pages[0]; // Safety fallback
     const isFirstPage = currentPageIndex === 0;
     const isLastPage = currentPageIndex === schema.pages.length - 1;
 
@@ -68,7 +90,11 @@ export const FormRenderer = ({ schema, onSuccess, readOnly = false, submitting =
 
     // Effect to clear values of hidden fields
     useEffect(() => {
-        setFormValues(prev => {
+        // We only do this auto-cleanup if uncontrolled, or if the parent handles it. 
+        // For now, let's only do it if we are uncontrolled to avoid infinite loops with parent state
+        if (isControlledValues) return;
+
+        setInternalFormValues(prev => {
             const next = { ...prev };
             let hasChanges = false;
             
@@ -81,15 +107,19 @@ export const FormRenderer = ({ schema, onSuccess, readOnly = false, submitting =
 
             return hasChanges ? next : prev;
         });
-    }, [visibleFieldIds, allFields]);
+    }, [visibleFieldIds, allFields, isControlledValues]);
 
     // Helper to handle input changes
     const handleChange = (fieldId: string, value: any) => {
         if (readOnly) return;
-        setFormValues(prev => ({
-            ...prev,
-            [fieldId]: value
-        }));
+        
+        const nextValues = { ...formValues, [fieldId]: value };
+        
+        if (isControlledValues) {
+            onValuesChange?.(nextValues);
+        } else {
+            setInternalFormValues(nextValues);
+        }
 
         try {
             const fieldSchema = zodSchema.shape[fieldId];
@@ -147,14 +177,24 @@ export const FormRenderer = ({ schema, onSuccess, readOnly = false, submitting =
         }
 
         if (!isLastPage) {
-            setCurrentPageIndex(prev => prev + 1);
+            const nextIndex = currentPageIndex + 1;
+            if (isControlledPage) {
+                onPageChange?.(nextIndex);
+            } else {
+                setInternalPageIndex(nextIndex);
+            }
             window.scrollTo(0, 0);
         }
     };
 
     const handlePrev = () => {
         if (!isFirstPage) {
-            setCurrentPageIndex(prev => prev - 1);
+            const prevIndex = currentPageIndex - 1;
+            if (isControlledPage) {
+                onPageChange?.(prevIndex);
+            } else {
+                setInternalPageIndex(prevIndex);
+            }
             window.scrollTo(0, 0);
         }
     };

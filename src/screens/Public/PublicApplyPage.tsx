@@ -6,6 +6,9 @@ import { Button } from '../../components/button';
 import { BriefcaseIcon, MapPinIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 import { toast } from 'react-toastify';
 import { FormRenderer } from '../FormBuilder/components/FormRenderer';
+import { useApplicationDraft } from '../../hooks/useApplicationDraft';
+import { ArrowPathIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
+import { formatDistanceToNow } from 'date-fns';
 
 
 export default function PublicApplyPage() {
@@ -15,8 +18,19 @@ export default function PublicApplyPage() {
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     
+    
     // Application Form State
     // We'll extract name and email from form values if they exist
+    const { 
+        answers, 
+        setAnswers, 
+        stepIndex, 
+        setStepIndex,
+        isSaving,
+        lastSavedAt,
+        clearDraft,
+        hasSavedDraft 
+    } = useApplicationDraft(publicPostingId);
 
     useEffect(() => {
         const loadPosting = async () => {
@@ -92,6 +106,8 @@ export default function PublicApplyPage() {
 
             setSubmitted(true);
             toast.success("Application submitted successfully!");
+            clearDraft(); // Clear draft on success
+
 
         } catch (error) {
             console.error(error);
@@ -164,7 +180,37 @@ export default function PublicApplyPage() {
                 {/* Application Form */}
                 <div className="bg-white dark:bg-zinc-900 rounded-b-2xl border-x border-b border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                     <div className="p-8 pb-0">
-                        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Apply for this position</h2>
+                        <div className="flex items-center justify-between mb-2">
+                             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Apply for this position</h2>
+                             {hasSavedDraft && (
+                                 <div className="flex items-center gap-4 text-xs">
+                                     <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+                                         {isSaving ? (
+                                             <>
+                                                <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
+                                                <span>Saving...</span>
+                                             </>
+                                         ) : (
+                                             <>
+                                                <CloudArrowUpIcon className="w-3.5 h-3.5" />
+                                                <span>Saved {lastSavedAt ? formatDistanceToNow(lastSavedAt, { addSuffix: true }) : ''}</span>
+                                             </>
+                                         )}
+                                     </div>
+                                     <button 
+                                         onClick={() => {
+                                             if (window.confirm("Are you sure you want to start over? This will clear your current progress.")) {
+                                                 clearDraft();
+                                                 window.location.reload(); 
+                                             }
+                                         }}
+                                         className="text-red-500 hover:text-red-600 underline decoration-red-500/30 font-medium"
+                                     >
+                                         Start over
+                                     </button>
+                                 </div>
+                             )}
+                        </div>
                     </div>
                     
                     <FormRenderer 
@@ -172,6 +218,10 @@ export default function PublicApplyPage() {
                         onSuccess={handleFormSuccess}
                         submitting={submitting}
                         embedded
+                        values={answers}
+                        onValuesChange={setAnswers}
+                        pageIndex={stepIndex}
+                        onPageChange={setStepIndex}
                     />
                 </div>
 
