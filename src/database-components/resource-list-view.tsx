@@ -44,6 +44,8 @@ export function ResourceListView({
   
   const [isCreating, setIsCreating] = useState(false);
   const [resourceToDelete, setResourceToDelete] = useState<any | null>(null);
+  const [resourcesToDelete, setResourcesToDelete] = useState<any[] | null>(null);
+  const [clearSelectionCallback, setClearSelectionCallback] = useState<(() => void) | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDefaultCreate = async () => {
@@ -73,25 +75,41 @@ export function ResourceListView({
   };
 
   const handleDeleteConfirm = useCallback(async () => {
-    if (!orgId || !resourceToDelete) return;
+    if (!orgId) return;
     
     setIsDeleting(true);
     NProgress.start();
     try {
-      await dispatch(deleteResource({ 
-        orgId, 
-        moduleId, 
-        resourceType, 
-        resourceId: resourceToDelete.id 
-      })).unwrap();
+      if (resourcesToDelete) {
+        await Promise.all(resourcesToDelete.map(resource => 
+          dispatch(deleteResource({ 
+            orgId, 
+            moduleId, 
+            resourceType, 
+            resourceId: resource.id 
+          })).unwrap()
+        ));
+        if (clearSelectionCallback) {
+          clearSelectionCallback();
+        }
+      } else if (resourceToDelete) {
+        await dispatch(deleteResource({ 
+          orgId, 
+          moduleId, 
+          resourceType, 
+          resourceId: resourceToDelete.id 
+        })).unwrap();
+      }
     } catch (error) {
-      console.error(`Failed to delete ${resourceName.toLowerCase()}`, error);
+      console.error(`Failed to delete ${resourceName.toLowerCase()}${resourcesToDelete ? 's' : ''}`, error);
     } finally {
       NProgress.done();
       setIsDeleting(false);
       setResourceToDelete(null);
+      setResourcesToDelete(null);
+      setClearSelectionCallback(null);
     }
-  }, [dispatch, orgId, moduleId, resourceType, resourceToDelete, resourceName]);
+  }, [dispatch, orgId, moduleId, resourceType, resourceToDelete, resourcesToDelete, clearSelectionCallback, resourceName]);
 
   const handleRowClick = useCallback((resource: any) => {
     onRowClick(resource);
@@ -99,6 +117,11 @@ export function ResourceListView({
 
   const setDeletingResource = useCallback((resource: any) => {
     setResourceToDelete(resource);
+  }, []);
+
+  const setDeletingResources = useCallback((resources: any[], clearSelection: () => void) => {
+    setResourcesToDelete(resources);
+    setClearSelectionCallback(() => clearSelection);
   }, []);
 
   return (
@@ -133,17 +156,30 @@ export function ResourceListView({
             resourceType={resourceType}
             onRowClick={handleRowClick}
             onDelete={setDeletingResource}
-            onCreate={onCreate || handleDefaultCreate}
+            onMultiDelete={setDeletingResources}
          />
       </div>
 
-      <Dialog open={!!resourceToDelete} onClose={() => setResourceToDelete(null)}>
-        <DialogTitle>Delete {resourceName}</DialogTitle>
+      <Dialog 
+        open={!!resourceToDelete || (!!resourcesToDelete && resourcesToDelete.length > 0)} 
+        onClose={() => {
+            setResourceToDelete(null);
+            setResourcesToDelete(null);
+        }}
+      >
+        <DialogTitle>Delete {resourcesToDelete ? `${resourceName}s` : resourceName}</DialogTitle>
         <DialogDescription>
-          Are you sure you want to delete {resourceName.toLowerCase()} "{resourceToDelete?.name}"? This action cannot be undone.
+          {resourcesToDelete ? (
+            `Are you sure you want to delete ${resourcesToDelete.length} ${resourceName.toLowerCase()}s? This action cannot be undone.`
+          ) : (
+            `Are you sure you want to delete ${resourceName.toLowerCase()} "${resourceToDelete?.name}"? This action cannot be undone.`
+          )}
         </DialogDescription>
         <DialogActions>
-          <Button variant="ghost" onClick={() => setResourceToDelete(null)} disabled={isDeleting}>
+          <Button variant="ghost" onClick={() => {
+            setResourceToDelete(null);
+            setResourcesToDelete(null);
+          }} disabled={isDeleting}>
             Cancel
           </Button>
           <Button 
@@ -155,7 +191,7 @@ export function ResourceListView({
             {isDeleting && (
                <div className="h-4 w-4 animate-spin rounded-full border-2 border-destructive-foreground border-t-transparent mr-2" />
             )}
-            Delete
+            Delete {resourcesToDelete ? `(${resourcesToDelete.length})` : ''}
           </Button>
         </DialogActions>
       </Dialog>
