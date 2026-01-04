@@ -56,7 +56,23 @@ export default function RecruitingApplicationDetail({ applicationId: propAppId, 
   const getCandidateName = (app: RecruitingApplication) => {
       const { answers } = app;
       if (!answers) return 'Unknown Candidate';
-      return answers.fullName || answers.name || answers['Full Name'] || answers['Name'] || 'Unknown Candidate';
+      
+      // 1. Try common full name keys
+      const candidateName = answers.fullName || answers.name || answers['Full Name'] || answers['Name'];
+      if (candidateName) return candidateName;
+
+      // 2. Try joining first and last name
+      const firstName = answers.firstName || answers.firstname || answers['First Name'];
+      const lastName = answers.lastName || answers.lastname || answers['Last Name'];
+      
+      if (firstName || lastName) {
+          return [firstName, lastName].filter(Boolean).join(' ');
+      }
+
+      // 3. Try email as last resort fallback
+      if (answers.email || answers.Email) return answers.email || answers.Email;
+
+      return 'Unknown Candidate';
   };
 
   const name = getCandidateName(application);

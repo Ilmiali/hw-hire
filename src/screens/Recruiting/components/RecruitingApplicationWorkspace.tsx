@@ -2,11 +2,15 @@ import { ChevronRightIcon, ChevronLeftIcon, XMarkIcon } from '@heroicons/react/2
 import { Badge } from '../../../components/badge';
 import { RecruitingAssignSelector } from './RecruitingAssignSelector';
 import { RecruitingApplication } from '../../../types/recruiting';
+import { Avatar } from '../../../components/avatar';
+import { UserIcon } from '@heroicons/react/24/solid';
 import RecruitingApplicationDetail from '../RecruitingApplicationDetail';
 
 interface Tab {
   id: string;
   name: string;
+  subtitle?: string;
+  avatar?: { type: 'text' | 'image'; value: string };
 }
 
 interface RecruitingApplicationWorkspaceProps {
@@ -93,10 +97,10 @@ export function RecruitingApplicationWorkspace({
         <div className="sticky top-0 z-10 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
           <div className="px-4 py-3">
             <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => onExpandChange(!isExpanded)}
-                  className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
                   aria-label={isExpanded ? "Collapse view" : "Expand view"}
                 >
                   {isExpanded ? (
@@ -105,11 +109,36 @@ export function RecruitingApplicationWorkspace({
                     <ChevronLeftIcon className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
                   )}
                 </button>
-                <div>
-                  <h1 className="text-lg font-semibold text-zinc-900 dark:text-white truncate text-ellipsis overflow-hidden whitespace-nowrap">
-                    {/* Access name from answers or compute it. Assuming currentApplication has helper or data */}
-                    {currentApplication.answers?.fullName || currentApplication.answers?.name || 'Candidate'}
-                  </h1>
+
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-3">
+                    {(() => {
+                        const activeTab = openTabs.find(t => t.id === activeTabId);
+                        if (activeTab?.avatar?.type === 'image' && activeTab.avatar.value) {
+                            return <img src={activeTab.avatar.value} alt="" className="size-10 rounded-full object-cover bg-zinc-100 shrink-0" />;
+                        } else if (activeTab?.avatar?.type === 'image') {
+                            return (
+                                <div className="size-10 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden shrink-0">
+                                    <UserIcon className="size-6 text-zinc-400" />
+                                </div>
+                            );
+                        } else {
+                            return <div className="flex items-baseline shrink-0"><Avatar initials={activeTab?.avatar?.value || activeTab?.name?.charAt(0) || '?'} className="size-10" /></div>;
+                        }
+                    })()}
+
+                    <div className="min-w-0">
+                      <h1 className="text-lg font-semibold text-zinc-900 dark:text-white truncate">
+                        {openTabs.find(t => t.id === activeTabId)?.name || 'Candidate'}
+                      </h1>
+                      {openTabs.find(t => t.id === activeTabId)?.subtitle && (
+                        <div className="text-sm text-zinc-500 dark:text-zinc-400 -mt-1 truncate">
+                            {openTabs.find(t => t.id === activeTabId)?.subtitle}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-2 mt-1">
                     <Badge color={getBadgeColor(currentApplication.currentStageId)} className="text-sm">
                       {currentApplication.currentStageId || 'New'}

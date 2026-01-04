@@ -161,8 +161,23 @@ export default function RecruitingJobDetail() {
   const getCandidateName = (app: RecruitingApplication) => {
       const { answers } = app;
       if (!answers) return 'Unknown Candidate';
-      // Try common keys
-      return answers.fullName || answers.name || answers['Full Name'] || answers['Name'] || 'Unknown Candidate';
+      
+      // 1. Try common full name keys
+      const candidateName = answers.fullName || answers.name || answers['Full Name'] || answers['Name'];
+      if (candidateName) return candidateName;
+
+      // 2. Try joining first and last name
+      const firstName = answers.firstName || answers.firstname || answers['First Name'];
+      const lastName = answers.lastName || answers.lastname || answers['Last Name'];
+      
+      if (firstName || lastName) {
+          return [firstName, lastName].filter(Boolean).join(' ');
+      }
+
+      // 3. Try email as last resort fallback
+      if (answers.email || answers.Email) return answers.email || answers.Email;
+
+      return 'Unknown Candidate';
   };
 
   const getFieldValue = (app: RecruitingApplication, fieldId?: string) => {
@@ -381,7 +396,37 @@ export default function RecruitingJobDetail() {
                     currentApplication={currentApp}
                     openTabs={openTabIds.map(id => {
                         const app = applications.find(a => a.id === id);
-                        return { id, name: app ? getCandidateName(app) : 'Loading...' };
+                        if (!app) return { id, name: 'Loading...' };
+
+                        const config = (job as any).applicationCardConfig;
+                        
+                        // Headline
+                        let headline = getFormattedFieldValue(getFieldValue(app, config?.headlineFieldId));
+                        if (!headline) headline = getCandidateName(app); // Fallback
+
+                        // Subtitle
+                        let subtitle = getFormattedFieldValue(getFieldValue(app, config?.subtitleFieldId));
+                        if (!subtitle) subtitle = app.jobPostingId || 'Candidate'; // Fallback
+
+                        // Avatar
+                        const avatarFieldId = config?.avatarFieldId;
+                        const avatarField = formFields.find(f => f.id === avatarFieldId);
+                        const avatarVal = getFieldValue(app, avatarFieldId);
+                        
+                        let avatar: { type: 'text' | 'image'; value: string } | undefined;
+                        
+                        if (avatarField && (avatarField.type === 'file' || avatarField.type === 'image')) {
+                             if (avatarVal) avatar = { type: 'image', value: avatarVal };
+                        } else if (avatarVal) {
+                             avatar = { type: 'text', value: String(avatarVal).charAt(0) };
+                        }
+
+                        return { 
+                            id, 
+                            name: headline,
+                            subtitle,
+                            avatar
+                        };
                     })}
                     activeTabId={applicationId}
                     isExpanded={isExpanded}
