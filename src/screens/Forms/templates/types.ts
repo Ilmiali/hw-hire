@@ -1,6 +1,7 @@
 export interface FormTemplate {
   id: string;
   name: string;
+  type: import('../../../types/forms').FormType;
   description: string;
   icon: React.ReactNode;
   tags: string[];

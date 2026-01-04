@@ -35,9 +35,10 @@ export default function FormsList() {
         orgId, 
         moduleId: 'hire', 
         resourceType: 'forms',
-        data: { 
+        data: {
           name: template.name === 'Blank Form' ? 'New Form' : template.name,
-          description: template.description 
+          description: template.description,
+          formType: template.type
         },
         initialDraftData: initialDraftGenerator
       })).unwrap();

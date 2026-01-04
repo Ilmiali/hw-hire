@@ -5,6 +5,7 @@ export const templates: FormTemplate[] = [
   {
     id: 'blank',
     name: 'Blank Form',
+    type: 'application',
     description: 'Start from scratch with an empty form.',
     icon: <DocumentPlusIcon className="w-6 h-6" />,
     tags: ['Basic'],
@@ -16,6 +17,7 @@ export const templates: FormTemplate[] = [
   {
     id: 'contact',
     name: 'Contact Us',
+    type: 'questionnaire',
     description: 'A simple contact form with name, email, and message fields.',
     icon: <ChatBubbleBottomCenterTextIcon className="w-6 h-6" />,
     tags: ['Business', 'Simple'],
@@ -74,6 +76,7 @@ export const templates: FormTemplate[] = [
   {
     id: 'feedback',
     name: 'Feedback Survey',
+    type: 'feedback',
     description: 'Collect user feedback with rating and comment fields.',
     icon: <ClipboardDocumentCheckIcon className="w-6 h-6" />,
     tags: ['Survey'],
@@ -125,6 +128,7 @@ export const templates: FormTemplate[] = [
   {
     id: 'job-application',
     name: 'Job Application',
+    type: 'application',
     description: 'Standard job application form with resume upload.',
     icon: <UserGroupIcon className="w-6 h-6" />,
     tags: ['HR', 'Hiring'],
@@ -143,14 +147,23 @@ export const templates: FormTemplate[] = [
                   {
                     id: 'f-1',
                     type: 'text',
-                    label: 'Full Name',
-                    required: true
+                    label: 'First Name',
+                    required: true,
+                    attributeName: 'firstName'
+                  },
+                  {
+                    id: 'f-1a',
+                    type: 'text',
+                    label: 'Last Name',
+                    required: true,
+                    attributeName: 'lastName'
                   },
                   {
                     id: 'f-2',
                     type: 'email',
                     label: 'Email',
-                    required: true
+                    required: true,
+                    attributeName: 'email'
                   }
                 ]
               },
@@ -162,7 +175,8 @@ export const templates: FormTemplate[] = [
                     type: 'file',
                     label: 'Resume/CV',
                     required: true,
-                    multiple: false
+                    multiple: false,
+                    attributeName: 'resume'
                   }
                 ]
               },
@@ -174,6 +188,7 @@ export const templates: FormTemplate[] = [
                     type: 'text',
                     label: 'LinkedIn Profile',
                     required: false,
+                    attributeName: 'linkedin',
                     placeholder: 'https://linkedin.com/in/...'
                   }
                 ]
@@ -188,6 +203,7 @@ export const templates: FormTemplate[] = [
   {
     id: 'job-application-full',
     name: 'Advanced Job Application',
+    type: 'application',
     description: 'Comprehensive application with experience, education, and screening questions.',
     icon: <BriefcaseIcon className="w-6 h-6" />,
     tags: ['HR', 'Hiring', 'Multi-page'],
@@ -204,15 +220,15 @@ export const templates: FormTemplate[] = [
                 {
                   id: 'row-1',
                   fields: [
-                    { id: 'f-1', type: 'text', label: 'First Name', required: true, width: 'basis-1/2' },
-                    { id: 'f-2', type: 'text', label: 'Last Name', required: true, width: 'basis-1/2' }
+                    { id: 'f-1', type: 'text', label: 'First Name', required: true, attributeName: 'firstName', width: 'basis-1/2' },
+                    { id: 'f-2', type: 'text', label: 'Last Name', required: true, attributeName: 'lastName', width: 'basis-1/2' }
                   ]
                 },
                 {
                   id: 'row-2',
                   fields: [
-                    { id: 'f-3', type: 'email', label: 'Email Address', required: true, width: 'basis-1/2' },
-                    { id: 'f-4', type: 'text', label: 'Phone Number', required: true, width: 'basis-1/2' }
+                    { id: 'f-3', type: 'email', label: 'Email Address', required: true, attributeName: 'email', width: 'basis-1/2' },
+                    { id: 'f-4', type: 'text', label: 'Phone Number', required: true, attributeName: 'phone', width: 'basis-1/2' }
                   ]
                 },
                 {
@@ -237,8 +253,8 @@ export const templates: FormTemplate[] = [
                 {
                   id: 'row-4',
                   fields: [
-                    { id: 'f-7', type: 'file', label: 'Resume / CV', required: true },
-                    { id: 'f-8', type: 'file', label: 'Cover Letter', required: false }
+                    { id: 'f-7', type: 'file', label: 'Resume / CV', required: true, attributeName: 'resume' },
+                    { id: 'f-8', type: 'file', label: 'Cover Letter', required: false, attributeName: 'coverLetter' }
                   ]
                 }
               ]
@@ -277,8 +293,8 @@ export const templates: FormTemplate[] = [
                 {
                   id: 'row-6',
                   fields: [
-                    { id: 'f-10', type: 'date', label: 'Earliest Start Date', required: true },
-                    { id: 'f-11', type: 'text', label: 'Desired Salary', required: false }
+                    { id: 'f-10', type: 'date', label: 'Earliest Start Date', required: true, attributeName: 'startDate' },
+                    { id: 'f-11', type: 'text', label: 'Desired Salary', required: false, attributeName: 'desiredSalary' }
                   ]
                 },
                 {
@@ -298,6 +314,7 @@ export const templates: FormTemplate[] = [
   {
     id: 'interview-questionnaire',
     name: 'Interview Pre-Screen',
+    type: 'questionnaire',
     description: 'Collect preliminary information from candidates before scheduling.',
     icon: <DocumentTextIcon className="w-6 h-6" />,
     tags: ['HR', 'Recruiting', 'Multi-page'],
@@ -375,6 +392,7 @@ export const templates: FormTemplate[] = [
   {
     id: 'general-questionnaire',
     name: 'General Questionnaire',
+    type: 'questionnaire',
     description: 'A structural survey for deep data collection.',
     icon: <ChatBubbleBottomCenterTextIcon className="w-6 h-6" />,
     tags: ['Survey', 'Research', 'Multi-page'],
@@ -455,6 +473,7 @@ export const templates: FormTemplate[] = [
   {
     id: 'skill-assessment',
     name: 'Skill Assessment',
+    type: 'assessment',
     description: 'Evaluate technical or general skills with a multi-part quiz.',
     icon: <AcademicCapIcon className="w-6 h-6" />,
     tags: ['Education', 'HR', 'Exam'],

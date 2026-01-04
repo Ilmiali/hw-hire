@@ -3,15 +3,21 @@ import { Switch } from '../../../components/switch';
 import { Textarea } from '../../../components/textarea';
 import { ValidationPanel } from './fields/ValidationPanel';
 
+import { PREDEFINED_ATTRIBUTES } from '../../../constants/formConstants';
+import { FormSchema } from '../../../types/form-builder';
+import { toast } from 'react-toastify';
+import { Combobox } from '../../../components/ui/combobox';
+
 interface PropertiesPanelProps {
     selectedElement: { type: 'field' | 'section' | 'page' | 'form', data: any } | null;
+    form: FormSchema;
     onUpdate: (updates: any) => void;
     onDelete?: () => void;
     onClose: () => void;
     hideHeader?: boolean;
 }
 
-const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose, hideHeader = false }: PropertiesPanelProps) => {
+const PropertiesPanel = ({ selectedElement, form, onUpdate, onDelete, onClose, hideHeader = false }: PropertiesPanelProps) => {
     if (!selectedElement) {
         return (
             <div className="p-4 text-center text-zinc-500 dark:text-zinc-400 mt-20">
@@ -51,6 +57,60 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onClose, hideHea
                     <div>
                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Placeholder</label>
                         <Input value={data.placeholder || ''} onChange={(e) => onUpdate({ placeholder: e.target.value })} />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Attribute Name (Save Key)</label>
+                        <Combobox
+                             options={PREDEFINED_ATTRIBUTES.filter(attr => attr.types.includes(data.type))}
+                             value={data.attributeName || ''}
+                             onChange={(value: string) => {
+                                 // Uniqueness Check
+                                 const isUsed = form.pages.some(p => 
+                                     p.sections.some(s => 
+                                         s.rows.some(r => 
+                                             r.fields.some(f => 
+                                                 f.attributeName === value && f.id !== data.id
+                                             )
+                                         )
+                                     )
+                                 );
+
+                                 if (isUsed) {
+                                     toast.error(`Attribute name '${value}' is already used in this form.`);
+                                     return; 
+                                 }
+                                 onUpdate({ attributeName: value });
+                             }}
+                             onCreate={(value: string) => {
+                                 // Convert to camelCase and strip non-alphanumeric
+                                 const camelValue = value
+                                     .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Strip diacritics (ä -> a)
+                                     .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+                                     .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => 
+                                         index === 0 ? word.toLowerCase() : word.toUpperCase()
+                                     )
+                                     .replace(/\s+/g, '');
+
+                                 const isUsed = form.pages.some(p => 
+                                     p.sections.some(s => 
+                                         s.rows.some(r => 
+                                             r.fields.some(f => 
+                                                 f.attributeName === camelValue && f.id !== data.id
+                                             )
+                                         )
+                                     )
+                                 );
+
+                                 if (isUsed) {
+                                     toast.error(`Attribute name '${camelValue}' is already used in this form.`);
+                                     return;
+                                 }
+                                 onUpdate({ attributeName: camelValue });
+                             }}
+                             placeholder="Select or type attribute..."
+                        />
+                        <p className="text-xs text-zinc-500 mt-1">Unique key for saving answers. Leave empty to auto-generate.</p>
                     </div>
 
                     {!['paragraph', 'divider', 'spacer', 'image'].includes(data.type) && (

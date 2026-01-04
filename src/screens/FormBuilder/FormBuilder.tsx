@@ -2,6 +2,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from 'zustand';
 import { useFormBuilderStore } from '../../store/formBuilderStore';
 import { FormField } from '../../types/form-builder';
+import { Form } from '../../types/forms';
+import { validateFormStructure } from '../../utils/formValidation';
 import { LeftSidebar } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
@@ -111,6 +113,24 @@ const FormBuilder = () => {
 
     const handleSave = async () => {
         if (!orgId || !formId) return;
+
+        // Validation
+        const formType = (currentForm as unknown as Form)?.formType;
+        if (formType) {
+             const validation = validateFormStructure(form, formType);
+             if (!validation.valid) {
+                 toast.error(
+                     <div>
+                         <p className="font-semibold">Validation Errors:</p>
+                         <ul className="list-disc pl-4 text-sm mt-1">
+                             {validation.errors.map(e => <li key={e}>{e}</li>)}
+                         </ul>
+                     </div>
+                 );
+                 return;
+             }
+        }
+
         setIsSaving(true);
         try {
             // Ensure title is up to date in the form object before saving
@@ -134,6 +154,24 @@ const FormBuilder = () => {
 
     const handlePublish = async () => {
         if (!orgId || !formId) return;
+
+        // Validation
+        const formType = (currentForm as unknown as Form)?.formType;
+        if (formType) {
+             const validation = validateFormStructure(form, formType);
+             if (!validation.valid) {
+                 toast.error(
+                     <div>
+                         <p className="font-semibold">Validation Errors:</p>
+                         <ul className="list-disc pl-4 text-sm mt-1">
+                             {validation.errors.map(e => <li key={e}>{e}</li>)}
+                         </ul>
+                     </div>
+                 );
+                 return;
+             }
+        }
+
         setIsPublishing(true);
         try {
             await dispatch(saveResourceDraft({ 
@@ -394,6 +432,7 @@ const FormBuilder = () => {
                     <div className="w-80 shrink-0 border-l border-zinc-200 dark:border-white/10">
                         <PropertiesPanel 
                             selectedElement={selectedElement} 
+                            form={form}
                             onUpdate={(updates: any) => {
                                 if (selectedElement?.type === 'field') updateField(selectedElementId!, updates);
                                 if (selectedElement?.type === 'section') updateSection(selectedElementId!, updates);

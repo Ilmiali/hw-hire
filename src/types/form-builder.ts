@@ -25,6 +25,7 @@ export interface FormField {
   altText?: string;
   width?: string;
   height?: string;
+  attributeName?: string;
   objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
   fields?: FormField[]; // For repeat fields
 }

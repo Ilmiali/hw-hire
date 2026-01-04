@@ -166,7 +166,7 @@ export const createResource = createAsyncThunk(
         orgId: string; 
         moduleId: string; 
         resourceType: string; 
-        data: Partial<Resource>;
+        data: Partial<Resource> & Record<string, any>;
         initialDraftData: any;
     }, { rejectWithValue, getState }) => {
         try {
