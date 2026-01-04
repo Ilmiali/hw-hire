@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDatabaseService } from '../../services/databaseService';
 import { PublicPosting } from '../../types/posting';
-import { Button } from '../../components/button';
-import { BriefcaseIcon, MapPinIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 import { toast } from 'react-toastify';
-import { FormRenderer } from '../FormBuilder/components/FormRenderer';
 import { useApplicationDraft } from '../../hooks/useApplicationDraft';
-import { ArrowPathIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
-import { formatDistanceToNow } from 'date-fns';
+import { buildZodSchema } from '../../utils/validation';
+import { evaluateRules } from '../../utils/evaluateRules';
+import { FormField } from '../../types/form-builder';
+import { z } from 'zod';
 
+import { ApplyLayout } from './Apply/ApplyLayout';
+import { ApplyProgress } from './Apply/ApplyProgress';
+import { ApplyStep } from './Apply/ApplyStep';
+import { ApplyFooterActions } from './Apply/ApplyFooterActions';
+import { SuccessScreen } from './Apply/SuccessScreen';
 
 export default function PublicApplyPage() {
     const { publicPostingId } = useParams<{ publicPostingId: string }>();
@@ -17,10 +21,9 @@ export default function PublicApplyPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    
+    const [errors, setErrors] = useState<Record<string, string>>({});
     
     // Application Form State
-    // We'll extract name and email from form values if they exist
     const { 
         answers, 
         setAnswers, 
@@ -28,10 +31,10 @@ export default function PublicApplyPage() {
         setStepIndex,
         isSaving,
         lastSavedAt,
-        clearDraft,
-        hasSavedDraft 
+        clearDraft
     } = useApplicationDraft(publicPostingId);
 
+    // Initial Load
     useEffect(() => {
         const loadPosting = async () => {
             if (!publicPostingId) return;
@@ -39,7 +42,6 @@ export default function PublicApplyPage() {
                 const db = getDatabaseService();
                 const doc = await db.getDocument('public_postings', publicPostingId);
                 if (doc) {
-                    // Check if closed or expired
                     const data = doc as unknown as PublicPosting;
                     if (data.status === 'closed') {
                          toast.error("This job posting is closed.");
@@ -65,28 +67,127 @@ export default function PublicApplyPage() {
         loadPosting();
     }, [publicPostingId]);
 
-    const handleFormSuccess = async (values: any) => {
-        if (!posting || !publicPostingId) return;
+    // Validation Logic
+    const schema = posting?.form.schemaSnapshot;
+    
+    const allFields = useMemo(() => {
+        if (!schema) return [];
+        const fields: FormField[] = [];
+        schema.pages.forEach(page => {
+            page.sections.forEach(section => {
+                section.rows.forEach(row => {
+                    row.fields.forEach(field => {
+                        fields.push(field);
+                    });
+                });
+            });
+        });
+        return fields;
+    }, [schema]);
 
-        // Guard: Prevent premature submission if not on last page
-        const isLastPage = stepIndex === posting.form.schemaSnapshot.pages.length - 1;
-        if (!isLastPage) {
-            console.warn("Prevented premature submission on step", stepIndex);
+    const { visibleFieldIds, requiredFieldIds } = useMemo(() => {
+        if (!schema) return { visibleFieldIds: new Set<string>(), requiredFieldIds: new Set<string>() };
+        return evaluateRules(schema.rules || [], answers, allFields);
+    }, [schema, answers, allFields]);
+
+    const zodSchema = useMemo(() => {
+        return buildZodSchema(allFields, requiredFieldIds, visibleFieldIds);
+    }, [allFields, requiredFieldIds, visibleFieldIds]);
+
+    const validateStep = (targetIndex: number) => {
+        if (!schema) return false;
+        
+        // Define fields strictly on the current page
+        const currentPage = schema.pages[targetIndex];
+        const pageFieldIds = new Set<string>();
+        currentPage.sections.forEach(s => s.rows.forEach(r => r.fields.forEach(f => pageFieldIds.add(f.id))));
+
+        let isValid = true;
+        const newErrors: Record<string, string> = {};
+
+        // Only validate fields on this page that are visible
+        pageFieldIds.forEach(fieldId => {
+            if (!visibleFieldIds.has(fieldId)) return;
+            
+            try {
+                const fieldSchema = zodSchema.shape[fieldId];
+                if (fieldSchema) {
+                    fieldSchema.parse(answers[fieldId]);
+                }
+            } catch (e) {
+                if (e instanceof z.ZodError) {
+                    newErrors[fieldId] = (e as any).issues?.[0]?.message || (e as any).errors?.[0]?.message || 'Invalid value';
+                    isValid = false;
+                }
+            }
+        });
+
+        if (!isValid) {
+            setErrors(prev => ({ ...prev, ...newErrors }));
+            
+            // Scroll to first error
+            const firstErrorId = Object.keys(newErrors)[0];
+            // Simple heuristic to scroll to top if error exists
+            if (firstErrorId) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        } else {
+            // Clear errors for fields on this page
+            setErrors(prev => {
+                const next = { ...prev };
+                pageFieldIds.forEach(id => delete next[id]);
+                return next;
+            });
+        }
+
+        return isValid;
+    };
+
+
+    const handleNext = () => {
+        if (!validateStep(stepIndex)) {
+            toast.error('Please fix the errors before proceeding.');
             return;
         }
+
+        if (schema && stepIndex < schema.pages.length - 1) {
+            setStepIndex(stepIndex + 1);
+            window.scrollTo(0, 0);
+        }
+    };
+
+    const handleBack = () => {
+        if (stepIndex > 0) {
+            setStepIndex(stepIndex - 1);
+            window.scrollTo(0, 0);
+        }
+    };
+
+    const handleChange = (fieldId: string, value: any) => {
+        setAnswers({ ...answers, [fieldId]: value });
+        
+        // Clear error immediately on change
+        if (errors[fieldId]) {
+            setErrors(prev => {
+                const next = { ...prev };
+                delete next[fieldId];
+                return next;
+            });
+        }
+    };
+
+    const handleFormSuccess = async () => {
+        // Final full validation
+        if (!validateStep(stepIndex)) return;
+        if (!posting || !publicPostingId || submitting) return;
 
         setSubmitting(true);
         try {
             const db = getDatabaseService();
             
-            // Helper to sanitize values for Firestore (remove File objects)
+            // Sanitize values (reuse logic or similar)
             const sanitizeForFirestore = (val: any): any => {
                 if (val instanceof File) {
-                    // Firestore cannot store File objects. 
-                    // ideally we'd upload this and store the URL, but for now we fallback to metadata
-                    // or null to prevent crash. 
-                    // User requested not to save file persistence, but that was for Drafts.
-                    // For submission, we really should upload, but stripping prevents the crash.
                     return {
                         _type: 'file',
                         name: val.name,
@@ -107,10 +208,10 @@ export default function PublicApplyPage() {
                 return val;
             };
 
-            const sanitizedValues = sanitizeForFirestore(values);
+            const sanitizedValues = sanitizeForFirestore(answers);
 
-            // Construct Application object
-            const application = {
+             // Construct Application object
+             const application = {
                 orgId: posting.orgId,
                 moduleId: 'hire',
                 jobId: posting.jobId,
@@ -128,9 +229,9 @@ export default function PublicApplyPage() {
                 currentStageId: posting.pipeline.firstStageId,
                 stageUpdatedAt: new Date().toISOString(),
                 
-                // Try to find name and email in the values
-                applicantName: values.name || values.fullName || values.applicantName || '',
-                applicantEmail: values.email || values.emailAddress || values.applicantEmail || '',
+                // Heuristic for name/email
+                applicantName: answers.name || answers.fullName || answers.applicantName || 'Applicant',
+                applicantEmail: answers.email || answers.emailAddress || answers.applicantEmail || '',
                 answers: sanitizedValues,
                 
                 createdAt: new Date().toISOString(),
@@ -143,10 +244,8 @@ export default function PublicApplyPage() {
             );
 
             setSubmitted(true);
-            toast.success("Application submitted successfully!");
-            clearDraft(); // Clear draft on success
-
-
+            clearDraft();
+            window.scrollTo(0, 0);
         } catch (error) {
             console.error(error);
             toast.error("Failed to submit application. Please try again.");
@@ -157,116 +256,76 @@ export default function PublicApplyPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+            <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center">
                 <div className="animate-pulse flex flex-col items-center gap-4">
-                    <div className="h-8 w-64 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
-                    <div className="h-4 w-48 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+                    <div className="h-8 w-64 bg-zinc-200 rounded"></div>
                 </div>
             </div>
         );
     }
 
-    if (!posting) {
+    if (!posting || !schema) {
         return (
-            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-500 dark:text-zinc-400">
-                Job posting not found or unavailable.
+            <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center text-zinc-500">
+                Job posting not found.
             </div>
         );
     }
 
     if (submitted) {
-        return (
-            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-zinc-900 p-8 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 max-w-md text-center">
-                    <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                    <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Application Received!</h2>
-                    <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-                        Thanks for applying to <strong>{posting.jobPublic.title}</strong>. We've received your details and will be in touch soon.
-                    </p>
-                    <Button href="/" outline className="dark:border-zinc-700 dark:text-zinc-300">Back to Home</Button>
-                </div>
-            </div>
-        );
+        return <SuccessScreen jobTitle={posting.jobPublic.title} />;
     }
 
+    const currentPage = schema.pages[stepIndex];
+    const isFirstStep = stepIndex === 0;
+    const isLastStep = stepIndex === schema.pages.length - 1;
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans">
-            <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-                
-                {/* Header */}
-                <div className="bg-white dark:bg-zinc-900 rounded-t-2xl border border-zinc-200 dark:border-zinc-800 p-8 pb-12 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                    <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight mb-4">{posting.jobPublic.title}</h1>
-                    <div className="flex flex-wrap gap-4 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-                        <span className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-100 dark:border-zinc-700">
-                            <MapPinIcon className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
-                            {posting.jobPublic.location}
-                        </span>
-                        <span className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-100 dark:border-zinc-700">
-                            <BriefcaseIcon className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
-                            {posting.jobPublic.employmentType}
-                        </span>
-                    </div>
-                    
-                    <div className="mt-8 prose prose-zinc dark:prose-invert max-w-none">
-                         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">About the Role</h3>
-                         <p className="whitespace-pre-wrap text-zinc-600 dark:text-zinc-400 leading-relaxed">{posting.jobPublic.description}</p>
-                    </div>
-                </div>
-
-                {/* Application Form */}
-                <div className="bg-white dark:bg-zinc-900 rounded-b-2xl border-x border-b border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                    <div className="p-8 pb-0">
-                        <div className="flex items-center justify-between mb-2">
-                             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Apply for this position</h2>
-                             {hasSavedDraft && (
-                                 <div className="flex items-center gap-4 text-xs">
-                                     <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
-                                         {isSaving ? (
-                                             <>
-                                                <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
-                                                <span>Saving...</span>
-                                             </>
-                                         ) : (
-                                             <>
-                                                <CloudArrowUpIcon className="w-3.5 h-3.5" />
-                                                <span>Saved {lastSavedAt ? formatDistanceToNow(lastSavedAt, { addSuffix: true }) : ''}</span>
-                                             </>
-                                         )}
-                                     </div>
-                                     <button 
-                                         onClick={() => {
-                                             if (window.confirm("Are you sure you want to start over? This will clear your current progress.")) {
-                                                 clearDraft();
-                                                 window.location.reload(); 
-                                             }
-                                         }}
-                                         className="text-red-500 hover:text-red-600 underline decoration-red-500/30 font-medium"
-                                     >
-                                         Start over
-                                     </button>
-                                 </div>
-                             )}
+        <ApplyLayout>
+            <div className="mb-8">
+                <div className="flex items-center gap-3 mb-6">
+                    {posting.orgName && (
+                        <div className="font-bold text-zinc-900 dark:text-zinc-100 text-lg">
+                            {posting.orgName}
                         </div>
-                    </div>
-                    
-                    <FormRenderer 
-                        schema={posting.form.schemaSnapshot} 
-                        onSuccess={handleFormSuccess}
-                        submitting={submitting}
-                        embedded
-                        values={answers}
-                        onValuesChange={setAnswers}
-                        pageIndex={stepIndex}
-                        onPageChange={setStepIndex}
-                    />
+                    )}
                 </div>
-
-                <div className="mt-8 text-center text-xs text-zinc-400">
-                    <p>Powered by HW Hire</p>
+                
+                {/* Job Header */}
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight mb-2">
+                    {posting.jobPublic.title}
+                </h1>
+                <div className="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                    <span>{posting.jobPublic.location}</span>
+                    <span>&bull;</span>
+                    <span>{posting.jobPublic.employmentType}</span>
                 </div>
             </div>
-        </div>
+
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 p-6 sm:p-8 md:p-10 mb-8 transition-colors">
+                <div className="mb-8">
+                    <ApplyProgress currentStep={stepIndex} totalSteps={schema.pages.length} />
+                </div>
+                
+                <ApplyStep 
+                    page={currentPage}
+                    values={answers}
+                    onChange={handleChange}
+                    errors={errors}
+                    visibleFieldIds={visibleFieldIds}
+                    requiredFieldIds={requiredFieldIds}
+                />
+
+                <ApplyFooterActions 
+                    onNext={isLastStep ? handleFormSuccess : handleNext}
+                    onBack={handleBack}
+                    isFirstStep={isFirstStep}
+                    isLastStep={isLastStep}
+                    submitting={submitting}
+                    isSaving={isSaving}
+                    lastSavedAt={lastSavedAt}
+                />
+            </div>
+        </ApplyLayout>
     );
 }
