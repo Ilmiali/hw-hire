@@ -10,6 +10,7 @@ import {
   QueueListIcon,
   BriefcaseIcon,
   DocumentIcon,
+  UserGroupIcon,
 } from '@heroicons/react/16/solid';
 import Dashboard from '../screens/Dashboard';
 import Profile from '../screens/Profile';
@@ -25,6 +26,9 @@ import JobDetailPage from '../screens/Jobs/JobDetailPage';
 import FormsList from '../screens/Forms/FormsList';
 import { RouteConfig, RouteGroup } from '../types/routes';
 import PublicApplyPage from '../screens/Public/PublicApplyPage';
+import RecruitingJobsList from '../screens/Recruiting/RecruitingJobsList';
+import RecruitingJobDetail from '../screens/Recruiting/RecruitingJobDetail';
+import RecruitingApplicationDetail from '../screens/Recruiting/RecruitingApplicationDetail';
 
 
 // Public routes (no authentication required)
@@ -49,6 +53,22 @@ export const publicRoutes: RouteConfig[] = [
 
 // Additional routes that shouldn't appear in the sidebar
 export const additionalRoutes: RouteConfig[] = [
+  {
+    path: '/orgs/:orgId/recruiting/:jobId',
+    name: 'Recruiting Job Details',
+    icon: BriefcaseIcon,
+    component: RecruitingJobDetail,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
+    path: '/orgs/:orgId/recruiting/applications/:applicationId',
+    name: 'Applicant Details',
+    icon: UserGroupIcon,
+    component: RecruitingApplicationDetail,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
   {
     path: '/orgs/:orgId/applications/:id',
     name: 'Application Details',
@@ -169,6 +189,14 @@ export const mainRoutes: RouteGroup[] = [
         name: 'Jobs',
         icon: BriefcaseIcon,
         component: JobsListPage,
+        layout: 'authenticated',
+        isAuthProtected: true,
+      },
+      {
+        path: '/orgs/:orgId/recruiting',
+        name: 'Recruiting',
+        icon: UserGroupIcon,
+        component: RecruitingJobsList,
         layout: 'authenticated',
         isAuthProtected: true,
       },

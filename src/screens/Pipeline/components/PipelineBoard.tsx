@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -15,7 +15,6 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
@@ -29,35 +28,21 @@ import { Avatar } from '../../../components/avatar';
 import { Badge } from '../../../components/badge';
 
 // Types for the board
-interface MockApplication {
+export interface BoardApplication {
   id: string;
   name: string;
   role: string;
   stageId: string;
+  source?: string;
+  createdAt: string;
 }
 
-// Generate some mock applications
-const generateMockApplications = (stages: PipelineStage[]): MockApplication[] => {
-  if (stages.length === 0) return [];
-  const apps: MockApplication[] = [];
-  const roles = ['Frontend Engineer', 'Product Manager', 'Designer', 'Backend Dev'];
-  const names = ['Alice Smith', 'Bob Jones', 'Charlie Day', 'Diana Prince', 'Evan Wright'];
 
-  for (let i = 0; i < 10; i++) {
-    // Distribute randomly, mostly in earlier stages
-    const stageIndex = Math.floor(Math.random() * Math.min(stages.length, 3));
-    apps.push({
-      id: `app-${i}`,
-      name: names[i % names.length],
-      role: roles[i % roles.length],
-      stageId: stages[stageIndex]?.id || stages[0].id
-    });
-  }
-  return apps;
-};
+
 
 // -- Draggable Application Card --
-function ApplicationCard({ app, isOverlay }: { app: MockApplication; isOverlay?: boolean }) {
+function ApplicationCard({ app, isOverlay }: { app: BoardApplication; isOverlay?: boolean }) {
+
   const {
     setNodeRef,
     attributes,
@@ -112,7 +97,7 @@ function ApplicationCard({ app, isOverlay }: { app: MockApplication; isOverlay?:
 }
 
 // -- Column --
-function StageColumn({ stage, applications }: { stage: PipelineStage; applications: MockApplication[] }) {
+function StageColumn({ stage, applications, onAppClick }: { stage: PipelineStage; applications: BoardApplication[], onAppClick?: (appId: string) => void }) {
   const { setNodeRef } = useSortable({
     id: stage.id,
     data: {
@@ -135,7 +120,9 @@ function StageColumn({ stage, applications }: { stage: PipelineStage; applicatio
         <SortableContext items={applications.map(a => a.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2 min-h-[100px]">
             {applications.map((app) => (
-              <ApplicationCard key={app.id} app={app} />
+              <div key={app.id} onClick={() => onAppClick?.(app.id)}>
+                 <ApplicationCard app={app} />
+              </div>
             ))}
           </div>
         </SortableContext>
@@ -146,18 +133,27 @@ function StageColumn({ stage, applications }: { stage: PipelineStage; applicatio
 
 interface PipelineBoardProps {
   stages: PipelineStage[];
+  applications?: BoardApplication[]; // Controlled applications
+  onApplicationMove?: (appId: string, newStageId: string) => void;
+  onApplicationClick?: (appId: string) => void;
   name?: string;
   onBack?: () => void;
+  readOnly?: boolean;
 }
 
-export default function PipelineBoard({ stages, name, onBack }: PipelineBoardProps) {
-  const [applications, setApplications] = useState<MockApplication[]>([]);
-  const [activeDragItem, setActiveDragItem] = useState<MockApplication | null>(null);
+export default function PipelineBoard({ 
+    stages, 
+    applications = [], 
+    onApplicationMove, 
+    onApplicationClick,
+    name, 
+    onBack,
+    readOnly = false 
+}: PipelineBoardProps) {
+  const [activeDragItem, setActiveDragItem] = useState<BoardApplication | null>(null);
 
-  // Init mock apps when stages change
-  useEffect(() => {
-    setApplications(generateMockApplications(stages));
-  }, [stages]);
+  // We rely on parent to pass applications now
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -166,7 +162,7 @@ export default function PipelineBoard({ stages, name, onBack }: PipelineBoardPro
 
   const handleDragStart = (event: DragStartEvent) => {
     if (event.active.data.current?.type === 'Application') {
-      setActiveDragItem(event.active.data.current.app as MockApplication);
+      setActiveDragItem(event.active.data.current.app as BoardApplication);
     }
   };
 
@@ -189,6 +185,7 @@ export default function PipelineBoard({ stages, name, onBack }: PipelineBoardPro
      const { active, over } = event;
 
      if (!over) return;
+     if (readOnly) return; 
 
      const activeId = active.id;
      const overId = over.id;
@@ -210,27 +207,25 @@ export default function PipelineBoard({ stages, name, onBack }: PipelineBoardPro
 
      if (!overStageId) return;
 
+     // If dropped on same stage, do nothing (sorting not fully persisted in backend yet)
+     if (activeApp.stageId === overStageId) {
+         return;
+     }
+
      if (!checkTransitionAllowed(activeApp.stageId, overStageId)) {
         toast.error(`Transition from "${stages.find(s => s.id === activeApp.stageId)?.name}" to "${stages.find(s => s.id === overStageId)?.name}" is not allowed.`);
         return;
      }
 
-     if (activeApp.stageId !== overStageId) {
-        setApplications(apps => apps.map(a => {
-           if (a.id === activeApp.id) return { ...a, stageId: overStageId! };
-           return a;
-        }));
-        
-        const toStage = stages.find(s => s.id === overStageId);
-        if (toStage?.type === 'terminal') {
-          toast.success(`Application moved to ${toStage.name}`);
-        }
-     } else {
-       if (activeId !== overId) {
-          const oldIndex = applications.findIndex(a => a.id === activeId);
-          const newIndex = applications.findIndex(a => a.id === overId);
-          setApplications(arrayMove(applications, oldIndex, newIndex));
-       }
+     // Optimistic update handled by parent or just call callback
+     if (onApplicationMove) {
+         onApplicationMove(activeApp.id, overStageId);
+         
+         // Optional: toast if moving to terminal
+         const toStage = stages.find(s => s.id === overStageId);
+         if (toStage?.type === 'terminal') {
+             // Let parent handle messaging or keep it here
+         }
      }
   };
 
@@ -279,6 +274,7 @@ export default function PipelineBoard({ stages, name, onBack }: PipelineBoardPro
                   key={stage.id} 
                   stage={stage} 
                   applications={applications.filter(a => a.stageId === stage.id)} 
+                  onAppClick={onApplicationClick}
                />
              ))}
            </div>

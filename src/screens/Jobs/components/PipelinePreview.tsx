@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../../store';
 import { fetchResourceById, fetchResourceVersionById } from '../../../store/slices/resourceSlice';
-import PipelineBoard from '../../Pipeline/components/PipelineBoard';
+import PipelineBoard, { BoardApplication } from '../../Pipeline/components/PipelineBoard';
 import { PipelineStage } from '../../../types/pipeline';
 import { Spinner } from '../../../components/ui/spinner';
 
@@ -74,9 +74,27 @@ export const PipelinePreview = ({ orgId, pipelineId, versionId }: PipelinePrevie
             </div>
             <div className="p-4 overflow-x-auto">
                 <div className="min-w-max h-[400px]">
-                    <PipelineBoard stages={stages} />
+                    <PipelineBoard stages={stages} readOnly applications={generateMockApplications(stages)} />
                 </div>
             </div>
         </div>
     );
+};
+export const generateMockApplications = (stages: PipelineStage[]): BoardApplication[] => {
+  if (stages.length === 0) return [];
+  const apps: BoardApplication[] = [];
+  const roles = ['Frontend Engineer', 'Product Manager', 'Designer', 'Backend Dev'];
+  const names = ['Alice Smith', 'Bob Jones', 'Charlie Day', 'Diana Prince', 'Evan Wright'];
+
+  for (let i = 0; i < 5; i++) {
+    const stageIndex = Math.floor(Math.random() * Math.min(stages.length, 3));
+    apps.push({
+      id: `app-${i}`,
+      name: names[i % names.length],
+      role: roles[i % roles.length],
+      stageId: stages[stageIndex]?.id || stages[0].id,
+      createdAt: new Date().toISOString()
+    });
+  }
+  return apps;
 };
