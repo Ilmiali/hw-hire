@@ -20,7 +20,7 @@ import { Skeleton } from '../../components/ui/skeleton';
 
 function JobDetailSkeleton() {
     return (
-        <div className="flex flex-col min-h-screen animate-pulse">
+        <div className="flex flex-col h-full animate-pulse">
             {/* Header Skeleton */}
             <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
                 <div className="px-8 py-8 flex flex-col gap-4 max-w-7xl mx-auto w-full">
@@ -91,6 +91,9 @@ export default function RecruitingJobDetail() {
   
   // Pipeline stages state
   const [stages, setStages] = useState<PipelineStage[]>(DEFAULT_STAGES); // Default fallback
+  
+  // Scroll state for sticky header
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const fetchJob = async () => {
       setLoadingJob(true);
@@ -186,14 +189,18 @@ export default function RecruitingJobDetail() {
         fetchApplications();
     }, [orgId, jobId]);
 
-    useEffect(() => {
-        if (applicationId && !openTabIds.includes(applicationId)) {
-          setOpenTabIds(prev => {
-              if (prev.includes(applicationId)) return prev;
-              return [...prev, applicationId];
-          });
-      }
+  useEffect(() => {
+      if (applicationId && !openTabIds.includes(applicationId)) {
+        setOpenTabIds(prev => {
+            if (prev.includes(applicationId)) return prev;
+            return [...prev, applicationId];
+        });
+    }
   }, [applicationId]);
+
+  useEffect(() => {
+      setIsScrolled(false);
+  }, [!!applicationId]);
 
   const getCandidateName = (app: RecruitingApplication) => {
       const { answers } = app;
@@ -351,63 +358,92 @@ export default function RecruitingJobDetail() {
   }
 
   const MainContent = (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-0 flex-1">
       <div 
-        className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800"
+        className={clsx(
+            "relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800 transition-all duration-200 sticky top-0 z-30",
+            isScrolled && "shadow-sm"
+        )}
         style={{ 
-          background: job.layout?.cover ? job.layout.cover.value : 'transparent',
+          background: job.layout?.cover ? job.layout.cover.value : undefined,
           backgroundImage: job.layout?.cover?.type === 'gradient' 
             ? `linear-gradient(${job.layout.cover.value})` 
-            : undefined
+            : undefined,
+          backgroundColor: !job.layout?.cover ? (isScrolled ? 'var(--background)' : 'transparent') : undefined
         }}
       >
         <div className={clsx(
-          "px-8 py-8 flex flex-col gap-4 max-w-7xl mx-auto w-full",
-          job.layout?.cover ? "text-white" : "text-zinc-900 dark:text-zinc-100"
+             // If no cover and scrolled, ensure we have a background color to prevent transparency issues
+             !job.layout?.cover && isScrolled && "bg-white dark:bg-zinc-900",
+             "transition-all duration-300 w-full"
         )}>
-          <div className="flex items-center gap-4">
-            <Avatar
-              initials={job.layout?.icon?.type === 'emoji' ? job.layout.icon.value : (job.title?.substring(0, 2).toUpperCase() || 'JB')}
-              src={job.layout?.icon?.type === 'image' ? job.layout.icon.value : undefined}
-              className={clsx(
-                "size-12 shadow-sm text-xl",
-                job.layout?.cover ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800"
-              )}
-              variant="square"
-            />
-            <div className="flex flex-col">
-              <Heading className={job.layout?.cover ? "text-white" : ""}>{job.title}</Heading>
-              <div className={clsx(
-                "mt-0.5 flex gap-2 text-sm items-center",
-                job.layout?.cover ? "text-white/80" : "text-zinc-500"
-              )}>
-                <Text className={job.layout?.cover ? "text-white/80" : ""}>{job.location}</Text>
-                <span>•</span>
-                <Text className={job.layout?.cover ? "text-white/80" : ""}>Updated {new Date(job.updatedAt).toLocaleDateString()}</Text>
-                <span>•</span>
-                <Badge color={job.status === 'open' ? 'green' : job.status === 'closed' ? 'red' : 'zinc'}>
-                    {job.status}
-                </Badge>
-              </div>
-
-              <div className="flex gap-2 mt-4">
-                <div className={clsx(
-                  "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium shadow-sm",
-                  job.layout?.cover ? "bg-white/20 text-white backdrop-blur-sm" : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                )}>
-                  <BriefcaseIcon className="size-3.5" />
-                  <span>0 Postings</span>
-                </div>
-                <div className={clsx(
-                  "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium shadow-sm",
-                  job.layout?.cover ? "bg-white/20 text-white backdrop-blur-sm" : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                )}>
-                  <UsersIcon className="size-3.5" />
-                  <span>{applications.length} Applicants</span>
+            <div className={clsx(
+              "flex flex-col mx-auto w-full transition-all duration-300",
+              isScrolled ? "gap-2 px-6 py-3" : "gap-4 px-8 py-8",
+              job.layout?.cover ? "text-white" : "text-zinc-900 dark:text-zinc-100"
+            )}>
+              <div className="flex items-center gap-4">
+                <Avatar
+                  initials={job.layout?.icon?.type === 'emoji' ? job.layout.icon.value : (job.title?.substring(0, 2).toUpperCase() || 'JB')}
+                  src={job.layout?.icon?.type === 'image' ? job.layout.icon.value : undefined}
+                  className={clsx(
+                    "shadow-sm transition-all duration-300",
+                    isScrolled ? "size-8 text-sm" : "size-12 text-xl",
+                    job.layout?.cover ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800"
+                  )}
+                  variant="square"
+                />
+                <div className="flex flex-col justify-center">
+                  <Heading className={clsx(
+                      "transition-all duration-300",
+                      isScrolled ? "text-base" : "text-2xl",
+                      job.layout?.cover ? "text-white" : ""
+                  )}>{job.title}</Heading>
+                  
+                  {/* Metadata - Hide on scroll */}
+                  <div className={clsx(
+                    "overflow-hidden transition-all duration-300",
+                    isScrolled ? "h-0 opacity-0 mt-0" : "h-auto opacity-100 mt-0.5"
+                  )}>
+                    <div className={clsx(
+                        "flex gap-2 text-sm items-center",
+                        job.layout?.cover ? "text-white/80" : "text-zinc-500"
+                    )}>
+                        <Text className={job.layout?.cover ? "text-white/80" : ""}>{job.location}</Text>
+                        <span>•</span>
+                        <Text className={job.layout?.cover ? "text-white/80" : ""}>Updated {new Date(job.updatedAt).toLocaleDateString()}</Text>
+                        <span>•</span>
+                        <Badge color={job.status === 'open' ? 'green' : job.status === 'closed' ? 'red' : 'zinc'}>
+                            {job.status}
+                        </Badge>
+                    </div>
+                  </div>
+    
+                  {/* Stats - Hide on scroll */}
+                  <div className={clsx(
+                    "overflow-hidden transition-all duration-300",
+                    isScrolled ? "h-0 opacity-0 mt-0" : "h-auto opacity-100 mt-4"
+                  )}>
+                      <div className="flex gap-2">
+                        <div className={clsx(
+                          "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium shadow-sm",
+                          job.layout?.cover ? "bg-white/20 text-white backdrop-blur-sm" : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                        )}>
+                          <BriefcaseIcon className="size-3.5" />
+                          <span>0 Postings</span>
+                        </div>
+                        <div className={clsx(
+                          "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium shadow-sm",
+                          job.layout?.cover ? "bg-white/20 text-white backdrop-blur-sm" : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                        )}>
+                          <UsersIcon className="size-3.5" />
+                          <span>{applications.length} Applicants</span>
+                        </div>
+                      </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
 
@@ -511,7 +547,10 @@ export default function RecruitingJobDetail() {
       return (
           <SplitTwoLayout 
             leftColumn={
-                <div className="h-full overflow-y-auto border-r border-zinc-200 dark:border-zinc-800">
+                <div 
+                    className="h-full overflow-y-auto border-r border-zinc-200 dark:border-zinc-800"
+                    onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 20)}
+                >
                     {MainContent}
                 </div>
             }
@@ -547,7 +586,10 @@ export default function RecruitingJobDetail() {
   }
 
   return (
-      <div className="h-full overflow-y-auto">
+      <div 
+        className="h-full overflow-y-auto"
+        onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 20)}
+      >
          {MainContent}
       </div>
   );

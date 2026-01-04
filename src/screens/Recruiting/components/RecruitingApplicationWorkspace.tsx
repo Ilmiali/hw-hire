@@ -54,8 +54,8 @@ export function RecruitingApplicationWorkspace({
   /* eslint-enable @typescript-eslint/no-unused-vars */
 
   return (
-    <div className="flex h-screen flex-col justify-between transition-all duration-300 w-full bg-white dark:bg-zinc-900">
-      <div className="flex-1 overflow-y-auto h-screen flex flex-col">
+    <div className="flex h-full flex-col justify-between transition-all duration-300 w-full bg-white dark:bg-zinc-900">
+      <div className="flex-1 overflow-y-auto h-full flex flex-col">
         {/* Tabs */}
         {openTabs.length > 0 && (
           <div className="sticky top-0 z-20 backdrop-blur-md backdrop-filter bg-white/80 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800 shrink-0">

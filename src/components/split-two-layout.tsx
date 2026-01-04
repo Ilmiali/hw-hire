@@ -21,18 +21,18 @@ export function SplitTwoLayout({
   hideColumn = 'none',
 }: SplitTwoLayoutProps) {
   return (
-    <div className={clsx('flex h-full', className)}>
+    <div className={clsx('flex h-full overflow-hidden', className)}>
       {hideColumn !== 'left' && (
         <aside 
           style={{width: hideColumn === 'right' ? '100%' : leftColumnWidth, maxWidth: hideColumn === 'right' ? '100%' : '50%'}} 
-          className={clsx('hidden lg:block shrink-0', leftColumnClassName)}
+          className={clsx('hidden lg:block shrink-0 h-full', leftColumnClassName)}
         >
           {leftColumn}
         </aside>
       )}
       {hideColumn !== 'right' && (
         <main 
-          className={clsx('flex-1 min-w-0', rightColumnClassName, {
+          className={clsx('flex-1 min-w-0 h-full', rightColumnClassName, {
             'w-full': hideColumn === 'left'
           })}
         >

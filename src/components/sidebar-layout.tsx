@@ -58,7 +58,7 @@ export function SidebarLayout({
   let [showSidebar, setShowSidebar] = useState(false)
 
   return (
-    <div className="relative isolate flex min-h-svh w-full bg-white max-lg:flex-col lg:bg-zinc-100 dark:bg-zinc-900 dark:lg:bg-zinc-900">
+    <div className="relative isolate flex h-svh w-full bg-white max-lg:flex-col lg:bg-zinc-100 dark:bg-zinc-900 dark:lg:bg-zinc-900 overflow-hidden">
       {/* Sidebar on desktop */}
       <div className={clsx("fixed inset-y-0 left-0 transition-all duration-300 max-lg:hidden", collapsed ? "w-[4.5rem]" : "w-64")}>
         {typeof sidebar === 'function' ? sidebar({ collapsed }) : sidebar}
@@ -80,9 +80,11 @@ export function SidebarLayout({
       </header>
 
       {/* Content */}
-      <main className={clsx("flex flex-1 flex-col pb-2 lg:min-w-0 lg:pt-2 lg:pr-2 overflow-y-hidden transition-all duration-300", collapsed ? "lg:pl-[4.5rem]" : "lg:pl-64")}>
-        <div className="grow lg:rounded-lg lg:bg-white lg:ring-1 lg:shadow-xs lg:ring-zinc-950/5 dark:lg:bg-black dark:lg:ring-white/10 overflow-y-auto">
-          <div className="mx-auto">{children}</div>
+      <main className={clsx("flex flex-1 flex-col pb-2 lg:min-w-0 lg:pt-2 lg:pr-2 transition-all duration-300 h-full overflow-hidden", collapsed ? "lg:pl-[4.5rem]" : "lg:pl-64")}>
+        <div className="grow lg:rounded-lg lg:bg-white lg:ring-1 lg:shadow-xs lg:ring-zinc-950/5 dark:lg:bg-black dark:lg:ring-white/10 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+            <div className="mx-auto w-full flex-1 flex flex-col min-h-0">{children}</div>
+          </div>
         </div>
       </main>
     </div>
