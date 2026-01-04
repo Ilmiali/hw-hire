@@ -6,6 +6,7 @@ import { Avatar } from '../components/avatar';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { getTeamDropdownConfig } from '../config/dropdowns';
 import { ViewsSidebarSection } from './ViewsSidebarSection';
+import { RecruitingSidebarSection } from './RecruitingSidebarSection';
 import { useState } from 'react';
 import { Cog8ToothIcon } from '@heroicons/react/16/solid';
 import { SettingsModal } from '../screens/Settings/SettingsModal';
@@ -111,8 +112,9 @@ export function MainSidebar({ collapsed, setCollapsed }: { collapsed?: boolean; 
           )}
         </SidebarHeader>
         <SidebarBody>
-          <ViewsSidebarSection />
           {routesBySection.body?.map(renderRouteGroup)}
+          <RecruitingSidebarSection />
+          <ViewsSidebarSection />
         </SidebarBody>
         <SidebarSpacer />
         <SidebarFooter>

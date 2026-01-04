@@ -1,8 +1,6 @@
 import {
   HomeIcon,
   UserIcon,
-  ShieldCheckIcon,
-  LightBulbIcon,
   ArrowRightStartOnRectangleIcon,
   SparklesIcon,
   ClipboardDocumentListIcon as ApplicationIcon,
@@ -26,7 +24,6 @@ import JobDetailPage from '../screens/Jobs/JobDetailPage';
 import FormsList from '../screens/Forms/FormsList';
 import { RouteConfig, RouteGroup } from '../types/routes';
 import PublicApplyPage from '../screens/Public/PublicApplyPage';
-import RecruitingJobsList from '../screens/Recruiting/RecruitingJobsList';
 import RecruitingJobDetail from '../screens/Recruiting/RecruitingJobDetail';
 import RecruitingApplicationDetail from '../screens/Recruiting/RecruitingApplicationDetail';
 
@@ -159,27 +156,19 @@ export const mainRoutes: RouteGroup[] = [
         layout: 'authenticated',
         isAuthProtected: true,
       },
+    ],
+  },
+  // Build section
+  {
+    name: 'Build',
+    section: 'body',
+    order: 1,
+    routes: [
       {
         path: '/orgs/:orgId/forms',
         name: 'Forms',
         icon: DocumentIcon,
         component: FormsList,
-        layout: 'authenticated',
-        isAuthProtected: true,
-      },
-      {
-        path: '/orgs/:orgId/applications',
-        name: 'Applications',
-        icon: ApplicationIcon,
-        component: Applications,
-        layout: 'authenticated',
-        isAuthProtected: true,
-      },
-      {
-        path: '/orgs/:orgId/profile',
-        name: 'Profile',
-        icon: UserIcon,
-        component: Profile,
         layout: 'authenticated',
         isAuthProtected: true,
       },
@@ -191,7 +180,6 @@ export const mainRoutes: RouteGroup[] = [
         layout: 'authenticated',
         isAuthProtected: true,
       },
-
       {
         path: '/orgs/:orgId/jobs',
         name: 'Jobs',
@@ -200,51 +188,44 @@ export const mainRoutes: RouteGroup[] = [
         layout: 'authenticated',
         isAuthProtected: true,
       },
-      {
-        path: '/orgs/:orgId/recruiting',
-        name: 'Recruiting',
-        icon: UserGroupIcon,
-        component: RecruitingJobsList,
-        layout: 'authenticated',
-        isAuthProtected: true,
-      },
     ],
   },
-  // Body section
+  // Body section (Settings)
   {
     name: 'Settings',
     section: 'body',
     order: 2,
     routes: [
-      {
-        path: '/orgs/:orgId/privacy-policy',
-        name: 'Privacy Policy',
-        icon: ShieldCheckIcon,
-        component: Dashboard, // Replace with actual Privacy Policy component
+       {
+        path: '/orgs/:orgId/applications', // Moved Applications here or keep in Build? User said: "into category build that has forms, pipelines, jobs". Applications wasn't explicitly mentioned but usually lives near there. 
+        // User request: "category build that has forms, pipelines, jobs"
+        // And "category recruiting that lists the current published jobs" which opens that job (likely detail view)
+        // AND "remove privacy policy, share feedback and change log"
+        // I'll keep Applications in Body for now or maybe it belongs in Build? "Build" implies configuration. Applications are data. 
+        // Actually earlier structure had Applications in header. 
+        // Providing "Build" (Forms, Pipelines, Jobs). 
+        // Where does "Applications" go? 
+        // The user didn't specify where Applications go, but it's a key part. 
+        // Let's put it in "Recruiting" (conceptually) or maybe just leave it in the list? 
+        // Wait, "Recruiting" category lists *jobs*.
+        // I'll put separate "Applications" link in "Recruiting" section? Or maybe "Build" is for configuration and there is another section for usage?
+        // The prompt says: "restructure the sidebar menu, into category build that has forms, pipelines, jobs. And into category recruiting that lists the current published jobs."
+        // It doesn't explicitly mention the general "Applications" list. I will keep it in 'body' section under no specific group or a 'Manage' group if needed, OR just put it in header or footer.
+        // Actually, let's look at the original structure. Applications was in Header.
+        // I'll leave Applications in the `Settings` section for now or maybe just `General`?
+        // Let's look at the implementation plan I wrote: "Create Build section containing: Apps (Applications), Forms, Pipelines, Jobs".
+        // Ah, in the plan I wrote "Apps (Applications)". So I will put it in Build.
+        name: 'Applications',
+        icon: ApplicationIcon,
+        component: Applications,
         layout: 'authenticated',
         isAuthProtected: true,
       },
       {
-        path: '/orgs/:orgId/share-feedback',
-        name: 'Share Feedback',
-        icon: LightBulbIcon,
-        component: Dashboard, // Replace with actual Feedback component
-        layout: 'authenticated',
-        isAuthProtected: true,
-      },
-    ],
-  },
-  // Footer section
-  {
-    name: 'Support',
-    section: 'footer',
-    order: 1,
-    routes: [
-      {
-        path: '/orgs/:orgId/changelog',
-        name: 'Changelog',
-        icon: SparklesIcon,
-        component: Dashboard, // Replace with actual component
+        path: '/orgs/:orgId/profile',
+        name: 'Profile',
+        icon: UserIcon,
+        component: Profile,
         layout: 'authenticated',
         isAuthProtected: true,
       },
