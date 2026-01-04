@@ -10,6 +10,7 @@ interface ApplyStepProps {
     visibleFieldIds: Set<string>;
     requiredFieldIds: Set<string>;
     disabled?: boolean;
+    hideHeader?: boolean;
 }
 
 export function ApplyStep({
@@ -19,20 +20,23 @@ export function ApplyStep({
     errors,
     visibleFieldIds,
     requiredFieldIds,
-    disabled = false
+    disabled = false,
+    hideHeader = false
 }: ApplyStepProps) {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="space-y-2 mb-8">
-                <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                    {page.title}
-                </h2>
-                {page.description && (
-                    <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                        {page.description}
-                    </p>
-                )}
-            </div>
+            {!hideHeader && (
+                <div className="space-y-2 mb-8">
+                    <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                        {page.title}
+                    </h2>
+                    {page.description && (
+                        <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                            {page.description}
+                        </p>
+                    )}
+                </div>
+            )}
 
             <div className="space-y-8">
                 {page.sections.map(section => (

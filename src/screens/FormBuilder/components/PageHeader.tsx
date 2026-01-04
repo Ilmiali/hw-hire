@@ -31,7 +31,7 @@ export const PageHeader = ({
             {/* Cover Area */}
             {cover ? (
                 <div 
-                    className="relative h-48 w-full rounded-t-2xl overflow-hidden transition-all shadow-inner"
+                    className="relative h-48 w-full rounded-t-xl overflow-hidden transition-all shadow-inner"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                     style={{ background: cover.value }}
@@ -64,7 +64,7 @@ export const PageHeader = ({
                 </div>
             ) : !readOnly ? (
                 <div 
-                    className="h-12 w-full transition-all group-hover:h-24 flex items-center justify-end px-10"
+                    className="h-12 w-full transition-all group-hover:h-24 flex items-center justify-end px-8 md:px-12"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                 >
@@ -78,7 +78,7 @@ export const PageHeader = ({
             ) : null}
 
             {/* Title & Description Area */}
-            <div className={`px-10 relative z-10 space-y-2 ${cover ? '-mt-10' : 'mt-4'}`}>
+            <div className={`px-8 md:px-12 relative z-10 space-y-2 ${cover ? '-mt-10' : 'mt-4'}`}>
                <div className="space-y-1">
                    {readOnly ? (
                        <h1 className="text-5xl font-extrabold text-zinc-900 dark:text-white p-0 drop-shadow-sm dark:drop-shadow-md">{title}</h1>

@@ -249,7 +249,7 @@ const FormBuilder = () => {
                 </div>
                 
                 <div className="flex gap-2 bg-zinc-100/50 dark:bg-white/5 p-1 rounded-lg border border-zinc-200 dark:border-white/10">
-                   {form.pages.map((page, index) => (
+                   {form.pages.map((page) => (
                        <button 
                            key={page.id}
                            onClick={() => setActivePageId(page.id)}
@@ -362,7 +362,7 @@ const FormBuilder = () => {
                 />
                 
                 <div 
-                    className="flex-1 bg-zinc-50 dark:bg-zinc-900/50 p-8 overflow-y-auto" 
+                    className="flex-1 bg-[#f8f9fb] dark:bg-zinc-950 p-8 overflow-y-auto" 
                     onClick={() => setSelectedElementId(null)}
                 >
                     <Canvas 

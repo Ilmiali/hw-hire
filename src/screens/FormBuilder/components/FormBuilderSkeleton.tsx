@@ -85,7 +85,7 @@ const FormBuilderSkeleton = () => {
                 </div>
 
                 {/* Main Canvas Skeleton - Fluid */}
-                <div className="flex-1 bg-zinc-50 dark:bg-zinc-900/50 p-8">
+                <div className="flex-1 bg-[#f8f9fb] dark:bg-zinc-950 p-8">
                      <ContentLoader
                         speed={2}
                         width="100%"

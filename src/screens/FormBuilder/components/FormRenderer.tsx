@@ -257,6 +257,7 @@ export const FormRenderer = ({
                     visibleFieldIds={visibleFieldIds}
                     requiredFieldIds={requiredFieldIds}
                     disabled={readOnly}
+                    hideHeader={true}
                 />
 
                 <ApplyFooterActions 
