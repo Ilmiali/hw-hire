@@ -303,7 +303,7 @@ export default function JobDetailPage() {
                 className="text-sm font-semibold bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-white p-0 "
             />
           </div>
-          <Badge color={activeResource?.status === 'active' ? 'green' : 'zinc'}>
+          <Badge color={((activeResource?.status as any) === 'published' || (activeResource?.status as any) === 'active') ? 'green' : 'zinc'}>
             {activeResource?.status}
           </Badge>
         </div>
@@ -534,7 +534,9 @@ export default function JobDetailPage() {
                                             }}
                                         >
                                             <option value="">Select Pipeline</option>
-                                            {(resources['pipelines'] || []).map(p => (
+                                            {(resources['pipelines'] || [])
+                                                .filter(p => p.status === 'published' || p.status === 'active')
+                                                .map(p => (
                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
                                         </Select>
@@ -600,7 +602,9 @@ export default function JobDetailPage() {
                                             }}
                                         >
                                             <option value="">Select Form</option>
-                                            {(resources['forms'] || []).map(f => (
+                                            {(resources['forms'] || [])
+                                                .filter(f => f.status === 'published' || f.status === 'active')
+                                                .map(f => (
                                                 <option key={f.id} value={f.id}>{f.name}</option>
                                             ))}
                                         </Select>

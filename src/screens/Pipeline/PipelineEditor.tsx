@@ -5,6 +5,8 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchResourceById, fetchResourceDraft, saveResourceDraft, publishResource, clearActiveResource } from '../../store/slices/resourceSlice';
 import { PipelineStage } from '../../types/pipeline';
 import { Button } from '@/components/ui/button';
+import { Button as CatalystButton } from '../../components/button';
+import { Alert, AlertActions, AlertDescription, AlertTitle } from '../../components/alert';
 import { 
     ChevronLeftIcon, 
     RocketLaunchIcon,
@@ -38,6 +40,8 @@ export default function PipelineEditor() {
   // Processing states
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [stageIdToDelete, setStageIdToDelete] = useState<string | null>(null);
 
   // Working state
   const [name, setName] = useState('');
@@ -138,13 +142,20 @@ export default function PipelineEditor() {
           toast.warning("Pipeline must have at least one stage.");
           return;
       }
-      if (!confirm("Are you sure you want to delete this stage?")) return;
+      setStageIdToDelete(stageId);
+      setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteStage = () => {
+      if (!stageIdToDelete) return;
 
       setStages(prev => {
-          const filtered = prev.filter(s => s.id !== stageId);
+          const filtered = prev.filter(s => s.id !== stageIdToDelete);
           return filtered.map((s, idx) => ({ ...s, order: idx }));
       });
-      if (selectedStageId === stageId) setSelectedStageId(null);
+      if (selectedStageId === stageIdToDelete) setSelectedStageId(null);
+      setIsDeleteDialogOpen(false);
+      setStageIdToDelete(null);
   };
 
   if (loading && !activeResource) {
@@ -265,6 +276,17 @@ export default function PipelineEditor() {
           resourceId={id!} 
           currentUserId={user?.uid}
       />
+
+      <Alert open={isDeleteDialogOpen} onClose={setIsDeleteDialogOpen}>
+          <AlertTitle>Delete Stage?</AlertTitle>
+          <AlertDescription>
+              Are you sure you want to delete this stage? This action cannot be undone and may affect transitions.
+          </AlertDescription>
+          <AlertActions>
+              <CatalystButton plain onClick={() => setIsDeleteDialogOpen(false)}>Cancel</CatalystButton>
+              <CatalystButton color="red" onClick={confirmDeleteStage}>Delete Stage</CatalystButton>
+          </AlertActions>
+      </Alert>
     </div>
   );
 }

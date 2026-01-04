@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../store';
@@ -72,7 +72,7 @@ export function ResourceListView({
     }
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!orgId || !resourceToDelete) return;
     
     setIsDeleting(true);
@@ -91,7 +91,15 @@ export function ResourceListView({
       setIsDeleting(false);
       setResourceToDelete(null);
     }
-  };
+  }, [dispatch, orgId, moduleId, resourceType, resourceToDelete, resourceName]);
+
+  const handleRowClick = useCallback((resource: any) => {
+    onRowClick(resource);
+  }, [onRowClick]);
+
+  const setDeletingResource = useCallback((resource: any) => {
+    setResourceToDelete(resource);
+  }, []);
 
   return (
     <div className="p-8 h-full flex flex-col">
@@ -123,8 +131,8 @@ export function ResourceListView({
             orgId={orgId}
             moduleId={moduleId}
             resourceType={resourceType}
-            onRowClick={onRowClick}
-            onDelete={(resource: any) => setResourceToDelete(resource)}
+            onRowClick={handleRowClick}
+            onDelete={setDeletingResource}
             onCreate={onCreate || handleDefaultCreate}
          />
       </div>

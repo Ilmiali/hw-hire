@@ -1,5 +1,5 @@
 
-export type ResourceStatus = 'active' | 'draft' | 'archived';
+export type ResourceStatus = 'published' | 'unpublished' | 'archived';
 
 export interface Resource {
   id: string;

@@ -114,7 +114,7 @@ export function PostingEditor({ orgId, jobId, posting, defaults, onUpdate }: Pos
         toast.success("Apply link copied");
     };
 
-    const isPublished = posting.status === 'published';
+    const isPublished = (posting.status as any) === 'published' || (posting.status as any) === 'active';
 
     return (
         <div className="max-w-4xl mx-auto p-8 space-y-8 animate-in fade-in duration-300">
@@ -124,7 +124,7 @@ export function PostingEditor({ orgId, jobId, posting, defaults, onUpdate }: Pos
                         <span className="text-zinc-900 dark:text-white">
                             {channel === 'direct' ? 'Direct Link' : CHANNELS.find(c => c.id === channel)?.name || channel}
                         </span>
-                        <Badge color={posting.status === 'published' ? 'green' : posting.status === 'draft' ? 'yellow' : 'zinc'}>
+                        <Badge color={((posting.status as any) === 'published' || (posting.status as any) === 'active') ? 'green' : ((posting.status as any) === 'draft' || (posting.status as any) === 'unpublished') ? 'yellow' : 'zinc'}>
                             {posting.status}
                         </Badge>
                     </h3>

@@ -226,13 +226,13 @@ export function ResourceTable({ orgId, moduleId, resourceType, onDelete, onRowCl
             let Icon = CheckCircleIcon;
             let iconColor = "text-green-500/80";
             
-            if (status === 'draft') {
+            if (status === 'unpublished') {
                 Icon = ClockIcon;
                 iconColor = "text-orange-500/80";
             } else if (status === 'archived') {
                 Icon = HandRaisedIcon;
                 iconColor = "text-red-500/80";
-            } else if (status === 'active') {
+            } else if (status === 'published' || status === 'active') { // Keep active for legacy
                 Icon = CheckCircleIcon;
                 iconColor = "text-green-500/80";
             }

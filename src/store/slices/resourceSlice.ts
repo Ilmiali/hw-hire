@@ -42,7 +42,7 @@ const mapDocumentToResource = (doc: any): Resource => ({
     id: doc.id,
     name: doc.name || '',
     description: doc.description || '',
-    status: doc.status || 'active',
+    status: doc.status || 'unpublished',
     visibility: doc.visibility || 'private',
     ownerIds: doc.ownerIds || [],
     createdBy: doc.createdBy || '',
@@ -177,7 +177,7 @@ export const createResource = createAsyncThunk(
 
             const resourceData = {
                 ...data,
-                status: 'active',
+                status: 'unpublished',
                 visibility: 'private', // Default
                 ownerIds: [currentUserId],
                 createdBy: currentUserId,
@@ -315,6 +315,7 @@ export const publishResource = createAsyncThunk(
             // 3. Update resource metadata
             await db.updateDocument(getResourcePath(orgId, moduleId, resourceType), resourceId, {
                 publishedVersionId: versionId,
+                status: 'published',
                 updatedAt: new Date().toISOString()
             });
 

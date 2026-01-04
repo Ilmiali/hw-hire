@@ -195,6 +195,7 @@ class PostingService {
     const jobsCollectionPath = `orgs/${orgId}/modules/hire/jobs`;
     await db.updateDocument(jobsCollectionPath, jobId, {
         publishedVersionId: newVersionId,
+        status: 'published',
         updatedAt: new Date().toISOString()
     });
 
