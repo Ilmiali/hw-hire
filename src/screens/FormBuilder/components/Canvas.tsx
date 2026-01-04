@@ -34,15 +34,28 @@ interface CanvasProps {
     onAddSection: (index?: number) => void;
 }
 
-const AddSectionTrigger = ({ onClick }: { onClick: () => void }) => {
+
+const ContextualAddTrigger = ({ onClick, index }: { onClick: (index: number) => void, index: number }) => {
     return (
-        <button 
-            onClick={onClick}
-            className="w-full py-4 border-2 border-dashed border-zinc-100 dark:border-white/5 rounded-xl flex items-center justify-center text-zinc-400 hover:text-blue-600 hover:border-blue-600/30 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all group opacity-50 hover:opacity-100"
-        >
-            <PlusIcon className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-medium">Add Section</span>
-        </button>
+        <div className="relative h-12 -my-6 flex items-center justify-center group z-30 pointer-events-auto cursor-pointer">
+            {/* Invisible large hit area */}
+            <div 
+                className="absolute inset-0 z-0" 
+                onClick={() => onClick(index)}
+            />
+            
+            {/* Unified visual unit */}
+            <div className="absolute inset-x-8 h-[2px] bg-blue-500/40 opacity-0 group-hover:opacity-100 transition-all pointer-events-none" />
+            
+            {/* Trigger button */}
+            <button 
+                onClick={() => onClick(index)}
+                className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border-2 border-blue-500/40 text-blue-500 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-110 shadow-lg transition-all z-10 pointer-events-none"
+                title="Add Section Here"
+            >
+                <PlusIcon className="w-5 h-5 pointer-events-none" />
+            </button>
+        </div>
     );
 };
 
@@ -152,7 +165,7 @@ const FieldRenderer = ({
                 }}
                 onDragEnd={() => setIsDragging(false)}
                 onClick={onClick}
-                className={`field-wrapper relative group p-4 rounded-xl cursor-grab active:cursor-grabbing border-2 transition-all flex-1 min-w-0 ${isDragging ? 'opacity-10 border-dashed border-zinc-300 dark:border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 shadow-sm' : 'border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:border-zinc-200 dark:hover:border-zinc-700'}`}
+                className={`field-wrapper relative group p-4 rounded-xl cursor-grab active:cursor-grabbing border-2 transition-all flex-1 min-w-0 ${isDragging ? 'opacity-40 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-white/5 scale-95' : isSelected ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 shadow-sm' : 'border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:border-zinc-200 dark:hover:border-zinc-700'}`}
             >
                {isSelected && (
                    <div className="absolute top-2 right-2 z-10 flex items-center bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm rounded-md border border-zinc-200 dark:border-white/10 p-0.5 shadow-sm">
@@ -173,12 +186,12 @@ const FieldRenderer = ({
                    </div>
                )}
                {!['paragraph', 'divider', 'spacer', 'image'].includes(field.type) && (
-                   <Label className={`block text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2 ml-1 truncate ${isDragging ? 'opacity-0' : ''}`}>
+                   <Label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2 ml-1 truncate">
                         {field.label} {field.required && <span className="text-red-500 text-xs ml-0.5">*</span>}
                     </Label>
                )}
                 
-                <div className={`pointer-events-none ${isDragging ? 'opacity-0' : ''}`}>
+                <div className="pointer-events-none">
                     {field.type === 'text' && <Input placeholder={field.placeholder} />}
                     {field.type === 'email' && <Input type="email" placeholder={field.placeholder} />}
                     {field.type === 'number' && <Input type="number" placeholder={field.placeholder} />}
@@ -481,7 +494,7 @@ const SectionRenderer = ({
                 onDragOver={handleDragOver}
                 onDragLeave={() => setDragOverRowIndex(null)}
                 onDrop={handleDrop}
-                className={`section-wrapper relative group rounded-2xl p-6 border-2 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-10 border-dashed border-zinc-300 dark:border-zinc-700 bg-transparent scale-95' : isSelected ? 'border-blue-600/50 bg-blue-600/5 shadow-md dark:shadow-none' : 'border-transparent hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 hover:border-zinc-200 dark:hover:border-white/5'}`}
+                className={`section-wrapper relative group rounded-2xl p-6 border-2 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-white/5 scale-95' : isSelected ? 'border-blue-600/50 bg-blue-600/5 shadow-md dark:shadow-none' : 'border-transparent hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 hover:border-zinc-200 dark:hover:border-white/5'}`}
             >
                 {isSelected && (
                     <div className="absolute top-4 right-4 z-10 flex items-center bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-lg border border-zinc-200 dark:border-white/10 p-1 gap-0.5 shadow-sm">
@@ -502,12 +515,12 @@ const SectionRenderer = ({
                     </div>
                 )}
 
-                <div className={`mb-8 ${isDragging ? 'opacity-0' : ''}`}>
+                <div className="mb-8">
                     <Heading level={2} className="text-zinc-900 dark:text-white text-2xl font-bold tracking-tight">{section.title}</Heading>
                     {section.description && <Text className="mt-2 text-zinc-500 dark:text-zinc-400 text-base">{section.description}</Text>}
                 </div>
 
-                <div className={`space-y-4 relative ${isDragging ? 'opacity-0' : ''}`} ref={containerRef}>
+                <div className="space-y-4 relative" ref={containerRef}>
                     {dragOverRowIndex === 0 && <DropIndicator isVisible={true} text="New Row" />}
                     
                     {section.rows.map((row, rowIndex) => (
@@ -615,10 +628,6 @@ const Canvas = ({
     return (
         <div 
             className="max-w-3xl mx-auto space-y-8 pb-32"
-            onDragOver={handleDragOver}
-            onDragLeave={() => setDragOverSectionIndex(null)}
-            onDrop={handleDrop}
-            ref={containerRef}
         >
             <div className="w-full bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-white/5 shadow-2xl overflow-hidden flex flex-col">
                 <PageHeader 
@@ -630,26 +639,37 @@ const Canvas = ({
                     setCover={(cover) => onUpdatePage({ cover } as any)}
                 />
 
-                <div className="p-8 md:p-12 space-y-12">
+                <div 
+                    className="p-8 md:p-12 space-y-4"
+                    onDragOver={handleDragOver}
+                    onDragLeave={() => setDragOverSectionIndex(null)}
+                    onDrop={handleDrop}
+                    ref={containerRef}
+                >
                     {dragOverSectionIndex === 0 && <DropIndicator isVisible={true} text="Move Section Here" />}
+                    {page.sections.length > 0 && <ContextualAddTrigger index={0} onClick={onAddSection} />}
 
                     {page.sections.map((section, index) => (
                         <React.Fragment key={section.id}>
-                            <SectionRenderer 
-                                section={section} 
-                                selectedId={selectedId}
-                                onSelect={onSelect}
-                                onDrop={onDrop}
-                                onReorderField={onReorderField}
-                                onDelete={onDelete}
-                                onDuplicate={onDuplicate}
-                                onDropToField={onDropToField}
-                            />
-                            {dragOverSectionIndex === index + 1 && <DropIndicator isVisible={true} text="Move Section Here" />}
+                            <div className="py-8">
+                                <SectionRenderer 
+                                    section={section} 
+                                    selectedId={selectedId}
+                                    onSelect={onSelect}
+                                    onDrop={onDrop}
+                                    onReorderField={onReorderField}
+                                    onDelete={onDelete}
+                                    onDuplicate={onDuplicate}
+                                    onDropToField={onDropToField}
+                                />
+                            </div>
+                            {dragOverSectionIndex === index + 1 ? (
+                                <DropIndicator isVisible={true} text="Move Section Here" />
+                            ) : (
+                                <ContextualAddTrigger index={index + 1} onClick={onAddSection} />
+                            )}
                         </React.Fragment>
                     ))}
-                    
-                    <AddSectionTrigger onClick={() => onAddSection(page.sections.length)} />
                 </div>
             </div>
             
