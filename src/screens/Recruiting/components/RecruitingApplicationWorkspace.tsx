@@ -3,7 +3,6 @@ import { Badge } from '../../../components/badge';
 import { RecruitingAssignSelector } from './RecruitingAssignSelector';
 import { RecruitingApplication } from '../../../types/recruiting';
 import { Avatar } from '../../../components/avatar';
-import { UserIcon } from '@heroicons/react/24/solid';
 import RecruitingApplicationDetail from '../RecruitingApplicationDetail';
 
 interface Tab {
@@ -113,27 +112,24 @@ export function RecruitingApplicationWorkspace({
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-3">
                     {(() => {
-                        const activeTab = openTabs.find(t => t.id === activeTabId);
-                        if (activeTab?.avatar?.type === 'image' && activeTab.avatar.value) {
-                            return <img src={activeTab.avatar.value} alt="" className="size-10 rounded-full object-cover bg-zinc-100 shrink-0" />;
-                        } else if (activeTab?.avatar?.type === 'image') {
-                            return (
-                                <div className="size-10 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden shrink-0">
-                                    <UserIcon className="size-6 text-zinc-400" />
-                                </div>
-                            );
+                        const cs = currentApplication.candidateSummary;
+                        const avatarUrl = cs?.avatarUrl;
+                        const initials = cs?.fullname?.charAt(0).toUpperCase() || '?';
+
+                        if (avatarUrl) {
+                            return <img src={avatarUrl} alt="" className="size-10 rounded-full object-cover bg-zinc-100 shrink-0 border border-zinc-200 dark:border-zinc-800" />;
                         } else {
-                            return <div className="flex items-baseline shrink-0"><Avatar initials={activeTab?.avatar?.value || activeTab?.name?.charAt(0) || '?'} className="size-10" /></div>;
+                            return <div className="flex items-baseline shrink-0"><Avatar initials={initials} className="size-10" /></div>;
                         }
                     })()}
 
                     <div className="min-w-0">
                       <h1 className="text-lg font-semibold text-zinc-900 dark:text-white truncate">
-                        {openTabs.find(t => t.id === activeTabId)?.name || 'Candidate'}
+                        {currentApplication.candidateSummary?.fullname || 'Candidate'}
                       </h1>
-                      {openTabs.find(t => t.id === activeTabId)?.subtitle && (
+                      {(currentApplication.candidateSummary?.email || currentApplication.candidateSummary?.phone) && (
                         <div className="text-sm text-zinc-500 dark:text-zinc-400 -mt-1 truncate">
-                            {openTabs.find(t => t.id === activeTabId)?.subtitle}
+                            {currentApplication.candidateSummary.email || currentApplication.candidateSummary.phone}
                         </div>
                       )}
                     </div>

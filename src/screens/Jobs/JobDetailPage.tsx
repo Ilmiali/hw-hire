@@ -727,75 +727,12 @@ export default function JobDetailPage() {
                                         <div className="py-4 text-center text-zinc-400 italic text-sm">Loading form fields...</div>
                                     ) : (
                                         <div className="space-y-6">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Field>
-                                                    <Label>Headline</Label>
-                                                    <Select
-                                                        value={jobForm.applicationCardConfig?.headlineFieldId || ''}
-                                                        onChange={(e) => setJobForm({
-                                                            ...jobForm,
-                                                            applicationCardConfig: {
-                                                                ...jobForm.applicationCardConfig,
-                                                                headlineFieldId: e.target.value
-                                                            }
-                                                        })}
-                                                    >
-                                                        <option value="">Default (Candidate Name)</option>
-                                                        {availableFormFields.map(f => (
-                                                            <option key={f.id} value={f.id}>{f.label}</option>
-                                                        ))}
-                                                    </Select>
-                                                </Field>
-                                                <Field>
-                                                    <Label>Subtitle</Label>
-                                                    <Select
-                                                        value={jobForm.applicationCardConfig?.subtitleFieldId || ''}
-                                                        onChange={(e) => setJobForm({
-                                                            ...jobForm,
-                                                            applicationCardConfig: {
-                                                                ...jobForm.applicationCardConfig,
-                                                                subtitleFieldId: e.target.value
-                                                            }
-                                                        })}
-                                                    >
-                                                        <option value="">Default (Job Role)</option>
-                                                        {availableFormFields.map(f => (
-                                                            <option key={f.id} value={f.id}>{f.label}</option>
-                                                        ))}
-                                                    </Select>
-                                                </Field>
-                                            </div>
-
-                                            <Field>
-                                                <Label>Avatar Source</Label>
-                                                <Select
-                                                    value={jobForm.applicationCardConfig?.avatarFieldId || ''}
-                                                        onChange={(e) => setJobForm({
-                                                            ...jobForm,
-                                                            applicationCardConfig: {
-                                                                ...jobForm.applicationCardConfig,
-                                                                avatarFieldId: e.target.value
-                                                            }
-                                                        })}
-                                                >
-                                                    <option value="">Default (Initials)</option>
-                                                    {availableFormFields.filter(f => f.type === 'file' || f.type === 'image' || f.type === 'text').map(f => (
-                                                        <option key={f.id} value={f.id}>{f.label} ({f.type})</option>
-                                                    ))}
-                                                </Select>
-                                            </Field>
-
-                                            <div className="pt-4 border-t border-zinc-100 dark:border-white/5">
-                                                <span className="text-sm font-medium text-zinc-950 dark:text-white mb-3 block">Additional Fields</span>
-                                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                                                    {availableFormFields
-                                                        .filter(f => 
-                                                            f.id !== jobForm.applicationCardConfig?.headlineFieldId &&
-                                                            f.id !== jobForm.applicationCardConfig?.subtitleFieldId &&
-                                                            f.id !== jobForm.applicationCardConfig?.avatarFieldId
-                                                        )
-                                                        .map(field => {
-                                                        const isSelected = (jobForm.applicationCardConfig?.additionalFields || []).includes(field.id);
+                                    <div className="pt-2">
+                                        <span className="text-sm font-medium text-zinc-950 dark:text-white mb-3 block text-center md:text-left">Additional Card Fields</span>
+                                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                            {availableFormFields
+                                                .map(field => {
+                                                const isSelected = (jobForm.applicationCardConfig?.additionalFields || []).includes(field.id);
                                                         return (
                                                             <label key={field.id} className="flex items-center gap-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors">
                                                                 <Checkbox 

@@ -24,14 +24,7 @@ export default function RecruitingJobDetail() {
   const [job, setJob] = useState<RecruitingJob | null>(null);
   const [applications, setApplications] = useState<RecruitingApplication[]>([]);
   const [loadingJob, setLoadingJob] = useState(true);
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  const [loadingApps, setLoadingApps] = useState(false);
-  /* eslint-enable @typescript-eslint/no-unused-vars */
   
-  // Card Config
-  const [formFields, setFormFields] = useState<any[]>([]);
-  const [loadingForm, setLoadingForm] = useState(false);
-
   // Workspace state
   const [openTabIds, setOpenTabIds] = useState<string[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -83,32 +76,7 @@ export default function RecruitingJobDetail() {
       }
     };
 
-
-
-    // Fetch form schema to resolve field labels
-    const fetchFormSchema = async (formId: string) => {
-        setLoadingForm(true);
-        try {
-             const formDoc = await db.getDocument<any>(`orgs/${orgId}/modules/hire/forms`, formId);
-             if (formDoc) {
-                 // Simplified schema extraction
-                 let schema: any = formDoc.data || formDoc;
-                 
-                 const fields: any[] = [];
-                 if (schema.pages) {
-                     schema.pages.forEach((p: any) => p.sections.forEach((s: any) => s.rows.forEach((r: any) => r.fields.forEach((f: any) => fields.push(f)))));
-                 }
-                 setFormFields(fields);
-             }
-        } catch (error) {
-            console.error("Failed to fetch form schema", error);
-        } finally {
-            setLoadingForm(false);
-        }
-    };
-
     const fetchApplications = async () => {
-        setLoadingApps(true);
         try {
             const appsPath = `orgs/${orgId}/modules/hire/applications`;
             const appsData = await db.getDocuments<any>(appsPath, {
@@ -131,26 +99,19 @@ export default function RecruitingJobDetail() {
             setApplications(mappedApps);
         } catch (error) {
             console.error("Failed to fetch applications", error);
-        } finally {
-            setLoadingApps(false);
         }
     };
 
-  useEffect(() => {
-    if (!orgId || !jobId) return;
-    fetchJob();
-    fetchApplications();
-  }, [orgId, jobId]);
 
-  // Load form schema when job is loaded and has formId
-  useEffect(() => {
-      if (job && (job as any).formId) {
-          fetchFormSchema((job as any).formId);
-      }
-  }, [job]);
 
-  useEffect(() => {
-      if (applicationId && !openTabIds.includes(applicationId)) {
+    useEffect(() => {
+        if (!orgId || !jobId) return;
+        fetchJob();
+        fetchApplications();
+    }, [orgId, jobId]);
+
+    useEffect(() => {
+        if (applicationId && !openTabIds.includes(applicationId)) {
           setOpenTabIds(prev => {
               if (prev.includes(applicationId)) return prev;
               return [...prev, applicationId];
@@ -162,34 +123,26 @@ export default function RecruitingJobDetail() {
       const { answers } = app;
       if (!answers) return 'Unknown Candidate';
       
-      // 1. Try common full name keys
-      const candidateName = answers.fullName || answers.name || answers['Full Name'] || answers['Name'];
+      // 1. Try candidateSummary if it exists
+      if (app.candidateSummary?.fullname) return app.candidateSummary.fullname;
+
+      // 2. Try common full name keys
+      const candidateName = (answers as any).fullName || (answers as any).name || answers['Full Name'] || answers['Name'];
       if (candidateName) return candidateName;
 
-      // 2. Try joining first and last name
-      const firstName = answers.firstName || answers.firstname || answers['First Name'];
-      const lastName = answers.lastName || answers.lastname || answers['Last Name'];
+      // 3. Try joining first and last name
+      const firstName = (answers as any).firstName || (answers as any).firstname || answers['First Name'];
+      const lastName = (answers as any).lastName || (answers as any).lastname || answers['Last Name'];
       
       if (firstName || lastName) {
           return [firstName, lastName].filter(Boolean).join(' ');
       }
 
-      // 3. Try email as last resort fallback
-      if (answers.email || answers.Email) return answers.email || answers.Email;
+      // 4. Try email as last resort fallback
+      const email = app.candidateSummary?.email || (answers as any).email || (answers as any).Email || answers['Email'];
+      if (email) return email;
 
       return 'Unknown Candidate';
-  };
-
-  const getFieldValue = (app: RecruitingApplication, fieldId?: string) => {
-      if (!fieldId || !app.answers) return undefined;
-      // 1. Try direct match by field ID (ideal)
-      if (app.answers[fieldId]) return app.answers[fieldId];
-      
-      // 2. Try match by label if we have the field definition (legacy/fallback)
-      const field = formFields.find(f => f.id === fieldId);
-      if (field && app.answers[field.label]) return app.answers[field.label];
-      
-      return undefined;
   };
 
   const getFormattedFieldValue = (val: any) => {
@@ -303,46 +256,31 @@ export default function RecruitingJobDetail() {
                 applications={applications.map(app => {
                     const config = (job as any).applicationCardConfig;
                     
-                    // Headline
-                    let headline = getFormattedFieldValue(getFieldValue(app, config?.headlineFieldId));
-                    if (!headline) headline = getCandidateName(app); // Fallback
+                    // Construct candidateSummary if not present (legacy support)
+                    const candidateSummary = app.candidateSummary || {
+                        fullname: getCandidateName(app),
+                        email: app.answers?.email || app.answers?.Email || '',
+                    };
 
-                    // Subtitle
-                    let subtitle = getFormattedFieldValue(getFieldValue(app, config?.subtitleFieldId));
-                    if (!subtitle) subtitle = app.jobPostingId || 'Candidate'; // Fallback
-
-                    // Avatar
-                    const avatarFieldId = config?.avatarFieldId;
-                    const avatarField = formFields.find(f => f.id === avatarFieldId);
-                    const avatarVal = getFieldValue(app, avatarFieldId);
-                    
-                    let avatar: { type: 'text' | 'image'; value: string } | undefined;
-                    
-                    if (avatarField && (avatarField.type === 'file' || avatarField.type === 'image')) {
-                        // Assuming val is a URL for file/image types
-                         if (avatarVal) avatar = { type: 'image', value: avatarVal };
-                    } else if (avatarVal) {
-                         avatar = { type: 'text', value: String(avatarVal).charAt(0) };
-                    }
-
-                    // Additional Fields
+                    // Additional Fields - still using config but now we have labels in answers
                     const additionalFields = (config?.additionalFields || []).map((fid: string) => {
-                        const field = formFields.find(f => f.id === fid);
-                        const val = getFormattedFieldValue(getFieldValue(app, fid));
-                        if (!field || !val) return null;
-                        return { id: fid, label: field.label, value: val };
+                        const answer = app.answers?.[fid];
+                        if (!answer || !answer.label || !answer.value) return null;
+                        return { 
+                            id: fid, 
+                            label: answer.label, 
+                            value: getFormattedFieldValue(answer.value) 
+                        };
                     }).filter(Boolean) as any[];
 
                     return {
                         id: app.id,
-                        headline,
-                        subtitle,
-                        name: headline, // legacy
-                        role: subtitle, // legacy
+                        headline: candidateSummary.fullname,
+                        subtitle: candidateSummary.email,
                         stageId: app.currentStageId || stages[0].id,
                         source: app.source,
                         createdAt: app.createdAt,
-                        avatar,
+                        candidateSummary,
                         additionalFields
                     };
                 })}
@@ -398,34 +336,17 @@ export default function RecruitingJobDetail() {
                         const app = applications.find(a => a.id === id);
                         if (!app) return { id, name: 'Loading...' };
 
-                        const config = (job as any).applicationCardConfig;
-                        
-                        // Headline
-                        let headline = getFormattedFieldValue(getFieldValue(app, config?.headlineFieldId));
-                        if (!headline) headline = getCandidateName(app); // Fallback
-
-                        // Subtitle
-                        let subtitle = getFormattedFieldValue(getFieldValue(app, config?.subtitleFieldId));
-                        if (!subtitle) subtitle = app.jobPostingId || 'Candidate'; // Fallback
-
-                        // Avatar
-                        const avatarFieldId = config?.avatarFieldId;
-                        const avatarField = formFields.find(f => f.id === avatarFieldId);
-                        const avatarVal = getFieldValue(app, avatarFieldId);
-                        
-                        let avatar: { type: 'text' | 'image'; value: string } | undefined;
-                        
-                        if (avatarField && (avatarField.type === 'file' || avatarField.type === 'image')) {
-                             if (avatarVal) avatar = { type: 'image', value: avatarVal };
-                        } else if (avatarVal) {
-                             avatar = { type: 'text', value: String(avatarVal).charAt(0) };
-                        }
+                        // Construct candidateSummary if not present (legacy support)
+                        const cs: { fullname: string; email: string; avatarUrl?: string } = app.candidateSummary || {
+                            fullname: getCandidateName(app),
+                            email: app.answers?.email || app.answers?.Email || '',
+                        };
 
                         return { 
                             id, 
-                            name: headline,
-                            subtitle,
-                            avatar
+                            name: cs.fullname,
+                            subtitle: cs.email,
+                            avatar: cs.avatarUrl ? { type: 'image', value: cs.avatarUrl } : { type: 'text', value: cs.fullname.charAt(0).toUpperCase() }
                         };
                     })}
                     activeTabId={applicationId}

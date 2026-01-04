@@ -200,14 +200,17 @@ export default function PublicApplyPage() {
         try {
             const db = getDatabaseService();
             
-            // Sanitize values (reuse logic or similar)
+            // Sanitize values for Firestore (Firestore doesn't support 'undefined')
             const sanitizeForFirestore = (val: any): any => {
+                if (val === undefined) return null;
+                
                 if (val instanceof File) {
                     return {
                         _type: 'file',
-                        name: val.name,
-                        size: val.size,
-                        type: val.type
+                        name: val.name || 'document',
+                        size: val.size || 0,
+                        type: val.type || 'application/octet-stream',
+                        url: (val as any).url || null
                     };
                 }
                 if (Array.isArray(val)) {
@@ -216,14 +219,52 @@ export default function PublicApplyPage() {
                 if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
                     const next: any = {};
                     for (const key in val) {
-                        next[key] = sanitizeForFirestore(val[key]);
+                        const sanitized = sanitizeForFirestore(val[key]);
+                        // Only add to object if not undefined (though we return null above)
+                        if (sanitized !== undefined) {
+                            next[key] = sanitized;
+                        }
                     }
                     return next;
                 }
                 return val;
             };
 
-            const sanitizedValues = sanitizeForFirestore(answers);
+            // 1. Enrich Answers with Label and Type
+            const enrichedAnswers: Record<string, any> = {};
+            const attributeMap: Record<string, string> = {}; // attributeName -> fieldId
+
+            allFields.forEach(field => {
+                if (answers[field.id] !== undefined) {
+                    enrichedAnswers[field.id] = {
+                        value: sanitizeForFirestore(answers[field.id]),
+                        label: field.label,
+                        type: field.type
+                    };
+                }
+                if (field.attributeName) {
+                    attributeMap[field.attributeName] = field.id;
+                }
+            });
+
+            // 2. Construct Candidate Summary
+            const getAnswerValue = (attr: string) => {
+                const fieldId = attributeMap[attr];
+                return fieldId ? answers[fieldId] : undefined;
+            };
+
+            const firstName = getAnswerValue('firstName') || '';
+            const lastName = getAnswerValue('lastName') || '';
+            const email = getAnswerValue('email') || '';
+            const phone = getAnswerValue('phone');
+            const avatar = getAnswerValue('avatar');
+            
+            const candidateSummary = {
+                fullname: `${firstName} ${lastName}`.trim(),
+                email: email,
+                ...(phone && { phone }),
+                ...(avatar && { avatarUrl: avatar }) // Assuming avatar returns a URL string or object needed here
+            };
 
              // Construct Application object
              const application = {
@@ -233,21 +274,24 @@ export default function PublicApplyPage() {
 
                 jobPostingId: posting.jobPostingId || 'DIRECT_PUBLIC',
                 publicPostingId: publicPostingId,
-                jobVersionId: posting.jobVersionId,
+                jobVersionId: posting.jobVersionId || null,
                 source: posting.source?.channel || 'direct',
                 
                 formId: posting.form.formId,
-                formVersionId: posting.form.formVersionId,
+                formVersionId: posting.form.formVersionId || null,
                 
                 pipelineId: posting.pipeline.pipelineId,
-                pipelineVersionId: posting.pipeline.pipelineVersionId,
-                currentStageId: posting.pipeline.firstStageId,
+                pipelineVersionId: posting.pipeline.pipelineVersionId || null,
+                currentStageId: posting.pipeline.firstStageId || null,
                 stageUpdatedAt: new Date().toISOString(),
                 
-                // Heuristic for name/email
-                applicantName: answers.name || answers.fullName || answers.applicantName || 'Applicant',
-                applicantEmail: answers.email || answers.emailAddress || answers.applicantEmail || '',
-                answers: sanitizedValues,
+                candidateSummary,
+                
+                // Fallbacks for backward compatibility / top-level querying if needed
+                applicantName: candidateSummary.fullname || 'Applicant',
+                applicantEmail: candidateSummary.email || '',
+                
+                answers: enrichedAnswers,
                 
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()

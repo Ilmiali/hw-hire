@@ -12,6 +12,12 @@ export interface RecruitingApplication {
   currentStageId?: string;
   groupId?: string;
   assignedTo?: string; // Member ID
+  candidateSummary?: {
+    fullname: string;
+    email: string;
+    phone?: string;
+    avatarUrl?: string;
+  };
   answers: Record<string, any>; // e.g. { fullName: "...", email: "..." }
   createdAt: string; // ISO timestamp
   updatedAt?: string;

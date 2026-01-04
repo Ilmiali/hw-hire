@@ -26,13 +26,11 @@ export const ApplicationCardPreview = ({ config, fields }: ApplicationCardPrevie
         }
     };
 
-    const headlineField = fields.find(f => f.id === config?.headlineFieldId);
-    const subtitleField = fields.find(f => f.id === config?.subtitleFieldId);
     const avatarField = fields.find(f => f.id === config?.avatarFieldId);
     
-    // Fallbacks
-    const headline = headlineField ? getMockValue(headlineField) : 'Candidate Name';
-    const subtitle = subtitleField ? getMockValue(subtitleField) : 'Applied Role';
+    // Standardized mocks as requested
+    const headline = 'John Doe';
+    const subtitle = 'john@example.com';
 
     const additionalFields = (config?.additionalFields || [])
         .map(id => fields.find(f => f.id === id))
@@ -62,9 +60,9 @@ export const ApplicationCardPreview = ({ config, fields }: ApplicationCardPrevie
             {additionalFields.length > 0 && (
                 <div className="space-y-1.5 pt-2 border-t border-zinc-100 dark:border-zinc-700/50">
                     {additionalFields.map(field => (
-                        <div key={field.id} className="text-xs flex justify-between gap-2">
-                            <span className="text-zinc-500 shrink-0">{field.label}:</span>
-                            <span className="text-zinc-700 dark:text-zinc-300 font-medium truncate text-right">
+                        <div key={field.id} className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500/80">{field.label}</span>
+                            <span className="text-xs text-zinc-700 dark:text-zinc-300 font-medium truncate">
                                 {getMockValue(field)}
                             </span>
                         </div>

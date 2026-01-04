@@ -26,16 +26,21 @@ import { ArrowLeftIcon } from '@heroicons/react/16/solid';
 import { toast } from 'react-toastify';
 import { Avatar } from '../../../components/avatar';
 import { Badge } from '../../../components/badge';
-import { UserIcon } from '@heroicons/react/24/solid';
 
 // Types for the board
 export interface BoardApplication {
   id: string;
-  headline: string; // was name
-  subtitle: string; // was role
+  headline: string; // fallback if candidateSummary missing
+  subtitle: string; // fallback if candidateSummary missing
   stageId: string;
   source?: string;
   createdAt: string;
+  candidateSummary?: {
+    fullname: string;
+    email: string;
+    phone?: string;
+    avatarUrl?: string;
+  };
   avatar?: { type: 'text' | 'image'; value: string };
   additionalFields?: { id: string; label: string; value: string }[];
   // Legacy support until full migration
@@ -79,9 +84,15 @@ function ApplicationCard({ app, isOverlay }: { app: BoardApplication; isOverlay?
     );
   }
 
-  // Resolve values (fallback to legacy name/role if headline/subtitle missing)
-  const headline = app.headline || app.name || 'Unknown';
-  const subtitle = app.subtitle || app.role || '';
+  // Resolve values prioritizing candidateSummary
+  const headline = app.candidateSummary?.fullname || app.headline || app.name || 'Unknown';
+  const subtitle = app.candidateSummary?.email || app.candidateSummary?.phone || app.subtitle || app.role || '';
+  
+  // Resolve Avatar
+  const avatarUrl = app.candidateSummary?.avatarUrl;
+  const avatarInitials = app.candidateSummary?.fullname 
+    ? app.candidateSummary.fullname.charAt(0).toUpperCase() 
+    : (app.headline || app.name || '?').charAt(0).toUpperCase();
 
   return (
     <div
@@ -96,15 +107,14 @@ function ApplicationCard({ app, isOverlay }: { app: BoardApplication; isOverlay?
       `}
     >
       <div className="flex items-center gap-3">
-         {app.avatar?.type === 'image' && app.avatar.value ? (
+         {avatarUrl ? (
+             <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover bg-zinc-100 dark:bg-zinc-700" />
+         ) : app.avatar?.type === 'image' && app.avatar.value ? (
              <img src={app.avatar.value} alt="" className="size-8 rounded-full object-cover bg-zinc-100" />
-         ) : app.avatar?.type === 'image' ? (
-              // Image type but no value (or fail) -> user icon
-             <div className="size-8 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden">
-                <UserIcon className="size-5 text-zinc-400" />
-             </div>
+         ) : app.avatar?.type === 'text' ? (
+             <Avatar initials={app.avatar.value} className="size-8" />
          ) : (
-            <Avatar initials={app.avatar?.value || headline.charAt(0) || '?'} className="size-8" />
+             <Avatar initials={avatarInitials} className="size-8" />
          )}
 
         <div className="min-w-0">
@@ -116,9 +126,9 @@ function ApplicationCard({ app, isOverlay }: { app: BoardApplication; isOverlay?
        {app.additionalFields && app.additionalFields.length > 0 && (
           <div className="space-y-1.5 pt-2 mt-2 border-t border-zinc-100 dark:border-zinc-700/50">
               {app.additionalFields.map(field => (
-                  <div key={field.id} className="text-xs flex justify-between gap-2">
-                      <span className="text-zinc-500 shrink-0">{field.label}:</span>
-                      <span className="text-zinc-700 dark:text-zinc-300 font-medium truncate text-right">
+                  <div key={field.id} className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500/80">{field.label}</span>
+                      <span className="text-xs text-zinc-700 dark:text-zinc-300 font-medium truncate">
                           {field.value}
                       </span>
                   </div>
