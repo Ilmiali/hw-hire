@@ -10,7 +10,8 @@ import {
     saveResourceDraft, 
     clearActiveResource,
     fetchResources,
-    fetchResourceVersions
+    fetchResourceVersions,
+    fetchResourceVersionById
 } from '../../store/slices/resourceSlice';
 import { Button } from '../../components/button';
 import { Fieldset, Field, Label } from '../../components/fieldset';
@@ -46,8 +47,12 @@ import {
     DocumentTextIcon,
     PlusIcon,
     LinkIcon,
-    BuildingOffice2Icon
+    BuildingOffice2Icon,
+    IdentificationIcon
 } from '@heroicons/react/20/solid';
+import { FormSchema, FormField } from '../../types/form-builder';
+import { ApplicationCardPreview } from './components/ApplicationCardPreview';
+import { Checkbox } from '../../components/checkbox';
 
 export default function JobDetailPage() {
   const { orgId, jobId } = useParams<{ orgId: string; jobId: string }>();
@@ -76,6 +81,10 @@ export default function JobDetailPage() {
   const [pipelineVersions, setPipelineVersions] = useState<ResourceVersion[]>([]);
   const [formVersions, setFormVersions] = useState<ResourceVersion[]>([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
+
+  // Card Config State
+  const [availableFormFields, setAvailableFormFields] = useState<FormField[]>([]);
+  const [loadingFormSchema, setLoadingFormSchema] = useState(false);
 
   useEffect(() => {
     if (orgId && jobId) {
@@ -127,6 +136,7 @@ export default function JobDetailPage() {
         formVersionId: draftData.formVersionId,
         pipelineId: draftData.pipelineId,
         pipelineVersionId: draftData.pipelineVersionId,
+        applicationCardConfig: draftData.applicationCardConfig || {},
       });
     } else if (activeResource) {
       setJobForm({
@@ -140,9 +150,75 @@ export default function JobDetailPage() {
         formVersionId: (activeResource as any).formVersionId,
         pipelineId: (activeResource as any).pipelineId,
         pipelineVersionId: (activeResource as any).pipelineVersionId,
+        applicationCardConfig: (activeResource as any).applicationCardConfig || {},
       });
     }
   }, [activeDraft, activeResource]);
+  
+  // Load form schema to get fields for card config
+  useEffect(() => {
+    const loadFormSchema = async () => {
+        if (!orgId || !jobForm.formId) {
+            setAvailableFormFields([]);
+            return;
+        }
+
+        setLoadingFormSchema(true);
+        try {
+            let resourceData: any;
+            if (jobForm.formVersionId) {
+                const res = await dispatch(fetchResourceVersionById({ 
+                    orgId, 
+                    moduleId: 'hire', 
+                    resourceType: 'forms', 
+                    resourceId: jobForm.formId,
+                    versionId: jobForm.formVersionId
+                })).unwrap();
+                resourceData = res.data;
+            } else {
+                const res = await dispatch(fetchResourceById({ 
+                    orgId, 
+                    moduleId: 'hire', 
+                    resourceType: 'forms', 
+                    resourceId: jobForm.formId 
+                })).unwrap();
+                resourceData = res;
+            }
+            
+            let schema: FormSchema | null = null;
+            if (resourceData.data) {
+                schema = resourceData.data;
+            } else if (resourceData.pages) { // handle if it is directly the schema object
+                 schema = resourceData;
+            } else if ((resourceData as any).id && (resourceData as any).pages) {
+                 schema = resourceData;
+            }
+
+            if (schema) {
+                const fields: FormField[] = [];
+                schema.pages.forEach(page => {
+                    page.sections.forEach(section => {
+                        section.rows.forEach(row => {
+                            row.fields.forEach(field => {
+                                // Exclude structural fields
+                                if (!['divider', 'spacer', 'image'].includes(field.type)) {
+                                    fields.push(field);
+                                }
+                            });
+                        });
+                    });
+                });
+                setAvailableFormFields(fields);
+            }
+        } catch (error) {
+            console.error("Failed to load form schema", error);
+        } finally {
+            setLoadingFormSchema(false);
+        }
+    };
+    
+    loadFormSchema();
+  }, [dispatch, orgId, jobForm.formId, jobForm.formVersionId]);
 
   // Load versions for selected pipeline
   useEffect(() => {
@@ -232,6 +308,7 @@ export default function JobDetailPage() {
                 formVersionId: jobForm.formVersionId,
                 pipelineId: jobForm.pipelineId,
                 pipelineVersionId: jobForm.pipelineVersionId,
+                applicationCardConfig: jobForm.applicationCardConfig,
             } as any
         })).unwrap();
         toast.success('Job saved');
@@ -303,7 +380,7 @@ export default function JobDetailPage() {
                 className="text-sm font-semibold bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-white p-0 "
             />
           </div>
-          <Badge color={((activeResource?.status as any) === 'published' || (activeResource?.status as any) === 'active') ? 'green' : 'zinc'}>
+          <Badge color={((activeResource?.status as any) === 'published') ? 'green' : 'zinc'}>
             {activeResource?.status}
           </Badge>
         </div>
@@ -535,7 +612,7 @@ export default function JobDetailPage() {
                                         >
                                             <option value="">Select Pipeline</option>
                                             {(resources['pipelines'] || [])
-                                                .filter(p => p.status === 'published' || p.status === 'active')
+                                                .filter(p => p.status === 'published')
                                                 .map(p => (
                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
@@ -603,7 +680,7 @@ export default function JobDetailPage() {
                                         >
                                             <option value="">Select Form</option>
                                             {(resources['forms'] || [])
-                                                .filter(f => f.status === 'published' || f.status === 'active')
+                                                .filter(f => f.status === 'published')
                                                 .map(f => (
                                                 <option key={f.id} value={f.id}>{f.name}</option>
                                             ))}
@@ -631,6 +708,145 @@ export default function JobDetailPage() {
                                 </div>
                              </Fieldset>
                         </section>
+
+                        {/* Application Card Configuration */}
+                         {jobForm.formId && (
+                             <section className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+                                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-400" />
+                                <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                                    <IdentificationIcon className="w-5 h-5 text-indigo-500" />
+                                    Application Card Display
+                                </h3>
+                            <div className="flex flex-col md:flex-row gap-8">
+                                <div className="flex-1 space-y-6">
+                                    <p className="text-sm text-zinc-500 mb-4">
+                                        Configure how applications appear on the pipeline board.
+                                    </p>
+                                    
+                                    {loadingFormSchema ? (
+                                        <div className="py-4 text-center text-zinc-400 italic text-sm">Loading form fields...</div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Field>
+                                                    <Label>Headline</Label>
+                                                    <Select
+                                                        value={jobForm.applicationCardConfig?.headlineFieldId || ''}
+                                                        onChange={(e) => setJobForm({
+                                                            ...jobForm,
+                                                            applicationCardConfig: {
+                                                                ...jobForm.applicationCardConfig,
+                                                                headlineFieldId: e.target.value
+                                                            }
+                                                        })}
+                                                    >
+                                                        <option value="">Default (Candidate Name)</option>
+                                                        {availableFormFields.map(f => (
+                                                            <option key={f.id} value={f.id}>{f.label}</option>
+                                                        ))}
+                                                    </Select>
+                                                </Field>
+                                                <Field>
+                                                    <Label>Subtitle</Label>
+                                                    <Select
+                                                        value={jobForm.applicationCardConfig?.subtitleFieldId || ''}
+                                                        onChange={(e) => setJobForm({
+                                                            ...jobForm,
+                                                            applicationCardConfig: {
+                                                                ...jobForm.applicationCardConfig,
+                                                                subtitleFieldId: e.target.value
+                                                            }
+                                                        })}
+                                                    >
+                                                        <option value="">Default (Job Role)</option>
+                                                        {availableFormFields.map(f => (
+                                                            <option key={f.id} value={f.id}>{f.label}</option>
+                                                        ))}
+                                                    </Select>
+                                                </Field>
+                                            </div>
+
+                                            <Field>
+                                                <Label>Avatar Source</Label>
+                                                <Select
+                                                    value={jobForm.applicationCardConfig?.avatarFieldId || ''}
+                                                        onChange={(e) => setJobForm({
+                                                            ...jobForm,
+                                                            applicationCardConfig: {
+                                                                ...jobForm.applicationCardConfig,
+                                                                avatarFieldId: e.target.value
+                                                            }
+                                                        })}
+                                                >
+                                                    <option value="">Default (Initials)</option>
+                                                    {availableFormFields.filter(f => f.type === 'file' || f.type === 'image' || f.type === 'text').map(f => (
+                                                        <option key={f.id} value={f.id}>{f.label} ({f.type})</option>
+                                                    ))}
+                                                </Select>
+                                            </Field>
+
+                                            <div className="pt-4 border-t border-zinc-100 dark:border-white/5">
+                                                <span className="text-sm font-medium text-zinc-950 dark:text-white mb-3 block">Additional Fields</span>
+                                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                                                    {availableFormFields
+                                                        .filter(f => 
+                                                            f.id !== jobForm.applicationCardConfig?.headlineFieldId &&
+                                                            f.id !== jobForm.applicationCardConfig?.subtitleFieldId &&
+                                                            f.id !== jobForm.applicationCardConfig?.avatarFieldId
+                                                        )
+                                                        .map(field => {
+                                                        const isSelected = (jobForm.applicationCardConfig?.additionalFields || []).includes(field.id);
+                                                        return (
+                                                            <label key={field.id} className="flex items-center gap-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors">
+                                                                <Checkbox 
+                                                                    checked={isSelected}
+                                                                    onChange={(checked) => {
+                                                                        const current = jobForm.applicationCardConfig?.additionalFields || [];
+                                                                        const newConfig = { ...jobForm.applicationCardConfig };
+                                                                        
+                                                                        if (checked) {
+                                                                            if (current.length >= 3) {
+                                                                                toast.info("You can only select up to 3 additional fields");
+                                                                                return;
+                                                                            }
+                                                                            newConfig.additionalFields = [...current, field.id];
+                                                                        } else {
+                                                                             newConfig.additionalFields = current.filter(id => id !== field.id);
+                                                                        }
+                                                                        setJobForm({ ...jobForm, applicationCardConfig: newConfig });
+                                                                    }}
+                                                                />
+                                                                <div className="flex-1">
+                                                                    <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{field.label}</div>
+                                                                    <div className="text-xs text-zinc-500">
+                                                                        Type: {field.type}
+                                                                        {field.required && <span className="ml-1 text-red-500">*</span>}
+                                                                    </div>
+                                                                </div>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                    {availableFormFields.length === 0 && (
+                                                         <div className="py-4 text-center text-zinc-400 italic text-sm">No fields found in this form</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                <div className="w-full md:w-auto flex flex-col items-center justify-start pt-8">
+                                     <div className="sticky top-6 p-6 bg-zinc-50/50 dark:bg-black/20 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
+                                         <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-4 block text-center">Preview</span>
+                                         <ApplicationCardPreview 
+                                            config={jobForm.applicationCardConfig}
+                                            fields={availableFormFields} 
+                                         />
+                                     </div>
+                                </div>
+                            </div>
+                         </section>
+                         )}
 
                         {jobForm.formId && (
                              <section className="animate-in fade-in slide-in-from-top-4 duration-500">

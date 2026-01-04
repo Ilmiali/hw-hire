@@ -1,3 +1,5 @@
+import { ApplicationCardConfig } from './jobs';
+
 export type ApplicationStatus = 'applied' | 'screening' | 'interview' | 'offer' | 'rejected' | 'hired';
 
 export interface RecruitingApplication {
@@ -29,6 +31,9 @@ export interface RecruitingJob {
   // Client-side aggregated counts
   postingsCount?: number;
   applicantsCount?: number;
+
+  formId?: string;
+  applicationCardConfig?: ApplicationCardConfig;
 }
 
 export interface JobStats {

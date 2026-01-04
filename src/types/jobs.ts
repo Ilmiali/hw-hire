@@ -1,6 +1,13 @@
 export type JobStatus = "draft" | "open" | "closed";
 export type EmploymentType = "Full-time" | "Part-time" | "Contract" | "Temporary";
 
+export type ApplicationCardConfig = {
+    headlineFieldId?: string;
+    subtitleFieldId?: string;
+    avatarFieldId?: string;
+    additionalFields?: string[];
+};
+
 export type Job = {
   id: string;
   name?: string; // Internal name
@@ -10,6 +17,8 @@ export type Job = {
   createdAt: string;
   updatedAt: string;
   publishedVersionId?: string; // Last published version
+
+  applicationCardConfig?: ApplicationCardConfig;
 };
 
 export type JobDraft = {
@@ -24,6 +33,8 @@ export type JobDraft = {
   
   pipelineId?: string;
   pipelineVersionId?: string;
+
+  applicationCardConfig?: ApplicationCardConfig;
   
   updatedAt: string;
   updatedBy?: string;
@@ -39,6 +50,7 @@ export type JobVersion = {
     employmentType: EmploymentType;
     description: string;
     coverImage?: string;
+    applicationCardConfig?: ApplicationCardConfig;
   };
   
   formId?: string;

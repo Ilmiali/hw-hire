@@ -88,12 +88,16 @@ export const generateMockApplications = (stages: PipelineStage[]): BoardApplicat
 
   for (let i = 0; i < 5; i++) {
     const stageIndex = Math.floor(Math.random() * Math.min(stages.length, 3));
+    const name = names[i % names.length];
     apps.push({
       id: `app-${i}`,
-      name: names[i % names.length],
-      role: roles[i % roles.length],
+      headline: name,
+      subtitle: roles[i % roles.length],
+      name: name, // legacy compat
+      role: roles[i % roles.length], // legacy compat
       stageId: stages[stageIndex]?.id || stages[0].id,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      avatar: { type: 'text', value: name.charAt(0) }
     });
   }
   return apps;

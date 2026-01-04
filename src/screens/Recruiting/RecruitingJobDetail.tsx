@@ -27,6 +27,10 @@ export default function RecruitingJobDetail() {
   /* eslint-disable @typescript-eslint/no-unused-vars */
   const [loadingApps, setLoadingApps] = useState(false);
   /* eslint-enable @typescript-eslint/no-unused-vars */
+  
+  // Card Config
+  const [formFields, setFormFields] = useState<any[]>([]);
+  const [loadingForm, setLoadingForm] = useState(false);
 
   // Workspace state
   const [openTabIds, setOpenTabIds] = useState<string[]>([]);
@@ -50,7 +54,9 @@ export default function RecruitingJobDetail() {
                 updatedAt: jobDoc.updatedAt,
                 createdAt: jobDoc.createdAt,
                 postingsCount: jobDoc.postingsCount, // Assuming these might exist now or later
-                applicantsCount: jobDoc.applicantsCount
+                applicantsCount: jobDoc.applicantsCount,
+                formId: jobDoc.data?.formId || jobDoc.formId, // Capture formId
+                applicationCardConfig: jobDoc.data?.applicationCardConfig || jobDoc.applicationCardConfig // Capture config
              };
              setJob(jobData);
 
@@ -75,6 +81,30 @@ export default function RecruitingJobDetail() {
       } finally {
         setLoadingJob(false);
       }
+    };
+
+
+
+    // Fetch form schema to resolve field labels
+    const fetchFormSchema = async (formId: string) => {
+        setLoadingForm(true);
+        try {
+             const formDoc = await db.getDocument<any>(`orgs/${orgId}/modules/hire/forms`, formId);
+             if (formDoc) {
+                 // Simplified schema extraction
+                 let schema: any = formDoc.data || formDoc;
+                 
+                 const fields: any[] = [];
+                 if (schema.pages) {
+                     schema.pages.forEach((p: any) => p.sections.forEach((s: any) => s.rows.forEach((r: any) => r.fields.forEach((f: any) => fields.push(f)))));
+                 }
+                 setFormFields(fields);
+             }
+        } catch (error) {
+            console.error("Failed to fetch form schema", error);
+        } finally {
+            setLoadingForm(false);
+        }
     };
 
     const fetchApplications = async () => {
@@ -112,6 +142,13 @@ export default function RecruitingJobDetail() {
     fetchApplications();
   }, [orgId, jobId]);
 
+  // Load form schema when job is loaded and has formId
+  useEffect(() => {
+      if (job && (job as any).formId) {
+          fetchFormSchema((job as any).formId);
+      }
+  }, [job]);
+
   useEffect(() => {
       if (applicationId && !openTabIds.includes(applicationId)) {
           setOpenTabIds(prev => {
@@ -126,6 +163,25 @@ export default function RecruitingJobDetail() {
       if (!answers) return 'Unknown Candidate';
       // Try common keys
       return answers.fullName || answers.name || answers['Full Name'] || answers['Name'] || 'Unknown Candidate';
+  };
+
+  const getFieldValue = (app: RecruitingApplication, fieldId?: string) => {
+      if (!fieldId || !app.answers) return undefined;
+      // 1. Try direct match by field ID (ideal)
+      if (app.answers[fieldId]) return app.answers[fieldId];
+      
+      // 2. Try match by label if we have the field definition (legacy/fallback)
+      const field = formFields.find(f => f.id === fieldId);
+      if (field && app.answers[field.label]) return app.answers[field.label];
+      
+      return undefined;
+  };
+
+  const getFormattedFieldValue = (val: any) => {
+      if (!val) return '';
+      if (Array.isArray(val)) return val.join(', '); // Multi-select
+      if (typeof val === 'object') return JSON.stringify(val);
+      return String(val);
   };
 
   const handleApplicationClick = (appId: string) => {
@@ -229,14 +285,52 @@ export default function RecruitingJobDetail() {
         <TabsContent value="applicants" className="mt-6 h-[calc(100vh-300px)] min-h-[500px]">
             <PipelineBoard 
                 stages={stages}
-                applications={applications.map(app => ({
-                    id: app.id,
-                    name: getCandidateName(app),
-                    role: app.jobPostingId || 'Candidate', // fallback
-                    stageId: app.currentStageId || stages[0].id,
-                    source: app.source,
-                    createdAt: app.createdAt
-                }))}
+                applications={applications.map(app => {
+                    const config = (job as any).applicationCardConfig;
+                    
+                    // Headline
+                    let headline = getFormattedFieldValue(getFieldValue(app, config?.headlineFieldId));
+                    if (!headline) headline = getCandidateName(app); // Fallback
+
+                    // Subtitle
+                    let subtitle = getFormattedFieldValue(getFieldValue(app, config?.subtitleFieldId));
+                    if (!subtitle) subtitle = app.jobPostingId || 'Candidate'; // Fallback
+
+                    // Avatar
+                    const avatarFieldId = config?.avatarFieldId;
+                    const avatarField = formFields.find(f => f.id === avatarFieldId);
+                    const avatarVal = getFieldValue(app, avatarFieldId);
+                    
+                    let avatar: { type: 'text' | 'image'; value: string } | undefined;
+                    
+                    if (avatarField && (avatarField.type === 'file' || avatarField.type === 'image')) {
+                        // Assuming val is a URL for file/image types
+                         if (avatarVal) avatar = { type: 'image', value: avatarVal };
+                    } else if (avatarVal) {
+                         avatar = { type: 'text', value: String(avatarVal).charAt(0) };
+                    }
+
+                    // Additional Fields
+                    const additionalFields = (config?.additionalFields || []).map((fid: string) => {
+                        const field = formFields.find(f => f.id === fid);
+                        const val = getFormattedFieldValue(getFieldValue(app, fid));
+                        if (!field || !val) return null;
+                        return { id: fid, label: field.label, value: val };
+                    }).filter(Boolean) as any[];
+
+                    return {
+                        id: app.id,
+                        headline,
+                        subtitle,
+                        name: headline, // legacy
+                        role: subtitle, // legacy
+                        stageId: app.currentStageId || stages[0].id,
+                        source: app.source,
+                        createdAt: app.createdAt,
+                        avatar,
+                        additionalFields
+                    };
+                })}
                 onApplicationMove={async (appId, newStageId) => {
                     // Optimistic update
                     const prevApps = [...applications];
