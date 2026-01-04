@@ -52,7 +52,8 @@ import {
     LinkIcon,
     BuildingOffice2Icon,
     IdentificationIcon,
-    SparklesIcon
+    SparklesIcon,
+    InformationCircleIcon
 } from '@heroicons/react/20/solid';
 import { FormSchema, FormField } from '../../types/form-builder';
 import { ApplicationCardPreview } from './components/ApplicationCardPreview';
@@ -422,7 +423,7 @@ export default function JobDetailPage() {
                 className="h-9 px-4 text-sm font-medium bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg hover:bg-zinc-200 dark:hover:bg-white/10 transition-all"
             >
                 {!isSaving && <ArrowDownOnSquareIcon className="mr-2 h-4 w-4 opacity-70" />}
-                {isSaving ? 'Saving...' : 'Save Draft'}
+                {isSaving ? 'Saving...' : 'Save'}
             </Button>
         </div>
       </header>
@@ -613,6 +614,12 @@ export default function JobDetailPage() {
                                 <ArrowPathIcon className="w-5 h-5 text-purple-500" />
                                 Recruitment Workflow
                             </h3>
+                            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-xl p-4 flex gap-3 mb-6">
+                                <InformationCircleIcon className="w-5 h-5 text-blue-500 shrink-0" />
+                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    Changes to the workflow are saved when you click Save.
+                                </p>
+                            </div>
                              <Fieldset>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <Field>
@@ -681,6 +688,12 @@ export default function JobDetailPage() {
                                 <DocumentTextIcon className="w-5 h-5 text-emerald-500" />
                                 Application Form
                             </h3>
+                            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-xl p-4 flex gap-3 mb-6">
+                                <InformationCircleIcon className="w-5 h-5 text-blue-500 shrink-0" />
+                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    Changes to the form take effect on new postings.
+                                </p>
+                            </div>
                              <Fieldset>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <Field>

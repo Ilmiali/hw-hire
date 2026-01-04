@@ -97,33 +97,54 @@ export default function RecruitingJobDetail() {
       try {
         const jobsPath = `orgs/${orgId}/modules/hire/jobs`;
         if (!jobId) return;
-        const jobDoc = await db.getDocument<any>(jobsPath, jobId);
+        
+        // Fetch both job and job draft
+        const [jobDoc, draftDoc] = await Promise.all([
+          db.getDocument<any>(jobsPath, jobId),
+          db.getDocument<any>(`${jobsPath}/${jobId}/draft`, 'current')
+        ]);
+
         if (jobDoc) {
+             const draftData = draftDoc?.data || {};
+             
              const jobData: RecruitingJob = {
                 id: jobDoc.id,
-                title: jobDoc.data?.name || jobDoc.name || 'Untitled Job',
-                location: jobDoc.data?.location || 'Remote',
+                title: draftData.title || jobDoc.data?.name || jobDoc.name || 'Untitled Job',
+                location: draftData.location || jobDoc.data?.location || 'Remote',
                 status: jobDoc.status || 'draft',
                 updatedAt: jobDoc.updatedAt,
                 createdAt: jobDoc.createdAt,
                 postingsCount: jobDoc.postingsCount,
                 applicantsCount: jobDoc.applicantsCount,
-                formId: jobDoc.data?.formId || jobDoc.formId,
-                applicationCardConfig: jobDoc.data?.applicationCardConfig || jobDoc.applicationCardConfig,
-                layout: jobDoc.data?.layout || jobDoc.layout
+                formId: draftData.formId || jobDoc.data?.formId || jobDoc.formId,
+                applicationCardConfig: draftData.applicationCardConfig || jobDoc.data?.applicationCardConfig || jobDoc.applicationCardConfig,
+                layout: draftData.layout || jobDoc.data?.layout || jobDoc.layout
              };
              setJob(jobData);
 
-             if (jobDoc.data?.pipelineId || jobDoc.pipelineId) {
-                const pid = jobDoc.data?.pipelineId || jobDoc.pipelineId;
-                const pipelineDoc = await db.getDocument<any>(`orgs/${orgId}/modules/hire/pipelines`, pid);
-                if (pipelineDoc) {
-                   if (pipelineDoc.activeVersionId && pipelineDoc.versions) {
-                       const v = pipelineDoc.versions.find((ver: any) => ver.id === pipelineDoc.activeVersionId);
-                       if (v && v.stages) setStages(v.stages);
-                   } else if (pipelineDoc.data?.stages) {
-                       setStages(pipelineDoc.data.stages);
-                   }
+             const pipelineId = draftData.pipelineId || jobDoc.data?.pipelineId || jobDoc.pipelineId;
+             const pipelineVersionId = draftData.pipelineVersionId || jobDoc.data?.pipelineVersionId || jobDoc.pipelineVersionId;
+
+             if (pipelineId) {
+                if (pipelineVersionId) {
+                    // Fetch specific version
+                    const versionDoc = await db.getDocument<any>(`orgs/${orgId}/modules/hire/pipelines/${pipelineId}/versions`, pipelineVersionId);
+                    if (versionDoc?.data?.stages) {
+                        setStages(versionDoc.data.stages);
+                    } else if (versionDoc?.stages) {
+                        setStages(versionDoc.stages);
+                    }
+                } else {
+                    // Fallback to active version or base document
+                    const pipelineDoc = await db.getDocument<any>(`orgs/${orgId}/modules/hire/pipelines`, pipelineId);
+                    if (pipelineDoc) {
+                       if (pipelineDoc.activeVersionId && pipelineDoc.versions) {
+                           const v = pipelineDoc.versions.find((ver: any) => ver.id === pipelineDoc.activeVersionId);
+                           if (v && v.stages) setStages(v.stages);
+                       } else if (pipelineDoc.data?.stages) {
+                           setStages(pipelineDoc.data.stages);
+                       }
+                    }
                 }
              }
         }
