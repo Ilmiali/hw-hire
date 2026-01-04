@@ -9,13 +9,12 @@ import { DEFAULT_STAGES } from '../../types/pipeline';
 import { toast } from 'react-toastify';
 import { Badge } from '../../components/badge';
 import { Avatar } from '../../components/avatar';
-import { Button } from '../../components/button';
 import { SplitTwoLayout } from '../../components/split-two-layout';
 import { Heading } from '../../components/heading';
 import { Text } from '../../components/text';
 import { RecruitingApplicationWorkspace } from './components/RecruitingApplicationWorkspace';
 import { DataTable, Field } from '../../data-components/dataTable';
-import { Squares2X2Icon, ListBulletIcon, ArrowLeftIcon, UsersIcon, BriefcaseIcon } from '@heroicons/react/16/solid';
+import { Squares2X2Icon, ListBulletIcon, UsersIcon, BriefcaseIcon } from '@heroicons/react/16/solid';
 
 import { Skeleton } from '../../components/ui/skeleton';
 
@@ -25,9 +24,6 @@ function JobDetailSkeleton() {
             {/* Header Skeleton */}
             <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
                 <div className="px-8 py-8 flex flex-col gap-4 max-w-7xl mx-auto w-full">
-                    <div className="flex items-center gap-4 mb-2">
-                        <Skeleton className="h-8 w-24" />
-                    </div>
                     <div className="flex items-center gap-4">
                         <Skeleton className="size-12 rounded-lg" />
                         <div className="flex flex-col gap-2">
@@ -348,13 +344,6 @@ export default function RecruitingJobDetail() {
           "px-8 py-8 flex flex-col gap-4 max-w-7xl mx-auto w-full",
           job.layout?.cover ? "text-white" : "text-zinc-900 dark:text-zinc-100"
         )}>
-           <div className="flex items-center gap-4 mb-2">
-            <Button plain onClick={() => navigate(`/orgs/${orgId}/recruiting`)} className={job.layout?.cover ? "!text-white/80 hover:!text-white" : ""}>
-                <ArrowLeftIcon className="size-4 mr-2" />
-                Back to Jobs
-            </Button>
-          </div>
-
           <div className="flex items-center gap-4">
             <Avatar
               initials={job.layout?.icon?.type === 'emoji' ? job.layout.icon.value : (job.title?.substring(0, 2).toUpperCase() || 'JB')}

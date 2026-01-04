@@ -19,6 +19,17 @@ export type Job = {
   publishedVersionId?: string; // Last published version
 
   applicationCardConfig?: ApplicationCardConfig;
+  layout?: {
+    cover: {
+      id: string;
+      type: 'solid' | 'gradient';
+      value: string;
+    };
+    icon: {
+      type: string;
+      value: string;
+    };
+  };
 };
 
 export type JobDraft = {
@@ -35,6 +46,17 @@ export type JobDraft = {
   pipelineVersionId?: string;
 
   applicationCardConfig?: ApplicationCardConfig;
+  layout?: {
+    cover: {
+      id: string;
+      type: 'solid' | 'gradient';
+      value: string;
+    };
+    icon: {
+      type: string;
+      value: string;
+    };
+  };
   
   updatedAt: string;
   updatedBy?: string;

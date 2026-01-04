@@ -24,6 +24,9 @@ import { JobPosting, ChannelType } from '../../types/posting';
 import { postingService } from '../../services/postingService';
 import { CHANNELS } from '../../config/channels';
 import { Dialog, DialogTitle, DialogDescription, DialogActions } from '../../components/dialog';
+import { ColorPickerCard } from '../../components/ColorPickerCard';
+import { ColorOption } from '../../components/ColorPickerDialog';
+import { EmojiPicker } from '../../components/EmojiPicker';
 
 import { CoverPicker } from './components/CoverPicker';
 
@@ -48,7 +51,8 @@ import {
     PlusIcon,
     LinkIcon,
     BuildingOffice2Icon,
-    IdentificationIcon
+    IdentificationIcon,
+    SparklesIcon
 } from '@heroicons/react/20/solid';
 import { FormSchema, FormField } from '../../types/form-builder';
 import { ApplicationCardPreview } from './components/ApplicationCardPreview';
@@ -60,12 +64,13 @@ export default function JobDetailPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { activeResource, activeDraft, loading, resources } = useSelector((state: RootState) => state.resource);
   
-  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | 'form' | 'posting'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'workflow' | 'form' | 'posting' | 'personalize'>('details');
   const [selectedPostingId, setSelectedPostingId] = useState<string | null>(null);
   const [isChannelPickerOpen, setIsChannelPickerOpen] = useState(false);
 
   const [showPicker, setShowPicker] = useState(false);
   const [isSharingOpen, setIsSharingOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   // Job Form State
   const [jobForm, setJobForm] = useState<Partial<JobDraft>>({});
@@ -132,6 +137,10 @@ export default function JobDetailPage() {
         employmentType: draftData.employmentType || 'Full-time',
         description: draftData.description || '',
         coverImage: draftData.coverImage,
+        layout: draftData.layout || {
+            cover: { id: 'blue', type: 'solid', value: '#64B5F6' },
+            icon: { type: 'emoji', value: '📋' }
+        },
         formId: draftData.formId,
         formVersionId: draftData.formVersionId,
         pipelineId: draftData.pipelineId,
@@ -145,6 +154,10 @@ export default function JobDetailPage() {
         employmentType: (activeResource as any).employmentType || 'Full-time',
         description: (activeResource as any).description || '',
         coverImage: (activeResource as any).coverImage,
+        layout: (activeResource as any).layout || {
+            cover: { id: 'blue', type: 'solid', value: '#64B5F6' },
+            icon: { type: 'emoji', value: '📋' }
+        },
 
         formId: (activeResource as any).formId,
         formVersionId: (activeResource as any).formVersionId,
@@ -309,6 +322,7 @@ export default function JobDetailPage() {
                 pipelineId: jobForm.pipelineId,
                 pipelineVersionId: jobForm.pipelineVersionId,
                 applicationCardConfig: jobForm.applicationCardConfig,
+                layout: jobForm.layout,
             } as any
         })).unwrap();
         toast.success('Job saved');
@@ -437,6 +451,12 @@ export default function JobDetailPage() {
                             label="Application Form" 
                             active={activeTab === 'form'} 
                             onClick={() => setActiveTab('form')} 
+                        />
+                         <SidebarItem 
+                            icon={SparklesIcon} 
+                            label="Personalize" 
+                            active={activeTab === 'personalize'} 
+                            onClick={() => setActiveTab('personalize')} 
                         />
                     </nav>
                 </div>
@@ -796,6 +816,76 @@ export default function JobDetailPage() {
                         )}
                     </div>
                 )}
+
+                {activeTab === 'personalize' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <section className="bg-white dark:bg-zinc-950 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-500 to-rose-500" />
+                            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                                <SparklesIcon className="w-5 h-5 text-pink-500" />
+                                Internal Personalization
+                            </h3>
+                            <p className="text-zinc-500 text-sm mb-8">
+                                Customize how this job appears to your team in the internal recruiting board.
+                                This does not affect the public job posting.
+                            </p>
+
+                            <div className="max-w-xl">
+                                <ColorPickerCard
+                                    label="Cover Style"
+                                    initialColor={jobForm.layout?.cover || { id: 'blue', type: 'solid', value: '#64B5F6' }}
+                                    onColorChange={(color) => setJobForm({ 
+                                        ...jobForm, 
+                                        layout: { 
+                                            ...(jobForm.layout || { icon: { type: 'emoji', value: '📋' }} as any),
+                                            cover: color 
+                                        } 
+                                    })}
+                                    className="mb-8"
+                                />
+
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                                        Job Icon
+                                    </label>
+                                    <div className="flex gap-4 items-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEmojiPickerOpen(true)}
+                                            className="relative group h-16 w-16 flex items-center justify-center rounded-xl text-4xl shadow-sm transition-all hover:scale-105"
+                                            style={{ 
+                                                background: jobForm.layout?.cover?.value || '#64B5F6' 
+                                            }}
+                                        >
+                                            <span className="transform group-hover:scale-110 transition-transform">
+                                                {jobForm.layout?.icon?.value || '📋'}
+                                            </span>
+                                            <div className="absolute inset-0 rounded-xl ring-inset ring-2 ring-black/5 dark:ring-white/10 group-hover:ring-white/50 transition-all" />
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-xl backdrop-blur-[1px]">
+                                                <span className="text-xs font-medium text-white bg-black/40 px-2 py-1 rounded-full border border-white/20">Change</span>
+                                            </div>
+                                        </button>
+                                        <div className="text-sm text-zinc-500">
+                                            This icon will be used in the job board and sidebar navigation.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                )}
+                
+                <EmojiPicker
+                    isOpen={isEmojiPickerOpen}
+                    onClose={() => setIsEmojiPickerOpen(false)}
+                    onEmojiSelect={(emoji) => setJobForm({ 
+                        ...jobForm, 
+                        layout: { 
+                            ...(jobForm.layout || { cover: { id: 'blue', type: 'solid', value: '#64B5F6' }} as any),
+                            icon: { type: 'emoji', value: emoji } 
+                        } 
+                    })}
+                />
 
                 {activeTab === 'posting' && selectedPosting && (
                     <PostingEditor 

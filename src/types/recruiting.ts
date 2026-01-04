@@ -23,7 +23,7 @@ export interface RecruitingApplication {
   updatedAt?: string;
 }
 
-export type JobStatus = 'draft' | 'open' | 'closed';
+export type JobStatus = 'draft' | 'open' | 'closed' | 'published' | 'unpublished';
 
 export interface RecruitingJob {
   id: string;

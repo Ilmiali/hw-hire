@@ -36,7 +36,8 @@ export function RecruitingSidebarSection() {
             location: doc.data?.location || 'Remote',
             status: doc.status || 'draft',
             updatedAt: doc.updatedAt,
-            createdAt: doc.createdAt
+            createdAt: doc.createdAt,
+            layout: doc.data?.layout || doc.layout
         }));
 
         // Filter for published/open jobs in JS
@@ -125,11 +126,25 @@ export function RecruitingSidebarSection() {
             href={`/orgs/${currentOrganization.id}/recruiting/${job.id}`}
             current={isActive}
           >
-            <Avatar 
+            {job.layout?.icon?.type === 'emoji' ? (
+              <div 
+                className="h-6 w-6 flex items-center justify-center rounded-lg text-lg shrink-0 overflow-hidden"
+                style={{ 
+                  background: job.layout?.cover?.value || '#64B5F6',
+                  ...(job.layout?.cover?.type === 'gradient' && {
+                    backgroundImage: `linear-gradient(${job.layout?.cover?.value})`
+                  })
+                }}
+              >
+                {job.layout?.icon.value}
+              </div>
+            ) : (
+              <Avatar 
                 variant="square" 
                 initials={initials} 
                 className="bg-indigo-500 text-white" 
-            />
+              />
+            )}
             <SidebarLabel>{titleRaw}</SidebarLabel>
             {job.applicantsCount !== undefined && job.applicantsCount > 0 && (
                 <Badge className="ml-auto bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
