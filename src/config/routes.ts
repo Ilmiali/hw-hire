@@ -139,6 +139,22 @@ export const additionalRoutes: RouteConfig[] = [
     layout: 'authenticated',
     isAuthProtected: true,
   },
+  {
+    path: '/orgs/:orgId/applications',
+    name: 'Applications',
+    icon: ApplicationIcon,
+    component: Applications,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
+    path: '/orgs/:orgId/profile',
+    name: 'Profile',
+    icon: UserIcon,
+    component: Profile,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
 ];
 // Main navigation routes (authenticated)
 export const mainRoutes: RouteGroup[] = [
@@ -185,47 +201,6 @@ export const mainRoutes: RouteGroup[] = [
         name: 'Jobs',
         icon: BriefcaseIcon,
         component: JobsListPage,
-        layout: 'authenticated',
-        isAuthProtected: true,
-      },
-    ],
-  },
-  // Body section (Settings)
-  {
-    name: 'Settings',
-    section: 'body',
-    order: 2,
-    routes: [
-       {
-        path: '/orgs/:orgId/applications', // Moved Applications here or keep in Build? User said: "into category build that has forms, pipelines, jobs". Applications wasn't explicitly mentioned but usually lives near there. 
-        // User request: "category build that has forms, pipelines, jobs"
-        // And "category recruiting that lists the current published jobs" which opens that job (likely detail view)
-        // AND "remove privacy policy, share feedback and change log"
-        // I'll keep Applications in Body for now or maybe it belongs in Build? "Build" implies configuration. Applications are data. 
-        // Actually earlier structure had Applications in header. 
-        // Providing "Build" (Forms, Pipelines, Jobs). 
-        // Where does "Applications" go? 
-        // The user didn't specify where Applications go, but it's a key part. 
-        // Let's put it in "Recruiting" (conceptually) or maybe just leave it in the list? 
-        // Wait, "Recruiting" category lists *jobs*.
-        // I'll put separate "Applications" link in "Recruiting" section? Or maybe "Build" is for configuration and there is another section for usage?
-        // The prompt says: "restructure the sidebar menu, into category build that has forms, pipelines, jobs. And into category recruiting that lists the current published jobs."
-        // It doesn't explicitly mention the general "Applications" list. I will keep it in 'body' section under no specific group or a 'Manage' group if needed, OR just put it in header or footer.
-        // Actually, let's look at the original structure. Applications was in Header.
-        // I'll leave Applications in the `Settings` section for now or maybe just `General`?
-        // Let's look at the implementation plan I wrote: "Create Build section containing: Apps (Applications), Forms, Pipelines, Jobs".
-        // Ah, in the plan I wrote "Apps (Applications)". So I will put it in Build.
-        name: 'Applications',
-        icon: ApplicationIcon,
-        component: Applications,
-        layout: 'authenticated',
-        isAuthProtected: true,
-      },
-      {
-        path: '/orgs/:orgId/profile',
-        name: 'Profile',
-        icon: UserIcon,
-        component: Profile,
         layout: 'authenticated',
         isAuthProtected: true,
       },

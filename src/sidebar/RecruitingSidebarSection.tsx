@@ -24,11 +24,9 @@ export function RecruitingSidebarSection() {
     const fetchPublishedJobs = async () => {
       try {
         const jobsPath = `orgs/${currentOrganization.id}/modules/hire/jobs`;
-        // Fetch published jobs
-        // Assuming status 'published' is the key. 
-        // Note: Earlier analysis showed 'status' field.
+        // Fetch all jobs sorted by updatedAt desc, like in RecruitingJobsList.tsx
+        // Avoiding constraints here ensures we don't hit index issues for this internal sidebar.
         const jobsData = await db.getDocuments<any>(jobsPath, {
-            constraints: [{ field: 'status', operator: '==', value: 'published' }],
             sortBy: { field: 'updatedAt', order: 'desc' }
         });
 
@@ -41,13 +39,15 @@ export function RecruitingSidebarSection() {
             createdAt: doc.createdAt
         }));
 
+        // Filter for published/open jobs in JS
+        const activeJobs = mappedJobs.filter(job => 
+            job.status === 'published' || job.status === 'open'
+        );
+
         // Fetch applicant counts
-        const jobsWithCounts = await Promise.all(mappedJobs.map(async (job) => {
+        const jobsWithCounts = await Promise.all(activeJobs.map(async (job) => {
             try {
                 const applicationsPath = `orgs/${currentOrganization.id}/modules/hire/applications`;
-                // Just getting count by fetching all docs with jobId. 
-                // Optimization: In a real app with thousands of applicants, this would be bad. 
-                // But for this scope, it mirrors existing logic.
                 const applications = await db.getDocuments(applicationsPath, {
                      constraints: [{ field: 'jobId', operator: '==', value: job.id }]
                 });

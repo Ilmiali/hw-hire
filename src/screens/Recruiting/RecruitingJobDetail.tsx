@@ -17,6 +17,68 @@ import { RecruitingApplicationWorkspace } from './components/RecruitingApplicati
 import { DataTable, Field } from '../../data-components/dataTable';
 import { Squares2X2Icon, ListBulletIcon, ArrowLeftIcon, UsersIcon, BriefcaseIcon } from '@heroicons/react/16/solid';
 
+import { Skeleton } from '../../components/ui/skeleton';
+
+function JobDetailSkeleton() {
+    return (
+        <div className="flex flex-col min-h-screen animate-pulse">
+            {/* Header Skeleton */}
+            <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                <div className="px-8 py-8 flex flex-col gap-4 max-w-7xl mx-auto w-full">
+                    <div className="flex items-center gap-4 mb-2">
+                        <Skeleton className="h-8 w-24" />
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="size-12 rounded-lg" />
+                        <div className="flex flex-col gap-2">
+                            <Skeleton className="h-7 w-48" />
+                            <div className="flex gap-2">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-4 w-32" />
+                                <Skeleton className="h-4 w-16" />
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                                <Skeleton className="h-6 w-24 rounded-md" />
+                                <Skeleton className="h-6 w-28 rounded-md" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Content Skeleton */}
+            <div className="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div className="flex justify-between items-center mb-4">
+                    <Skeleton className="h-8 w-32" />
+                    <Skeleton className="h-9 w-20 rounded-lg" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {[...Array(8)].map((_, i) => (
+                        <div key={i} className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-4 shadow-sm bg-white dark:bg-zinc-900/50">
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="size-10 rounded-lg" />
+                                <div className="space-y-1.5 flex-1">
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-3 w-1/2" />
+                                </div>
+                            </div>
+                            <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/50">
+                                <Skeleton className="h-3 w-full" />
+                                <Skeleton className="h-3 w-2/3" />
+                            </div>
+                            <div className="flex justify-between items-center pt-2">
+                                <Skeleton className="h-5 w-16 rounded-full" />
+                                <Skeleton className="h-3 w-20" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function RecruitingJobDetail() {
   const { orgId, jobId, applicationId } = useParams<{ orgId: string; jobId: string; applicationId?: string }>();
   const navigate = useNavigate();
@@ -262,8 +324,10 @@ export default function RecruitingJobDetail() {
   }, [job, stages, applications]);
 
   if (loadingJob) {
-      return <div className="p-8">Loading job...</div>;
+      return <JobDetailSkeleton />;
   }
+
+
 
   if (!job) {
       return <div className="p-8">Job not found.</div>;
