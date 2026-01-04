@@ -8,6 +8,8 @@ export interface RecruitingApplication {
   jobVersionId?: string;
   source?: string;
   currentStageId?: string;
+  groupId?: string;
+  assignedTo?: string; // Member ID
   answers: Record<string, any>; // e.g. { fullName: "...", email: "..." }
   createdAt: string; // ISO timestamp
   updatedAt?: string;

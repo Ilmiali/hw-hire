@@ -9,8 +9,15 @@ import { Text } from '../../components/text';
 import { DescriptionList, DescriptionDetails, DescriptionTerm } from '../../components/description-list';
 import { ArrowLeftIcon } from '@heroicons/react/16/solid';
 
-export default function RecruitingApplicationDetail() {
-  const { orgId, applicationId } = useParams<{ orgId: string; applicationId: string }>();
+interface RecruitingApplicationDetailProps {
+    applicationId?: string;
+    embedded?: boolean;
+    onClose?: () => void;
+}
+
+export default function RecruitingApplicationDetail({ applicationId: propAppId, embedded = false, onClose }: RecruitingApplicationDetailProps) {
+  const { orgId, applicationId: paramAppId } = useParams<{ orgId: string; applicationId: string }>();
+  const applicationId = propAppId || paramAppId;
   const navigate = useNavigate();
   const db = getDatabaseService();
 
@@ -55,15 +62,25 @@ export default function RecruitingApplicationDetail() {
   const name = getCandidateName(application);
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
+    <div className={`p-8 ${embedded ? 'p-4 max-w-none' : 'max-w-4xl mx-auto'} space-y-8`}>
+       {!embedded && (
        <div className="flex items-center gap-4">
         <Button plain onClick={() => navigate(-1)}>
             <ArrowLeftIcon className="size-4 mr-2" />
             Back
         </Button>
       </div>
+       )}
+       {embedded && onClose && (
+           <div className="flex justify-end mb-2">
+               <Button plain onClick={onClose} className="text-zinc-500">
+                   Close
+               </Button>
+           </div>
+       )}
 
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-8 shadow-sm">
+       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-8 shadow-sm">
+           {!embedded && (
            <div className="flex justify-between items-start mb-8">
                 <div>
                     <Heading>{name}</Heading>
@@ -77,6 +94,7 @@ export default function RecruitingApplicationDetail() {
                     <Badge color="blue">{application.currentStageId || 'New'}</Badge>
                 </div>
            </div>
+           )}
 
            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-8">
                 <Heading level={2} className="mb-6">Application Details</Heading>

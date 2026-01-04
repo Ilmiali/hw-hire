@@ -8,21 +8,29 @@ import { DEFAULT_STAGES } from '../../types/pipeline';
 import { toast } from 'react-toastify';
 import { Badge } from '../../components/badge';
 import { Button } from '../../components/button';
+import { SplitTwoLayout } from '../../components/split-two-layout';
 import { Heading } from '../../components/heading';
 import { Text } from '../../components/text';
+import { RecruitingApplicationWorkspace } from './components/RecruitingApplicationWorkspace';
 // Table removed
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { ArrowLeftIcon } from '@heroicons/react/16/solid';
 
 export default function RecruitingJobDetail() {
-  const { orgId, jobId } = useParams<{ orgId: string; jobId: string }>();
+  const { orgId, jobId, applicationId } = useParams<{ orgId: string; jobId: string; applicationId?: string }>();
   const navigate = useNavigate();
   const db = getDatabaseService();
 
   const [job, setJob] = useState<RecruitingJob | null>(null);
   const [applications, setApplications] = useState<RecruitingApplication[]>([]);
   const [loadingJob, setLoadingJob] = useState(true);
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   const [loadingApps, setLoadingApps] = useState(false);
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+
+  // Workspace state
+  const [openTabIds, setOpenTabIds] = useState<string[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
   
   // Pipeline stages state
   const [stages, setStages] = useState<PipelineStage[]>(DEFAULT_STAGES); // Default fallback
@@ -31,6 +39,7 @@ export default function RecruitingJobDetail() {
       setLoadingJob(true);
       try {
         const jobsPath = `orgs/${orgId}/modules/hire/jobs`;
+        if (!jobId) return;
         const jobDoc = await db.getDocument<any>(jobsPath, jobId);
         if (jobDoc) {
              const jobData: RecruitingJob = {
@@ -103,11 +112,65 @@ export default function RecruitingJobDetail() {
     fetchApplications();
   }, [orgId, jobId]);
 
+  useEffect(() => {
+      if (applicationId && !openTabIds.includes(applicationId)) {
+          setOpenTabIds(prev => {
+              if (prev.includes(applicationId)) return prev;
+              return [...prev, applicationId];
+          });
+      }
+  }, [applicationId]);
+
   const getCandidateName = (app: RecruitingApplication) => {
       const { answers } = app;
       if (!answers) return 'Unknown Candidate';
       // Try common keys
       return answers.fullName || answers.name || answers['Full Name'] || answers['Name'] || 'Unknown Candidate';
+  };
+
+  const handleApplicationClick = (appId: string) => {
+      if (!openTabIds.includes(appId)) {
+          setOpenTabIds(prev => [...prev, appId]);
+      }
+      navigate(`/orgs/${orgId}/recruiting/${jobId}/applications/${appId}`);
+  };
+
+  const handleTabClose = (tabId: string) => {
+      const newTabs = openTabIds.filter(id => id !== tabId);
+      setOpenTabIds(newTabs);
+      
+      if (tabId === applicationId) {
+          if (newTabs.length > 0) {
+              const lastTab = newTabs[newTabs.length - 1];
+              navigate(`/orgs/${orgId}/recruiting/${jobId}/applications/${lastTab}`);
+          } else {
+              navigate(`/orgs/${orgId}/recruiting/${jobId}`);
+          }
+      }
+  };
+
+  const currentApp = applications.find(app => app.id === applicationId) || null;
+
+  const handleAssignChange = async ({ groupId, memberId }: { groupId: string; memberId?: string }) => {
+      if (!currentApp) return;
+
+      // Optimistic update
+      const prevApps = [...applications];
+      setApplications(prev => prev.map(a => 
+          a.id === currentApp.id ? { ...a, groupId, assignedTo: memberId } : a
+      ));
+
+      try {
+          await db.updateDocument(`orgs/${orgId}/modules/hire/applications`, currentApp.id, {
+              groupId,
+              assignedTo: memberId || null,
+              updatedAt: new Date().toISOString()
+          });
+      } catch (err) {
+          console.error("Failed to assign application", err);
+          toast.error("Failed to update assignee");
+          setApplications(prevApps); // Revert
+      }
   };
 
 
@@ -120,7 +183,7 @@ export default function RecruitingJobDetail() {
       return <div className="p-8">Job not found.</div>;
   }
 
-  return (
+  const MainContent = (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Button plain onClick={() => navigate(`/orgs/${orgId}/recruiting`)}>
@@ -192,7 +255,7 @@ export default function RecruitingJobDetail() {
                         setApplications(prevApps); // Revert
                     }
                 }}
-                onApplicationClick={(appId) => navigate(`/orgs/${orgId}/recruiting/applications/${appId}`)}
+                onApplicationClick={handleApplicationClick}
             />
         </TabsContent>
         <TabsContent value="postings">
@@ -210,4 +273,40 @@ export default function RecruitingJobDetail() {
       </Tabs>
     </div>
   );
+
+  if (applicationId) {
+      return (
+          <SplitTwoLayout 
+            leftColumn={
+                <div className="h-full overflow-y-auto border-r border-zinc-200 dark:border-zinc-800">
+                    {MainContent}
+                </div>
+            }
+            rightColumn={
+                <RecruitingApplicationWorkspace
+                    currentApplication={currentApp}
+                    openTabs={openTabIds.map(id => {
+                        const app = applications.find(a => a.id === id);
+                        return { id, name: app ? getCandidateName(app) : 'Loading...' };
+                    })}
+                    activeTabId={applicationId}
+                    isExpanded={isExpanded}
+                    onExpandChange={setIsExpanded}
+                    onTabChange={(id) => navigate(`/orgs/${orgId}/recruiting/${jobId}/applications/${id}`)}
+                    onTabClose={handleTabClose}
+                    onAssignChange={handleAssignChange}
+                />
+            }
+            hideColumn={isExpanded ? 'left' : 'none'}
+            leftColumnWidth="45%" 
+          />
+      );
+  }
+
+  return (
+      <div className="h-full overflow-y-auto">
+         {MainContent}
+      </div>
+  );
 }
+

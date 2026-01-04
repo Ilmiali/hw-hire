@@ -62,6 +62,14 @@ export const additionalRoutes: RouteConfig[] = [
     isAuthProtected: true,
   },
   {
+    path: '/orgs/:orgId/recruiting/:jobId/applications/:applicationId',
+    name: 'Job Application Details',
+    icon: UserGroupIcon,
+    component: RecruitingJobDetail,
+    layout: 'authenticated',
+    isAuthProtected: true,
+  },
+  {
     path: '/orgs/:orgId/recruiting/applications/:applicationId',
     name: 'Applicant Details',
     icon: UserGroupIcon,
